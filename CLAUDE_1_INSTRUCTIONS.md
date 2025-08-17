@@ -1,0 +1,49 @@
+# Claude 1: Dummy Account Creation
+
+## Working Directory
+`/Users/tyler/Library/CloudStorage/Dropbox/artrio-claude1`
+
+## Primary Task: Create 10 Dummy High School Student Accounts
+
+### Account Requirements
+Create 10 realistic high school student accounts with the following:
+
+**5 Male Students:**
+1. Jake Thompson - Senior, Basketball player
+2. Ethan Rodriguez - Junior, Drama club
+3. Mason Chen - Sophomore, Chess club
+4. Tyler Brooks - Senior, Student council
+5. Dylan Martinez - Junior, Band (drums)
+
+**5 Female Students:**
+1. Emma Johnson - Senior, Volleyball captain
+2. Sophia Williams - Junior, Debate team
+3. Olivia Davis - Sophomore, Art club
+4. Isabella Garcia - Senior, Yearbook editor
+5. Ava Mitchell - Junior, Track and field
+
+### For Each Account Create:
+- Realistic profile with:
+  - Age (14-18)
+  - Grade level
+  - Interests/activities
+  - Bio (2-3 sentences)
+  - Profile picture placeholder description
+- Email format: firstname.lastname.artrio@test.com
+- Password: ArtrioTest2025!
+- Username: firstname_lastname_grade (e.g., jake_thompson_12)
+
+### Implementation Steps:
+1. Create a `dummy_accounts.json` file with all account data
+2. Create a seed script to populate Supabase
+3. Ensure accounts work with authentication flow
+4. Test login for each account
+5. Document any issues or blockers
+
+### Deliverables:
+- [ ] dummy_accounts.json with all 10 accounts
+- [ ] seed_accounts.js script
+- [ ] Test results document
+- [ ] Any database migration files needed
+
+Commit all changes to your branch `claude1` and push regularly.
