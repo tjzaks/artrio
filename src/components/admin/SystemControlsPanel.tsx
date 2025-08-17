@@ -1,0 +1,215 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Settings, Users, Trash2, RefreshCw } from 'lucide-react';
+
+export default function SystemControlsPanel() {
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const { toast } = useToast();
+
+  const setButtonLoading = (key: string, isLoading: boolean) => {
+    setLoading(prev => ({ ...prev, [key]: isLoading }));
+  };
+
+  const triggerTrioRandomization = async () => {
+    setButtonLoading('randomize', true);
+    try {
+      const { data, error } = await supabase.rpc('randomize_trios');
+      
+      if (error) throw error;
+
+      const currentUser = await supabase.auth.getUser();
+      await supabase.rpc('log_admin_action', {
+        p_admin_id: currentUser.data.user?.id,
+        p_action_type: 'system_control',
+        p_description: 'Manually triggered trio randomization'
+      });
+
+      toast({
+        title: "Success",
+        description: "Trio randomization triggered successfully"
+      });
+    } catch (error) {
+      console.error('Error triggering randomization:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to trigger trio randomization"
+      });
+    } finally {
+      setButtonLoading('randomize', false);
+    }
+  };
+
+  const cleanupExpiredContent = async () => {
+    setButtonLoading('cleanup', true);
+    try {
+      const { error } = await supabase.rpc('cleanup_expired_content');
+      
+      if (error) throw error;
+
+      const currentUser = await supabase.auth.getUser();
+      await supabase.rpc('log_admin_action', {
+        p_admin_id: currentUser.data.user?.id,
+        p_action_type: 'system_control',
+        p_description: 'Manually triggered expired content cleanup'
+      });
+
+      toast({
+        title: "Success",
+        description: "Expired content cleanup completed"
+      });
+    } catch (error) {
+      console.error('Error cleaning up content:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to cleanup expired content"
+      });
+    } finally {
+      setButtonLoading('cleanup', false);
+    }
+  };
+
+  const refreshSafeProfiles = async () => {
+    setButtonLoading('profiles', true);
+    try {
+      const { error } = await supabase.rpc('populate_safe_profiles');
+      
+      if (error) throw error;
+
+      const currentUser = await supabase.auth.getUser();
+      await supabase.rpc('log_admin_action', {
+        p_admin_id: currentUser.data.user?.id,
+        p_action_type: 'system_control',
+        p_description: 'Manually refreshed safe profiles'
+      });
+
+      toast({
+        title: "Success",
+        description: "Safe profiles refreshed successfully"
+      });
+    } catch (error) {
+      console.error('Error refreshing profiles:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh safe profiles"
+      });
+    } finally {
+      setButtonLoading('profiles', false);
+    }
+  };
+
+  const deleteTodaysTrios = async () => {
+    setButtonLoading('deleteTrios', true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { error } = await supabase
+        .from('trios')
+        .delete()
+        .eq('date', today);
+      
+      if (error) throw error;
+
+      const currentUser = await supabase.auth.getUser();
+      await supabase.rpc('log_admin_action', {
+        p_admin_id: currentUser.data.user?.id,
+        p_action_type: 'system_control',
+        p_description: `Deleted all trios for ${today}`
+      });
+
+      toast({
+        title: "Success",
+        description: "Today's trios deleted successfully"
+      });
+    } catch (error) {
+      console.error('Error deleting trios:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete today's trios"
+      });
+    } finally {
+      setButtonLoading('deleteTrios', false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          System Controls
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button
+            onClick={triggerTrioRandomization}
+            disabled={loading.randomize}
+            className="h-20 flex flex-col gap-2"
+          >
+            <Users className="h-6 w-6" />
+            <div className="text-center">
+              <div className="font-medium">Randomize Trios</div>
+              <div className="text-xs opacity-80">Create new daily trios</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={cleanupExpiredContent}
+            disabled={loading.cleanup}
+            variant="outline"
+            className="h-20 flex flex-col gap-2"
+          >
+            <Trash2 className="h-6 w-6" />
+            <div className="text-center">
+              <div className="font-medium">Cleanup Content</div>
+              <div className="text-xs opacity-80">Remove expired posts</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={refreshSafeProfiles}
+            disabled={loading.profiles}
+            variant="outline"
+            className="h-20 flex flex-col gap-2"
+          >
+            <RefreshCw className="h-6 w-6" />
+            <div className="text-center">
+              <div className="font-medium">Refresh Profiles</div>
+              <div className="text-xs opacity-80">Update safe profile data</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={deleteTodaysTrios}
+            disabled={loading.deleteTrios}
+            variant="destructive"
+            className="h-20 flex flex-col gap-2"
+          >
+            <Trash2 className="h-6 w-6" />
+            <div className="text-center">
+              <div className="font-medium">Delete Today's Trios</div>
+              <div className="text-xs opacity-80">Remove current daily trios</div>
+            </div>
+          </Button>
+        </div>
+
+        <div className="mt-6 p-4 bg-muted rounded-lg">
+          <h4 className="font-medium mb-2">⚠️ Important Notes</h4>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li>• Trio randomization runs automatically daily</li>
+            <li>• Content cleanup happens automatically via cron jobs</li>
+            <li>• Use manual controls only when necessary</li>
+            <li>• All actions are logged for audit purposes</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

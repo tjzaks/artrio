@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Button Fix Injector</title>
+</head>
+<body>
+    <h1>Artrio Admin Button Fixer</h1>
+    <p>This will fix your admin buttons remotely!</p>
+    
+    <button onclick="injectFix()">Click to Generate Fix Code</button>
+    
+    <div id="code" style="margin-top: 20px; padding: 20px; background: #f0f0f0; display: none;">
+        <h3>Copy this code and paste in browser console on admin page:</h3>
+        <pre id="fixCode"></pre>
+    </div>
+
+    <script>
+    function injectFix() {
+        const code = `
+// AUTO-FIX ADMIN BUTTONS
+(async () => {
+    // Import Supabase
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    
+    // Initialize
+    window.supabase = createClient(
+        'https://nqwijkvpzyadpsegvgbm.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xd2lqa3ZwenlhZHBzZWd2Z2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzODc3NjcsImV4cCI6MjA3MDk2Mzc2N30.4KWvBXCJtV8uxKvI5JXiMAvhrl-8tTZvZ3IIrmZDvqA'
+    );
+    
+    // Find and fix all buttons
+    const buttons = document.querySelectorAll('button');
+    let fixed = 0;
+    
+    buttons.forEach(btn => {
+        const text = btn.textContent;
+        
+        if (text.includes('Randomize') && text.includes('Trios')) {
+            btn.onclick = async (e) => {
+                e.preventDefault();
+                btn.disabled = true;
+                btn.textContent = 'Processing...';
+                
+                try {
+                    const { data, error } = await window.supabase.rpc('randomize_trios');
+                    if (error) throw error;
+                    
+                    alert(\`Success! Created \${data.trios_created} trios with \${data.users_assigned} users!\`);
+                    window.location.reload();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = text;
+                }
+            };
+            fixed++;
+            console.log('✅ Fixed Randomize Trios button');
+        }
+        
+        if (text.includes('Delete') && text.includes('Trios')) {
+            btn.onclick = async (e) => {
+                e.preventDefault();
+                if (!confirm('Delete all trios created today?')) return;
+                
+                btn.disabled = true;
+                btn.textContent = 'Deleting...';
+                
+                try {
+                    const { data, error } = await window.supabase.rpc('delete_todays_trios');
+                    if (error) throw error;
+                    
+                    alert(\`Deleted \${data.trios_deleted} trios!\`);
+                    window.location.reload();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.textContent = text;
+                }
+            };
+            fixed++;
+            console.log('✅ Fixed Delete Trios button');
+        }
+        
+        if (text.includes('Cleanup') || text.includes('Refresh')) {
+            btn.onclick = () => {
+                alert('This feature is coming soon!');
+            };
+            fixed++;
+        }
+    });
+    
+    if (fixed > 0) {
+        console.log(\`✅ Fixed \${fixed} admin buttons! Try clicking them now.\`);
+        
+        // Visual feedback
+        buttons.forEach(btn => {
+            if (btn.onclick) {
+                btn.style.backgroundColor = '#10b981';
+                btn.style.transition = 'all 0.3s';
+                setTimeout(() => {
+                    btn.style.backgroundColor = '';
+                }, 1000);
+            }
+        });
+    } else {
+        console.log('❌ No admin buttons found. Are you on the admin page?');
+    }
+})();
+        `.trim();
+        
+        document.getElementById('fixCode').textContent = code;
+        document.getElementById('code').style.display = 'block';
+        
+        // Also copy to clipboard
+        navigator.clipboard.writeText(code);
+        alert('Code copied to clipboard! Just paste in console on admin page.');
+    }
+    </script>
+</body>
+</html>
