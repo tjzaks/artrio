@@ -81,17 +81,17 @@ Build system to:
 
 #### 4. API Endpoints
 Create endpoints for:
-- GET /api/users/:id/sharing-score
-- GET /api/users/:id/streak
+- GET /api/users/:id/sharing-score (private - own score only)
+- GET /api/users/:id/streak (private - own streak only)
 - POST /api/sharing-events
-- GET /api/leaderboard/weekly
-- GET /api/leaderboard/monthly
+- GET /api/users/:id/stats (personal stats only)
 - PUT /api/streaks/freeze
+- NO PUBLIC LEADERBOARD ENDPOINTS
 
 #### 5. Background Jobs
 Set up:
 - Daily streak checker (cron job)
-- Weekly leaderboard reset
+- Personal milestone tracker
 - Notification triggers for streak warnings
 
 See GAMIFICATION_FEATURES.md for full specifications.

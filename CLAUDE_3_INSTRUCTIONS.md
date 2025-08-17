@@ -107,7 +107,7 @@ Test all scoring scenarios:
 - Test daily bonus cap (max 1/day)
 - Validate milestone bonuses trigger correctly
 - Test concurrent point updates
-- Verify leaderboard calculations
+- Verify personal score calculations (NO public leaderboards)
 
 #### 3. Performance Testing
 Monitor impact of gamification:
@@ -131,7 +131,7 @@ Create monitoring for:
 - **Feature Adoption**:
   - % users with active streaks
   - % users who've earned badges
-  - Leaderboard participation
+  - Personal stats page views
 
 #### 5. A/B Testing Framework
 Set up tests for:
@@ -145,7 +145,7 @@ Set up tests for:
 - User deletes post (streak impact?)
 - Invite link expires (points awarded?)
 - User blocks sender (points reversed?)
-- Account deletion (leaderboard update?)
+- Account deletion (personal scores removed?)
 - Network failure during point award
 
 #### 7. User Flow Testing

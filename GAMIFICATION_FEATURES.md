@@ -21,10 +21,10 @@ Users earn points for growing the Artrio community through invites and shares.
   - 25 invites sent: +100 bonus
   - 50 invites sent: +250 bonus
 
-### Leaderboard Categories
-- **Weekly Top Sharers** - Resets every Sunday
-- **Monthly Ambassadors** - Top 10 sharers/month
-- **All-Time Leaders** - Hall of fame
+### Private Score Tracking
+- **Personal Stats Only** - Users see their own scores
+- **Friend Comparisons** - Optional: See scores of direct friends only
+- **No Public Rankings** - Keep competition friendly, not toxic
 
 ### Visual Elements
 - Share score badge on profile
@@ -133,13 +133,13 @@ Combines both metrics for ultimate bragging rights:
 - Create database migrations for scoring tables
 - Implement point calculation system
 - Build streak tracking logic
-- Create API endpoints for scores/streaks
+- Create API endpoints for personal scores/streaks (NO public leaderboard endpoints)
 - Add timezone handling for streaks
 
 ### Claude 2 - Frontend UI/UX
-- Design sharing score display
+- Design personal sharing score display
 - Create streak counter component
-- Build leaderboard screens
+- Build personal stats dashboard (NO public leaderboards)
 - Add achievement badges
 - Implement animations/celebrations
 - Create notification system for streaks

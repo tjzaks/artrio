@@ -95,12 +95,12 @@ Create the frontend experience that makes users WANT to use Artrio daily:
 - **StreakWarning**: Alert component for expiring streaks
 - **FreezeTokenButton**: UI for using streak freeze
 
-#### 3. Leaderboard Screens
-Create three leaderboard views:
-- **Weekly Champions**: Top 10 sharers this week
-- **Monthly Leaders**: Top performers this month  
-- **Hall of Fame**: All-time top contributors
-- Include user's rank and points to next position
+#### 3. Personal Stats Dashboard
+Create private stats view (NO PUBLIC LEADERBOARDS):
+- **My Stats**: Personal sharing score and streaks
+- **My Progress**: Points earned this week/month
+- **My Achievements**: Badges and milestones earned
+- **Friends Only** (optional): Compare with direct friends if they allow it
 
 #### 4. Achievement System
 - **BadgeGallery**: Display earned badges on profile
@@ -117,7 +117,7 @@ Create three leaderboard views:
 #### 6. Notification Components
 - **StreakReminder**: Morning/evening notifications
 - **MilestoneAlert**: Celebration notifications
-- **LeaderboardUpdate**: Weekly position changes
+- **PersonalRecord**: Beat your own best score
 
 #### 7. Share Flow Enhancement
 Update share button to show:
