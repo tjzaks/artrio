@@ -1,8 +1,11 @@
-# Welcome to your Lovable project
+# Artrio - Daily Social Trios
 
-## Project info
+Connect with 2 new people every day in randomized social trios.
 
-**URL**: https://lovable.dev/projects/5616f9cd-575b-4981-842e-64a5c8e9b8c9
+## Live Site
+
+**Production**: https://artrio.up.railway.app  
+**Lovable**: https://lovable.dev/projects/5616f9cd-575b-4981-842e-64a5c8e9b8c9
 
 ## How can I edit this code?
 
