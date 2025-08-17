@@ -19,6 +19,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState(''); // Can be username or email for login
   const [birthdayText, setBirthdayText] = useState('');
   const [bio, setBio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -295,7 +296,29 @@ const Auth = () => {
           setBio('');
         }
       } else {
-        const { error } = await signIn(email, password);
+        // For login, check if it's a username or email
+        let emailToUse = loginIdentifier;
+        
+        // Check if it's a username (no @ symbol)
+        if (!loginIdentifier.includes('@')) {
+          // Try to get email from username
+          const { data: userEmail, error: lookupError } = await supabase
+            .rpc('get_email_from_username', { input_username: loginIdentifier });
+          
+          if (lookupError || !userEmail) {
+            toast({
+              title: 'Login failed',
+              description: 'Username not found',
+              variant: 'destructive'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          emailToUse = userEmail;
+        }
+        
+        const { error } = await signIn(emailToUse, password);
         
         if (error) {
           toast({
@@ -331,17 +354,32 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="Enter your email"
-              />
-            </div>
+            {/* Show email for signup/forgot password, username for login */}
+            {(isSignUp || isForgotPassword) ? (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="Enter your email"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="loginIdentifier">Username</Label>
+                <Input
+                  id="loginIdentifier"
+                  type="text"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  required
+                  placeholder="Enter your username"
+                />
+              </div>
+            )}
 
             {!isForgotPassword && (
               <div className="space-y-2">
