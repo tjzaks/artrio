@@ -302,21 +302,33 @@ const Auth = () => {
         
         // Check if it's a username (no @ symbol)
         if (!loginIdentifier.includes('@')) {
-          // Try to get email from username
-          const { data: userEmail, error: lookupError } = await supabase
-            .rpc('get_email_from_username', { input_username: loginIdentifier });
-          
-          if (lookupError || !userEmail) {
+          // First try the RPC function (if it exists)
+          try {
+            const { data: userEmail, error: lookupError } = await supabase
+              .rpc('get_email_from_username', { input_username: loginIdentifier });
+            
+            if (!lookupError && userEmail) {
+              emailToUse = userEmail;
+            } else {
+              // Fallback: since we can't get email directly, show helpful error
+              toast({
+                title: 'Database setup incomplete',
+                description: 'Please run COMPLETE_AUTH_SETUP.sql in Supabase SQL Editor to enable username login',
+                variant: 'destructive'
+              });
+              setIsSubmitting(false);
+              return;
+            }
+          } catch (err) {
+            // If RPC doesn't exist, show error
             toast({
-              title: 'Login failed',
-              description: 'Username not found',
+              title: 'Database setup incomplete',
+              description: 'Please run COMPLETE_AUTH_SETUP.sql in Supabase SQL Editor to enable username login',
               variant: 'destructive'
             });
             setIsSubmitting(false);
             return;
           }
-          
-          emailToUse = userEmail;
         }
         
         const { error } = await signIn(emailToUse, password);
