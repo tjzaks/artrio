@@ -99,7 +99,7 @@ Critical test cases:
   - Multiple posts in same day
   - Server downtime scenarios
 
-#### 2. Point System Validation
+#### 2. Point System & Privacy Validation
 Test all scoring scenarios:
 - Verify +10 for sending invite
 - Verify +50 for accepted invite
@@ -107,7 +107,13 @@ Test all scoring scenarios:
 - Test daily bonus cap (max 1/day)
 - Validate milestone bonuses trigger correctly
 - Test concurrent point updates
-- Verify personal score calculations (NO public leaderboards)
+
+CRITICAL PRIVACY TESTS:
+- **Points MUST be private**: User A cannot see User B's points
+- **Streaks MUST be public**: User A CAN see User B's streak
+- Test that /api/users/:id/sharing-score returns 403 if not own profile
+- Test that /api/users/:id/streak returns data for any user
+- Verify points don't leak in API responses or UI
 
 #### 3. Performance Testing
 Monitor impact of gamification:
@@ -150,10 +156,12 @@ Set up tests for:
 
 #### 7. User Flow Testing
 Complete journeys:
-- New user → First share → First points
-- Streak start → 7 days → Badge unlock
-- Invite friend → Friend joins → Both get points
+- New user → First share → First points (visible only to them)
+- Streak start → 7 days → Badge unlock (streak visible to all)
+- Invite friend → Friend joins → Both get points (private)
 - Lose streak → Use freeze → Maintain streak
+- View own profile → See both points and streak
+- View friend's profile → See ONLY their streak, NOT their points
 
 See GAMIFICATION_FEATURES.md for specifications.
 

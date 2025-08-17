@@ -21,16 +21,16 @@ Users earn points for growing the Artrio community through invites and shares.
   - 25 invites sent: +100 bonus
   - 50 invites sent: +250 bonus
 
-### Private Score Tracking
-- **Personal Stats Only** - Users see their own scores
-- **Friend Comparisons** - Optional: See scores of direct friends only
-- **No Public Rankings** - Keep competition friendly, not toxic
+### Visibility Rules
+- **Sharing Points**: PRIVATE - Only visible to the user themselves
+- **Streaks**: PUBLIC - Visible on profiles and in Trios (like Snapchat)
+- **No Public Rankings** - No competitive leaderboards
 
 ### Visual Elements
-- Share score badge on profile
-- Animation when earning points
-- Progress bar to next milestone
-- Confetti effect at milestones
+- Share score visible ONLY to user on their own profile
+- Animation when earning points (private)
+- Progress bar to next milestone (private)
+- Confetti effect at milestones (private)
 
 ### Database Schema
 ```sql
@@ -82,11 +82,11 @@ Encourage daily engagement by rewarding consistent posting in Trios.
 - **Streak Saved**: "Streak maintained! You're on fire! 🔥"
 - **Milestone Alert**: "Amazing! You've reached a 7-day streak!"
 
-### Social Recognition
-- Streak counter visible on profile
+### Social Recognition (STREAKS ARE PUBLIC)
+- Streak counter visible on ALL profiles 🔥
 - Friends get notified of milestone streaks
-- Trio members see streak badges in chat
-- Weekly streak champions highlighted
+- Trio members see streak badges next to names in chat
+- Streak emoji visible everywhere (profiles, chat, Trio lists)
 
 ### Database Schema
 ```sql

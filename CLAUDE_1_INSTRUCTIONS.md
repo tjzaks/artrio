@@ -81,10 +81,11 @@ Build system to:
 
 #### 4. API Endpoints
 Create endpoints for:
-- GET /api/users/:id/sharing-score (private - own score only)
-- GET /api/users/:id/streak (private - own streak only)
+- GET /api/users/:id/sharing-score (PRIVATE - only accessible by the user themselves)
+- GET /api/users/:id/streak (PUBLIC - anyone can see anyone's streak)
 - POST /api/sharing-events
-- GET /api/users/:id/stats (personal stats only)
+- GET /api/users/me/stats (personal stats - points visible only to self)
+- GET /api/users/:id/public-profile (returns streak but NOT points)
 - PUT /api/streaks/freeze
 - NO PUBLIC LEADERBOARD ENDPOINTS
 

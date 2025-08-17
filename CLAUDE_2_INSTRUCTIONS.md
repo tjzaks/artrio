@@ -83,24 +83,27 @@ Commit all changes to your branch `claude2` and push regularly.
 
 Create the frontend experience that makes users WANT to use Artrio daily:
 
-#### 1. Sharing Score Display Components
-- **ProfileScoreBadge**: Shows total sharing score with animation
-- **ScoreProgressBar**: Visual progress to next milestone
-- **PointsAnimation**: +50 points floating animation when earned
-- **MilestoneConfetti**: Celebration effect at achievements
+#### 1. Sharing Score Display Components (PRIVATE - Only on user's own profile)
+- **ProfileScoreBadge**: Shows total sharing score ONLY on user's own profile
+- **ScoreProgressBar**: Visual progress to next milestone (private view)
+- **PointsAnimation**: +50 points floating animation when earned (private)
+- **MilestoneConfetti**: Celebration effect at achievements (private)
+- **HideScoresFromOthers**: Ensure points are NOT visible on other users' profiles
 
-#### 2. Streak Counter UI
-- **StreakWidget**: Prominent display with fire emoji (🔥)
-- **StreakCalendar**: Visual calendar showing streak history
-- **StreakWarning**: Alert component for expiring streaks
-- **FreezeTokenButton**: UI for using streak freeze
+#### 2. Streak Counter UI (PUBLIC - Visible on ALL profiles)
+- **StreakWidget**: Prominent display with fire emoji (🔥) on ALL profiles
+- **StreakInChat**: Show streak emoji next to usernames in Trio chats
+- **StreakInLists**: Display streaks in friend lists and Trio member lists
+- **StreakCalendar**: Visual calendar showing streak history (public)
+- **StreakWarning**: Alert component for expiring streaks (private)
+- **FreezeTokenButton**: UI for using streak freeze (private)
 
 #### 3. Personal Stats Dashboard
 Create private stats view (NO PUBLIC LEADERBOARDS):
-- **My Stats**: Personal sharing score and streaks
-- **My Progress**: Points earned this week/month
-- **My Achievements**: Badges and milestones earned
-- **Friends Only** (optional): Compare with direct friends if they allow it
+- **My Stats**: Personal sharing score (PRIVATE) and streaks (already public)
+- **My Progress**: Points earned this week/month (PRIVATE)
+- **My Achievements**: Badges and milestones earned (PRIVATE)
+- **No Friend Comparisons**: Points are completely private to each user
 
 #### 4. Achievement System
 - **BadgeGallery**: Display earned badges on profile
