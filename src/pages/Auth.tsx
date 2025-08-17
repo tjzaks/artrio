@@ -304,66 +304,56 @@ const Auth = () => {
         
         // Check if it's a username (no @ symbol)
         if (!loginIdentifier.includes('@')) {
-          // First check if username exists
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('username')
-            .ilike('username', loginIdentifier)
-            .single();
+          // Hardcoded username to email mapping (temporary until SQL function is set up)
+          const usernameToEmail: Record<string, string> = {
+            'beth_jackson_12': 'beth@example.com',
+            'dylan_thomas_12': 'dylan@example.com',
+            'emma_johnson_12': 'emma@example.com',
+            'ethan_davis_12': 'ethan@example.com',
+            'isabella_anderson_12': 'isabella@example.com',
+            'jake_thompson_12': 'jake@example.com',
+            'jonny b': 'jonnyb@example.com',
+            'joshy b': 'marcher_windier.0o@icloud.com',
+            'logan_taylor_12': 'logan@example.com',
+            'mason_wilson_12': 'mason@example.com',
+            'olivia_moore_12': 'olivia@example.com',
+            'sophia_miller_12': 'sophia@example.com',
+            'tobyszaks': 'tobyszakacs@icloud.com',
+            'tyler': 'szakacsmediacompany@gmail.com',
+          };
           
-          if (profileError || !profile) {
-            toast({
-              title: 'Login failed',
-              description: 'Username not found',
-              variant: 'destructive'
-            });
-            setIsSubmitting(false);
-            return;
-          }
+          // Look up email from username (case-insensitive)
+          const email = usernameToEmail[loginIdentifier.toLowerCase()];
           
-          // Try the RPC function first
-          try {
-            const { data: userEmail, error: lookupError } = await supabase
-              .rpc('get_email_from_username', { input_username: loginIdentifier });
+          if (!email) {
+            // Username not found - check if it exists in database
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username')
+              .ilike('username', loginIdentifier)
+              .single();
             
-            if (!lookupError && userEmail) {
-              emailToUse = userEmail;
-            } else {
-              // Show helpful message with workaround
+            if (profile) {
+              // Username exists but not in our mapping - they signed up recently
               toast({
-                title: 'Username login not fully configured',
-                description: 'Please login with your email address instead, or ask admin to run COMPLETE_AUTH_SETUP.sql',
-                variant: 'destructive'
-              });
-              setIsSubmitting(false);
-              return;
-            }
-          } catch (err) {
-            // RPC doesn't exist - show email addresses for known users
-            const knownEmails: Record<string, string> = {
-              'tyler': 'szakacsmediacompany@gmail.com',
-              'jonny b': 'jonnyb@example.com',
-              'tobyszaks': 'Check your email used during signup',
-              'joshy b': 'Check your email used during signup'
-            };
-            
-            const email = knownEmails[loginIdentifier.toLowerCase()];
-            if (email) {
-              toast({
-                title: 'Use email to login',
-                description: `Please login with email: ${email}`,
+                title: 'Please use email to login',
+                description: 'New users should login with their email address',
                 variant: 'destructive'
               });
             } else {
+              // Username doesn't exist at all
               toast({
-                title: 'Username login not available',
-                description: 'Please login with your email address instead',
+                title: 'Username not found',
+                description: 'Please check your username or login with email',
                 variant: 'destructive'
               });
             }
             setIsSubmitting(false);
             return;
           }
+          
+          // Use the email we found
+          emailToUse = email;
         }
         
         const { error } = await signIn(emailToUse, password);
