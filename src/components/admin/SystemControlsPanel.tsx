@@ -18,7 +18,15 @@ export default function SystemControlsPanel() {
     try {
       const { data, error } = await supabase.rpc('randomize_trios');
       
-      if (error) throw error;
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
+      }
+
+      // Check if the function returned success: false
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Randomization failed');
+      }
 
       // Skip logging for now if it doesn't exist
       try {
@@ -32,16 +40,25 @@ export default function SystemControlsPanel() {
         console.log('Logging skipped:', logError);
       }
 
-      toast({
-        title: "Success",
-        description: `Created ${data?.trios_created || 0} trios with ${data?.users_assigned || 0} users!`
-      });
-    } catch (error) {
+      // Only show success if we actually created trios
+      if (data?.trios_created > 0) {
+        toast({
+          title: "Success",
+          description: `Created ${data.trios_created} trios with ${data.users_assigned} users!`
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "No Trios Created",
+          description: data?.error || "No users available for trio creation"
+        });
+      }
+    } catch (error: any) {
       console.error('Error triggering randomization:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to trigger trio randomization"
+        description: error.message || "Failed to trigger trio randomization. Please run the SQL script in Supabase."
       });
     } finally {
       setButtonLoading('randomize', false);
@@ -51,27 +68,47 @@ export default function SystemControlsPanel() {
   const cleanupExpiredContent = async () => {
     setButtonLoading('cleanup', true);
     try {
-      const { error } = await supabase.rpc('cleanup_expired_content');
+      const { data, error } = await supabase.rpc('cleanup_expired_content');
       
-      if (error) throw error;
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
+      }
 
-      const currentUser = await supabase.auth.getUser();
-      await supabase.rpc('log_admin_action', {
-        p_admin_id: currentUser.data.user?.id,
-        p_action_type: 'system_control',
-        p_description: 'Manually triggered expired content cleanup'
-      });
+      // Check if the function returned success: false
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Cleanup failed');
+      }
 
-      toast({
-        title: "Success",
-        description: "Expired content cleanup completed"
-      });
-    } catch (error) {
+      try {
+        const currentUser = await supabase.auth.getUser();
+        await supabase.rpc('log_admin_action', {
+          p_admin_id: currentUser.data.user?.id,
+          p_action_type: 'system_control',
+          p_description: 'Manually triggered expired content cleanup'
+        });
+      } catch (logError) {
+        console.log('Logging skipped:', logError);
+      }
+
+      const deletedTotal = (data?.deleted_posts || 0) + (data?.deleted_messages || 0);
+      if (deletedTotal > 0) {
+        toast({
+          title: "Success",
+          description: `Cleanup completed: ${data?.deleted_posts || 0} posts, ${data?.deleted_messages || 0} messages deleted`
+        });
+      } else {
+        toast({
+          title: "No Content to Clean",
+          description: "No expired content found"
+        });
+      }
+    } catch (error: any) {
       console.error('Error cleaning up content:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to cleanup expired content"
+        description: error.message || "Failed to cleanup expired content. Please run the SQL script in Supabase."
       });
     } finally {
       setButtonLoading('cleanup', false);
@@ -81,27 +118,46 @@ export default function SystemControlsPanel() {
   const refreshSafeProfiles = async () => {
     setButtonLoading('profiles', true);
     try {
-      const { error } = await supabase.rpc('populate_safe_profiles');
+      const { data, error } = await supabase.rpc('populate_safe_profiles');
       
-      if (error) throw error;
+      if (error) {
+        console.error('RPC Error:', error);
+        throw error;
+      }
 
-      const currentUser = await supabase.auth.getUser();
-      await supabase.rpc('log_admin_action', {
-        p_admin_id: currentUser.data.user?.id,
-        p_action_type: 'system_control',
-        p_description: 'Manually refreshed safe profiles'
-      });
+      // Check if the function returned success: false
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Profile refresh failed');
+      }
 
-      toast({
-        title: "Success",
-        description: "Safe profiles refreshed successfully"
-      });
-    } catch (error) {
+      try {
+        const currentUser = await supabase.auth.getUser();
+        await supabase.rpc('log_admin_action', {
+          p_admin_id: currentUser.data.user?.id,
+          p_action_type: 'system_control',
+          p_description: 'Manually refreshed safe profiles'
+        });
+      } catch (logError) {
+        console.log('Logging skipped:', logError);
+      }
+
+      if (data?.profiles_updated > 0) {
+        toast({
+          title: "Success",
+          description: `Updated ${data.profiles_updated} profiles out of ${data.total_profiles} total`
+        });
+      } else {
+        toast({
+          title: "Profiles Up to Date",
+          description: `All ${data?.total_profiles || 0} profiles are already up to date`
+        });
+      }
+    } catch (error: any) {
       console.error('Error refreshing profiles:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to refresh safe profiles"
+        description: error.message || "Failed to refresh safe profiles. Please run the SQL script in Supabase."
       });
     } finally {
       setButtonLoading('profiles', false);
