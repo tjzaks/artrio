@@ -25,7 +25,19 @@ First, review these files in your working directory:
 - [ ] Enable proper capabilities (Push Notifications, etc.)
 - [ ] Configure app groups if needed
 
-#### 3. Beta Testing Setup
+#### 3. Share/Invite Feature Implementation
+- [ ] Create share button component
+- [ ] Implement invite link generation
+- [ ] Add share options:
+  - Share via Messages
+  - Share via Email
+  - Copy invite link
+  - Share to social media (optional)
+- [ ] Create invite tracking system
+- [ ] Design invite acceptance flow
+- [ ] Add referral rewards (if applicable)
+
+#### 4. Beta Testing Setup
 - [ ] Create TestFlight test groups:
   - Internal Testing (team members)
   - Beta Group 1 (first 20 users)
@@ -33,7 +45,7 @@ First, review these files in your working directory:
 - [ ] Prepare beta testing instructions
 - [ ] Create feedback collection process
 
-#### 4. Pre-submission Checklist
+#### 5. Pre-submission Checklist
 - [ ] App Store Connect metadata
 - [ ] Screenshots for all device sizes
 - [ ] App description (beta version)
@@ -41,7 +53,7 @@ First, review these files in your working directory:
 - [ ] Support URL
 - [ ] Beta testing notes
 
-#### 5. Testing Documentation
+#### 6. Testing Documentation
 Create a BETA_TESTING_GUIDE.md with:
 - How to join beta
 - Known issues
