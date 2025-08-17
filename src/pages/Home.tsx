@@ -95,12 +95,24 @@ const Home = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Fetch today's trio - check all user positions
+      // First get the user's profile ID
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (!profile) {
+        console.log('No profile found for user');
+        return;
+      }
+      
+      // Fetch today's trio using PROFILE ID, not auth user ID
       const { data: trio, error: trioError } = await supabase
         .from('trios')
         .select('*')
         .eq('date', today)
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id},user4_id.eq.${user?.id},user5_id.eq.${user?.id}`)
+        .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id},user3_id.eq.${profile.id},user4_id.eq.${profile.id},user5_id.eq.${profile.id}`)
         .single();
 
       if (trioError && trioError.code !== 'PGRST116') {
