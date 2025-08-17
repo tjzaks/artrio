@@ -47,3 +47,53 @@ Create 10 realistic high school student accounts with the following:
 - [ ] Any database migration files needed
 
 Commit all changes to your branch `claude1` and push regularly.
+
+---
+
+## 🎮 NEW PRIORITY TASK: Gamification Backend
+
+### Implement Sharing Score & Streak System Backend
+
+You need to create the backend infrastructure for engagement features:
+
+#### 1. Database Schema
+Create migrations for:
+- `sharing_scores` table (track user sharing points)
+- `sharing_events` table (log all sharing activities)
+- `user_streaks` table (track daily posting streaks)
+- `streak_milestones` table (achievement tracking)
+
+#### 2. Point Calculation System
+Implement logic for:
+- Award points for sending invites (+10)
+- Award points for accepted invites (+50)
+- Award points when friends join Trios (+100)
+- Daily share bonus (+5, max 1/day)
+- Milestone bonuses (5, 10, 25, 50 invites)
+
+#### 3. Streak Tracking Logic
+Build system to:
+- Track daily posts in Trios
+- Calculate current streak
+- Handle timezone considerations
+- Implement freeze tokens (1/week)
+- Grace period (2 hours after midnight)
+
+#### 4. API Endpoints
+Create endpoints for:
+- GET /api/users/:id/sharing-score
+- GET /api/users/:id/streak
+- POST /api/sharing-events
+- GET /api/leaderboard/weekly
+- GET /api/leaderboard/monthly
+- PUT /api/streaks/freeze
+
+#### 5. Background Jobs
+Set up:
+- Daily streak checker (cron job)
+- Weekly leaderboard reset
+- Notification triggers for streak warnings
+
+See GAMIFICATION_FEATURES.md for full specifications.
+
+**Priority**: This is HIGH PRIORITY - users need reasons to engage daily!

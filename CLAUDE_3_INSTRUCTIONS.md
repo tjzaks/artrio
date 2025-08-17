@@ -79,3 +79,82 @@ Before approving beta release, ensure:
 - Performance metrics meet standards
 
 Commit all changes to your branch `claude3` and push regularly.
+
+---
+
+## 🎮 NEW PRIORITY TASK: Gamification Testing & Analytics
+
+### Test & Monitor Engagement Features
+
+Ensure the gamification features work flawlessly and track their impact:
+
+#### 1. Streak Logic Testing
+Critical test cases:
+- **Timezone Transitions**: User posts at 11:59 PM and 12:01 AM
+- **Grace Period**: Test 2-hour buffer after midnight
+- **Freeze Tokens**: Verify 1/week allocation and usage
+- **Edge Cases**: 
+  - Daylight savings time changes
+  - User changes timezone
+  - Multiple posts in same day
+  - Server downtime scenarios
+
+#### 2. Point System Validation
+Test all scoring scenarios:
+- Verify +10 for sending invite
+- Verify +50 for accepted invite
+- Verify +100 for friend joining Trio
+- Test daily bonus cap (max 1/day)
+- Validate milestone bonuses trigger correctly
+- Test concurrent point updates
+- Verify leaderboard calculations
+
+#### 3. Performance Testing
+Monitor impact of gamification:
+- Database query performance with scoring tables
+- Real-time update latency for scores
+- Notification delivery speed
+- Memory usage with streak tracking
+- API response times under load
+
+#### 4. Analytics Dashboard
+Create monitoring for:
+- **Engagement Metrics**:
+  - Daily Active Users (DAU)
+  - Average session length
+  - Posts per user per day
+  - Streak retention rates
+- **Viral Metrics**:
+  - Invites sent per user
+  - Invite acceptance rate
+  - K-factor (viral coefficient)
+- **Feature Adoption**:
+  - % users with active streaks
+  - % users who've earned badges
+  - Leaderboard participation
+
+#### 5. A/B Testing Framework
+Set up tests for:
+- Different point values
+- Notification timing
+- Badge designs
+- Streak reminder copy
+- Celebration animations
+
+#### 6. Bug Scenarios to Test
+- User deletes post (streak impact?)
+- Invite link expires (points awarded?)
+- User blocks sender (points reversed?)
+- Account deletion (leaderboard update?)
+- Network failure during point award
+
+#### 7. User Flow Testing
+Complete journeys:
+- New user → First share → First points
+- Streak start → 7 days → Badge unlock
+- Invite friend → Friend joins → Both get points
+- Lose streak → Use freeze → Maintain streak
+
+See GAMIFICATION_FEATURES.md for specifications.
+
+**Priority**: These features will make or break user retention - they MUST be bulletproof!

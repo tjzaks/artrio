@@ -74,3 +74,58 @@ Create a BETA_TESTING_GUIDE.md with:
 - [ ] Beta tester invitation template
 
 Commit all changes to your branch `claude2` and push regularly.
+
+---
+
+## 🎮 NEW PRIORITY TASK: Gamification Frontend UI
+
+### Build Engaging UI for Sharing Scores & Streaks
+
+Create the frontend experience that makes users WANT to use Artrio daily:
+
+#### 1. Sharing Score Display Components
+- **ProfileScoreBadge**: Shows total sharing score with animation
+- **ScoreProgressBar**: Visual progress to next milestone
+- **PointsAnimation**: +50 points floating animation when earned
+- **MilestoneConfetti**: Celebration effect at achievements
+
+#### 2. Streak Counter UI
+- **StreakWidget**: Prominent display with fire emoji (🔥)
+- **StreakCalendar**: Visual calendar showing streak history
+- **StreakWarning**: Alert component for expiring streaks
+- **FreezeTokenButton**: UI for using streak freeze
+
+#### 3. Leaderboard Screens
+Create three leaderboard views:
+- **Weekly Champions**: Top 10 sharers this week
+- **Monthly Leaders**: Top performers this month  
+- **Hall of Fame**: All-time top contributors
+- Include user's rank and points to next position
+
+#### 4. Achievement System
+- **BadgeGallery**: Display earned badges on profile
+- **AchievementToast**: Pop-up when unlocking new badge
+- **ProgressTrackers**: Show progress to next badges
+- **BadgeShowcase**: Let users pick 3 featured badges
+
+#### 5. Home Screen Integration
+- **DailyGoalCard**: "Post in a Trio to keep streak!"
+- **QuickShareButton**: One-tap invite sending
+- **FriendActivityFeed**: See friends' streaks/scores
+- **TodayStatsWidget**: Points earned, streak status
+
+#### 6. Notification Components
+- **StreakReminder**: Morning/evening notifications
+- **MilestoneAlert**: Celebration notifications
+- **LeaderboardUpdate**: Weekly position changes
+
+#### 7. Share Flow Enhancement
+Update share button to show:
+- Current sharing score
+- Points to be earned
+- Friends who haven't joined yet
+- Social media share options
+
+See GAMIFICATION_FEATURES.md for detailed specifications.
+
+**Priority**: Make this VISUALLY ADDICTIVE - think Snapchat streaks but better!
