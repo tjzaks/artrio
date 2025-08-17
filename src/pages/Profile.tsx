@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Save, User, Camera, Upload } from 'lucide-react';
+import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,8 @@ interface Profile {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  username_change_count?: number;
+  last_username_change?: string;
 }
 
 interface SensitiveData {
@@ -41,6 +43,10 @@ const Profile = () => {
     bio: '',
     avatar_url: ''
   });
+  const [originalUsername, setOriginalUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameChangeWarning, setUsernameChangeWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -58,7 +64,7 @@ const Profile = () => {
         .maybeSingle();
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
+        logger.error('Error fetching profile:', profileError);
         toast({
           title: 'Error',
           description: 'Failed to load profile',
@@ -75,7 +81,7 @@ const Profile = () => {
         .maybeSingle();
 
       if (sensitiveError && sensitiveError.code !== 'PGRST116') {
-        console.error('Error fetching sensitive data:', sensitiveError);
+        logger.error('Error fetching sensitive data:', sensitiveError);
       }
 
       // Calculate age using secure function
@@ -83,7 +89,7 @@ const Profile = () => {
         .rpc('calculate_age_secure', { target_user_id: user?.id });
 
       if (ageError) {
-        console.error('Error calculating age:', ageError);
+        logger.error('Error calculating age:', ageError);
       }
 
       if (profileData) {
@@ -93,9 +99,18 @@ const Profile = () => {
           bio: profileData.bio || '',
           avatar_url: profileData.avatar_url || ''
         });
+        setOriginalUsername(profileData.username);
+        
+        // Check if user is approaching or at the change limit
+        const changeCount = profileData.username_change_count || 0;
+        if (changeCount === 2) {
+          setUsernameChangeWarning('This is your last free username change. Additional changes will cost $5.');
+        } else if (changeCount >= 3) {
+          setUsernameChangeWarning('You\'ve used all 3 free username changes. Additional changes cost $5.');
+        }
       } else {
         // No profile exists - this might happen if signup didn't create one
-        console.log('No profile found, user will need to create one');
+        logger.log('No profile found, user will need to create one');
         setFormData({
           username: '',
           bio: '',
@@ -111,7 +126,7 @@ const Profile = () => {
         setUserAge(ageData);
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to load profile',
@@ -186,7 +201,7 @@ const Profile = () => {
         });
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: 'Upload failed',
         description: 'Failed to upload image',
@@ -209,6 +224,30 @@ const Profile = () => {
         variant: 'destructive'
       });
       return;
+    }
+
+    // Check if username is available (only if it changed)
+    if (formData.username !== originalUsername && usernameAvailable === false) {
+      toast({
+        title: 'Error',
+        description: 'This username is already taken',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Check if user has exceeded free username changes
+    if (profile && formData.username !== originalUsername) {
+      const changeCount = profile.username_change_count || 0;
+      if (changeCount >= 3) {
+        toast({
+          title: 'Payment Required',
+          description: 'You\'ve used all 3 free username changes. Additional changes cost $5.',
+          variant: 'destructive'
+        });
+        // In the future, this would trigger a payment flow
+        return;
+      }
     }
 
     setSaving(true);
@@ -261,7 +300,7 @@ const Profile = () => {
       // Refresh profile data
       await fetchProfile();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast({
         title: 'Error',
         description: 'Failed to update profile',
@@ -271,6 +310,46 @@ const Profile = () => {
       setSaving(false);
     }
   };
+
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username === originalUsername) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username.toLowerCase())
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        logger.error('Error checking username:', error);
+        setUsernameAvailable(null);
+      } else {
+        setUsernameAvailable(!data);
+      }
+    } catch (error) {
+      logger.error('Error checking username:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.username && formData.username !== originalUsername) {
+        checkUsernameAvailability(formData.username);
+      } else {
+        setUsernameAvailable(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.username, originalUsername]);
 
   const calculateAge = (birthday: string | null): number | 'Unknown' => {
     if (!birthday) return 'Unknown';
@@ -359,12 +438,61 @@ const Profile = () => {
             {/* Username */}
             <div className="space-y-2">
               <Label htmlFor="username">Username *</Label>
-              <Input
-                id="username"
-                placeholder="Enter your username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-              />
+              <div className="relative">
+                <Input
+                  id="username"
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                  className={`pr-10 ${
+                    formData.username !== originalUsername && usernameAvailable !== null
+                      ? usernameAvailable
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-red-500 focus:border-red-500'
+                      : ''
+                  }`}
+                />
+                {/* Status icon */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  {checkingUsername ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : formData.username !== originalUsername && usernameAvailable !== null ? (
+                    usernameAvailable ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500" />
+                    )
+                  ) : null}
+                </div>
+              </div>
+              
+              {/* Availability message */}
+              {formData.username !== originalUsername && usernameAvailable !== null && !checkingUsername && (
+                <p className={`text-xs ${usernameAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                  {usernameAvailable ? 'Username is available!' : 'Username is already taken'}
+                </p>
+              )}
+              
+              {/* Username change warning */}
+              {usernameChangeWarning && formData.username !== originalUsername && (
+                <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                  <p className="text-xs text-amber-700">{usernameChangeWarning}</p>
+                </div>
+              )}
+              
+              {/* Username changes info */}
+              {profile && (
+                <p className="text-xs text-muted-foreground">
+                  {profile.username_change_count === 0 || !profile.username_change_count
+                    ? 'You have 3 free username changes available'
+                    : profile.username_change_count === 1
+                    ? 'You have 2 free username changes remaining'
+                    : profile.username_change_count === 2
+                    ? 'You have 1 free username change remaining'
+                    : 'You\'ve used all free username changes'}
+                </p>
+              )}
             </div>
 
             {/* Bio */}

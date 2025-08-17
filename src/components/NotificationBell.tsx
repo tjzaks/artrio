@@ -14,7 +14,7 @@ interface Notification {
   type: string;
   title: string;
   message: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   is_read: boolean;
   created_at: string;
 }
@@ -53,7 +53,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
       if (error) throw error;
       setNotifications(data || []);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      logger.error('Error fetching notifications:', error);
     }
   };
 
@@ -69,7 +69,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
           filter: `user_id=eq.${user?.id}`
         },
         (payload) => {
-          console.log('New notification received:', payload);
+          logger.log('New notification received:', payload);
           const newNotification = payload.new as Notification;
           
           setNotifications(prev => [newNotification, ...prev]);
@@ -104,7 +104,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logger.error('Error marking notification as read:', error);
     }
   };
 
@@ -125,7 +125,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
         prev.map(n => ({ ...n, is_read: true }))
       );
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      logger.error('Error marking all notifications as read:', error);
     }
   };
 

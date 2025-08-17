@@ -19,7 +19,7 @@ export default function SystemControlsPanel() {
       const { data, error } = await supabase.rpc('randomize_trios');
       
       if (error) {
-        console.error('RPC Error:', error);
+        logger.error('RPC Error:', error);
         throw error;
       }
 
@@ -37,7 +37,7 @@ export default function SystemControlsPanel() {
           p_description: 'Manually triggered trio randomization'
         });
       } catch (logError) {
-        console.log('Logging skipped:', logError);
+        logger.log('Logging skipped:', logError);
       }
 
       // Only show success if we actually created trios
@@ -53,8 +53,8 @@ export default function SystemControlsPanel() {
           description: data?.error || "No users available for trio creation"
         });
       }
-    } catch (error: any) {
-      console.error('Error triggering randomization:', error);
+    } catch (error) {
+      logger.error('Error triggering randomization:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -71,7 +71,7 @@ export default function SystemControlsPanel() {
       const { data, error } = await supabase.rpc('cleanup_expired_content');
       
       if (error) {
-        console.error('RPC Error:', error);
+        logger.error('RPC Error:', error);
         throw error;
       }
 
@@ -88,7 +88,7 @@ export default function SystemControlsPanel() {
           p_description: 'Manually triggered expired content cleanup'
         });
       } catch (logError) {
-        console.log('Logging skipped:', logError);
+        logger.log('Logging skipped:', logError);
       }
 
       const deletedTotal = (data?.deleted_posts || 0) + (data?.deleted_messages || 0);
@@ -103,8 +103,8 @@ export default function SystemControlsPanel() {
           description: "No expired content found"
         });
       }
-    } catch (error: any) {
-      console.error('Error cleaning up content:', error);
+    } catch (error) {
+      logger.error('Error cleaning up content:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -121,7 +121,7 @@ export default function SystemControlsPanel() {
       const { data, error } = await supabase.rpc('populate_safe_profiles');
       
       if (error) {
-        console.error('RPC Error:', error);
+        logger.error('RPC Error:', error);
         throw error;
       }
 
@@ -138,7 +138,7 @@ export default function SystemControlsPanel() {
           p_description: 'Manually refreshed safe profiles'
         });
       } catch (logError) {
-        console.log('Logging skipped:', logError);
+        logger.log('Logging skipped:', logError);
       }
 
       if (data?.profiles_updated > 0) {
@@ -152,8 +152,8 @@ export default function SystemControlsPanel() {
           description: `All ${data?.total_profiles || 0} profiles are already up to date`
         });
       }
-    } catch (error: any) {
-      console.error('Error refreshing profiles:', error);
+    } catch (error) {
+      logger.error('Error refreshing profiles:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -171,7 +171,7 @@ export default function SystemControlsPanel() {
       const { data, error } = await supabase.rpc('delete_todays_trios');
       
       if (error) {
-        console.error('RPC Error:', error);
+        logger.error('RPC Error:', error);
         throw error;
       }
 
@@ -189,7 +189,7 @@ export default function SystemControlsPanel() {
           p_description: `Deleted ${data?.deleted_count || 0} trios for ${data?.date || 'today'}`
         });
       } catch (logError) {
-        console.log('Logging skipped:', logError);
+        logger.log('Logging skipped:', logError);
       }
 
       if (data?.deleted_count > 0) {
@@ -203,8 +203,8 @@ export default function SystemControlsPanel() {
           description: "No trios exist for today to delete"
         });
       }
-    } catch (error: any) {
-      console.error('Error deleting trios:', error);
+    } catch (error) {
+      logger.error('Error deleting trios:', error);
       toast({
         variant: "destructive",
         title: "Error",

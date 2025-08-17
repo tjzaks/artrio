@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare } from 'lucide-react';
+import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ interface Profile {
   username: string;
   bio: string | null;
   avatar_url: string | null;
+  is_birthday?: boolean;
 }
 
 interface Trio {
@@ -95,36 +97,24 @@ const Home = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // First get the user's profile ID
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-      
-      if (!profile) {
-        console.log('No profile found for user');
-        return;
-      }
-      
-      // Fetch today's trio using PROFILE ID, not auth user ID
+      // Fetch today's trio using AUTH USER ID
       // Use multiple queries to find the trio (PostgREST OR syntax issue workaround)
       const { data: trios, error: trioError } = await supabase
         .from('trios')
         .select('*')
         .eq('date', today);
       
-      // Find the trio that contains this user
+      // Find the trio that contains this user (using auth user ID)
       const trio = trios?.find(t => 
-        t.user1_id === profile.id ||
-        t.user2_id === profile.id ||
-        t.user3_id === profile.id ||
-        t.user4_id === profile.id ||
-        t.user5_id === profile.id
+        t.user1_id === user?.id ||
+        t.user2_id === user?.id ||
+        t.user3_id === user?.id ||
+        t.user4_id === user?.id ||
+        t.user5_id === user?.id
       );
 
       if (trioError && trioError.code !== 'PGRST116') {
-        console.error('Error fetching trio:', trioError);
+        logger.error('Error fetching trio:', trioError);
         return;
       }
 
@@ -138,18 +128,31 @@ const Home = () => {
           trio.user5_id
         ].filter(Boolean);
 
-        // Fetch profiles for all trio members
+        // Fetch profiles for all trio members (using user_id, not id)
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, bio, avatar_url')
-          .in('id', userIds);
+          .select('id, user_id, username, bio, avatar_url')
+          .in('user_id', userIds);
 
         if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
+          logger.error('Error fetching profiles:', profilesError);
           return;
         }
 
-        setCurrentTrio({ ...trio, profiles: profiles || [] });
+        // Check birthdays for each profile
+        const profilesWithBirthdays = await Promise.all(
+          (profiles || []).map(async (profile) => {
+            const { data: birthdayData } = await supabase
+              .rpc('get_user_birthday_display', { target_user_id: profile.user_id });
+            
+            return {
+              ...profile,
+              is_birthday: birthdayData?.is_birthday || false
+            };
+          })
+        );
+
+        setCurrentTrio({ ...trio, profiles: profilesWithBirthdays });
         
         // Fetch posts for this trio
         await fetchTrioPosts(trio.id);
@@ -161,7 +164,7 @@ const Home = () => {
         });
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to load today\'s trio',
@@ -182,7 +185,7 @@ const Home = () => {
         .order('created_at', { ascending: false });
 
       if (postsError) {
-        console.error('Error fetching posts:', postsError);
+        logger.error('Error fetching posts:', postsError);
         return;
       }
 
@@ -240,7 +243,7 @@ const Home = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      logger.error('Error fetching posts:', error);
     }
   };
 
@@ -253,14 +256,14 @@ const Home = () => {
       });
       
       if (error) {
-        console.error('Error checking rate limit:', error);
+        logger.error('Error checking rate limit:', error);
         return;
       }
       
       setSecondsUntilNextPost(data || 0);
       setCanPost((data || 0) === 0);
     } catch (error) {
-      console.error('Error checking rate limit:', error);
+      logger.error('Error checking rate limit:', error);
     }
   };
 
@@ -301,7 +304,7 @@ const Home = () => {
       await fetchTrioPosts(currentTrio.id);
       await checkPostRateLimit();
     } catch (error) {
-      console.error('Error posting:', error);
+      logger.error('Error posting:', error);
       toast({
         title: 'Error',
         description: 'Failed to send post',
@@ -347,7 +350,7 @@ const Home = () => {
         await fetchTrioPosts(currentTrio.id);
       }
     } catch (error) {
-      console.error('Error replying:', error);
+      logger.error('Error replying:', error);
       toast({
         title: 'Error',
         description: 'Failed to send reply',
@@ -370,12 +373,12 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3">
+      <header className="sticky top-0 z-40 navigation-glass p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold">Artrio</h1>
+            <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
             {isSubscribed && (
-              <Badge variant="outline" className="text-xs px-1 py-0">
+              <Badge className="badge-green text-xs px-2 py-0 pulse">
                 Live
               </Badge>
             )}
@@ -404,11 +407,11 @@ const Home = () => {
         {currentTrio ? (
           <>
             {/* Trio Panel */}
-            <Card>
+            <Card className="content-card animate-in">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Users className="h-5 w-5" />
-                  Today's Trio ({currentTrio.profiles.length})
+                  <Users className="h-5 w-5" style={{color: 'hsl(195 45% 55%)'}} />
+                  Today's Trio
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -426,12 +429,17 @@ const Home = () => {
                             {profile.username.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {isUserOnline(profile.user_id) && (
+                        {/* Show birthday indicator if it's their birthday, otherwise show online status */}
+                        {profile.is_birthday ? (
+                          <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1">
+                            <PartyPopper className="h-3 w-3 text-white" />
+                          </div>
+                        ) : isUserOnline(profile.user_id) ? (
                           <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
-                        )}
+                        ) : null}
                       </div>
                       <div className="text-center min-w-0">
-                        <p className="font-medium text-sm truncate w-16">{profile.username}</p>
+                        <p className="font-medium text-sm truncate w-16">@{profile.username}</p>
                         {profile.user_id === user?.id && (
                           <Badge variant="secondary" className="text-xs mt-1">You</Badge>
                         )}
@@ -443,7 +451,7 @@ const Home = () => {
             </Card>
 
             {/* Post Box */}
-            <Card>
+            <Card className="content-card animate-slide-up">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Share with your trio</CardTitle>
               </CardHeader>
@@ -488,7 +496,7 @@ const Home = () => {
                 const userHasReplied = postReplies.some(reply => reply.user_id === user?.id);
                 
                 return (
-                  <Card key={post.id}>
+                  <Card key={post.id} className="content-card animate-slide-up">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-start gap-3">
                         <Avatar className="h-8 w-8 flex-shrink-0">
@@ -499,7 +507,7 @@ const Home = () => {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <p className="font-medium text-sm truncate">{post.profiles.username}</p>
+                            <p className="font-medium text-sm truncate">@{post.profiles.username}</p>
                             <p className="text-xs text-muted-foreground flex-shrink-0">
                               {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
@@ -542,7 +550,7 @@ const Home = () => {
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className="font-medium text-xs truncate">{reply.profiles.username}</p>
+                                  <p className="font-medium text-xs truncate">@{reply.profiles.username}</p>
                                   <p className="text-xs text-muted-foreground flex-shrink-0">
                                     {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                   </p>

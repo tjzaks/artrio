@@ -170,7 +170,8 @@ export class Validator {
 
   // SQL injection prevention (for any direct SQL usage)
   static escapeSqlString(str: string): string {
-    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, (char) => {
+    // eslint-disable-next-line no-control-regex
+    return str.replace(/[\0\x08\x09\x1a\n\r"'\\%]/g, (char) => {
       switch (char) {
         case '\0': return '\\0';
         case '\x08': return '\\b';
@@ -191,7 +192,7 @@ export class Validator {
 
   // Validate phone number (basic)
   static isValidPhoneNumber(phone: string): boolean {
-    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    const phoneRegex = /^[\d\s\-+()]+$/;
     return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
   }
 

@@ -75,7 +75,7 @@ export default function MediaUpload({ onMediaUploaded, className = '' }: MediaUp
         await uploadFile(file, 'image');
       }
     } catch (error) {
-      console.error('Camera error:', error);
+      logger.error('Camera error:', error);
       toast({
         variant: "destructive",
         title: "Camera error",
@@ -105,7 +105,7 @@ export default function MediaUpload({ onMediaUploaded, className = '' }: MediaUp
         await uploadFile(file, 'image');
       }
     } catch (error) {
-      console.error('Gallery error:', error);
+      logger.error('Gallery error:', error);
       toast({
         variant: "destructive",
         title: "Gallery error", 
@@ -140,7 +140,7 @@ export default function MediaUpload({ onMediaUploaded, className = '' }: MediaUp
         description: `${type === 'image' ? 'Image' : 'Video'} uploaded successfully`
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         variant: "destructive",
         title: "Upload failed",

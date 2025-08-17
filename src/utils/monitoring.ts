@@ -15,7 +15,7 @@ export class Logger {
     return Logger.instance;
   }
 
-  log(level: 'info' | 'warn' | 'error', message: string, data?: any) {
+  log(level: 'info' | 'warn' | 'error', message: string, data?: unknown) {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -55,19 +55,19 @@ export class Logger {
       });
     } catch (error) {
       // Silently fail to avoid infinite loop
-      console.error('Failed to send log to backend:', error);
+      logger.error('Failed to send log to backend:', error);
     }
   }
 
-  info(message: string, data?: any) {
+  info(message: string, data?: unknown) {
     this.log('info', message, data);
   }
 
-  warn(message: string, data?: any) {
+  warn(message: string, data?: unknown) {
     this.log('warn', message, data);
   }
 
-  error(message: string, data?: any) {
+  error(message: string, data?: unknown) {
     this.log('error', message, data);
   }
 
@@ -84,7 +84,7 @@ interface LogEntry {
   timestamp: string;
   level: 'info' | 'warn' | 'error';
   message: string;
-  data?: any;
+  data?: unknown;
   url: string;
   userAgent: string;
 }

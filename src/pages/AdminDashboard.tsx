@@ -80,7 +80,7 @@ const AdminDashboard = () => {
         activeProfiles: userCount || 0
       });
     } catch (error) {
-      console.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error);
     }
   };
 
@@ -97,7 +97,7 @@ const AdminDashboard = () => {
         .eq('date', today);
 
       if (deleteError) {
-        console.error('Delete error:', deleteError);
+        logger.error('Delete error:', deleteError);
       }
 
       // Get all profiles
@@ -165,8 +165,8 @@ const AdminDashboard = () => {
       // Reload stats
       await loadStats();
 
-    } catch (error: any) {
-      console.error('Error randomizing:', error);
+    } catch (error) {
+      logger.error('Error randomizing:', error);
       toast({
         title: 'Error creating trios',
         description: error.message || 'Failed to randomize trios',
@@ -200,8 +200,8 @@ const AdminDashboard = () => {
       setLastAction('Successfully deleted today\'s trios');
       await loadStats();
 
-    } catch (error: any) {
-      console.error('Error deleting:', error);
+    } catch (error) {
+      logger.error('Error deleting:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete trios',
@@ -237,8 +237,8 @@ const AdminDashboard = () => {
       setLastAction('Successfully deleted all trios');
       await loadStats();
 
-    } catch (error: any) {
-      console.error('Error:', error);
+    } catch (error) {
+      logger.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete all trios',
@@ -301,7 +301,7 @@ const AdminDashboard = () => {
         details += '\n';
       });
 
-      console.log(details);
+      logger.log(details);
       
       toast({
         title: `✅ Verified: ${trios.length} trios exist`,
@@ -310,8 +310,8 @@ const AdminDashboard = () => {
 
       setLastAction(`Verified: ${trios.length} trios with ${userIds.size} users`);
 
-    } catch (error: any) {
-      console.error('Verification error:', error);
+    } catch (error) {
+      logger.error('Verification error:', error);
       toast({
         title: 'Verification failed',
         description: error.message,

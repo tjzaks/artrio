@@ -43,12 +43,15 @@ const Admin = () => {
 
   const checkAdminAccess = async () => {
     try {
-      // Check if user has admin role
-      const { data: roles, error } = await supabase
-        .rpc('get_user_roles', { _user_id: user?.id });
+      // Check if user has admin privileges in their profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('user_id', user?.id)
+        .single();
 
       if (error) {
-        console.error('Error checking admin access:', error);
+        logger.error('Error checking admin access:', error);
         toast({
           title: 'Access Denied',
           description: 'You do not have permission to access this page',
@@ -58,9 +61,7 @@ const Admin = () => {
         return;
       }
 
-      const hasAdminRole = roles?.some((role: any) => role.role === 'admin');
-      
-      if (!hasAdminRole) {
+      if (!profile?.is_admin) {
         toast({
           title: 'Access Denied',
           description: 'You do not have admin privileges',
@@ -73,7 +74,7 @@ const Admin = () => {
       setIsAdmin(true);
       await fetchAdminStats();
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       navigate('/');
     }
   };
@@ -137,7 +138,7 @@ const Admin = () => {
         recentUsers
       });
     } catch (error) {
-      console.error('Error fetching admin stats:', error);
+      logger.error('Error fetching admin stats:', error);
       toast({
         title: 'Error',
         description: 'Failed to load admin statistics',
@@ -182,9 +183,9 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card p-4">
+      <header className="navigation-glass p-4">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="interactive">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Button>

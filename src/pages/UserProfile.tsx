@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare, PartyPopper, Cake } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -31,6 +31,8 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [birthday, setBirthday] = useState<string | null>(null);
+  const [isBirthday, setIsBirthday] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -51,7 +53,7 @@ const UserProfile = () => {
         .single();
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
+        logger.error('Error fetching profile:', profileError);
         toast({
           title: 'Error',
           description: 'Failed to load user profile',
@@ -69,8 +71,17 @@ const UserProfile = () => {
       if (!ageError && ageData) {
         setAgeRange(ageData);
       }
+
+      // Fetch birthday info (month and day only for privacy)
+      const { data: birthdayData, error: birthdayError } = await supabase
+        .rpc('get_user_birthday_display', { target_user_id: userId });
+
+      if (!birthdayError && birthdayData) {
+        setBirthday(birthdayData.display_date);
+        setIsBirthday(birthdayData.is_birthday);
+      }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to load profile',
@@ -138,7 +149,7 @@ const UserProfile = () => {
         });
       }
     } catch (error) {
-      console.error('Error updating block status:', error);
+      logger.error('Error updating block status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update block status',
@@ -155,8 +166,8 @@ const UserProfile = () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${profile?.username}'s Profile`,
-          text: `Check out ${profile?.username}'s profile on our app!`,
+          title: `@${profile?.username}'s Profile`,
+          text: `Check out @${profile?.username}'s profile on our app!`,
           url: profileUrl,
         });
       } catch (error) {
@@ -242,17 +253,33 @@ const UserProfile = () => {
             <CardContent className="space-y-6">
               {/* Avatar and Basic Info */}
               <div className="flex flex-col items-center gap-4">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl">
-                    {profile.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl">
+                      {profile.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Birthday indicator instead of active dot */}
+                  {isBirthday && (
+                    <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1.5">
+                      <PartyPopper className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                </div>
                 
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold">{profile.username}</h2>
+                  <h2 className="text-2xl font-bold">@{profile.username}</h2>
                   {ageRange && (
                     <p className="text-muted-foreground">Age: {ageRange}</p>
+                  )}
+                  {isBirthday && (
+                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-900/20 dark:to-purple-900/20 rounded-full">
+                      <Cake className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                      <span className="text-sm font-medium text-pink-600 dark:text-pink-400">
+                        It's my birthday! 🎉
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -269,6 +296,12 @@ const UserProfile = () => {
               <div className="space-y-2">
                 <h3 className="font-semibold">Account Information</h3>
                 <div className="space-y-1 text-sm text-muted-foreground">
+                  {birthday && (
+                    <div className="flex items-center gap-2">
+                      <Cake className="h-4 w-4" />
+                      <span>Birthday: {birthday}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     <span>Joined {new Date(profile.created_at).toLocaleDateString()}</span>

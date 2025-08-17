@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Artrio Favicon Generator</title>
+</head>
+<body style="padding: 50px; background: #f0f0f0;">
+    <h2>Artrio Favicon - Three Bars</h2>
+    <p>Right-click and save the 32x32 icon below as favicon.ico</p>
+    
+    <!-- 32x32 Favicon -->
+    <canvas id="favicon32" width="32" height="32" style="border: 1px solid #ccc; image-rendering: pixelated; width: 128px; height: 128px;"></canvas>
+    
+    <!-- 16x16 Favicon -->
+    <canvas id="favicon16" width="16" height="16" style="border: 1px solid #ccc; image-rendering: pixelated; width: 128px; height: 128px; margin-left: 20px;"></canvas>
+
+    <script>
+        // Colors from the logo
+        const red = '#D15651';
+        const green = '#7FB744';
+        const blue = '#5B9FC0';
+        
+        // 32x32 version
+        const ctx32 = document.getElementById('favicon32').getContext('2d');
+        ctx32.fillStyle = 'white';
+        ctx32.fillRect(0, 0, 32, 32);
+        
+        // Draw three bars for 32x32
+        const barWidth32 = 6;
+        const barHeight32 = 20;
+        const spacing32 = 3;
+        const startX32 = 4;
+        const startY32 = 6;
+        
+        // Red bar
+        ctx32.fillStyle = red;
+        ctx32.fillRect(startX32, startY32, barWidth32, barHeight32);
+        
+        // Green bar
+        ctx32.fillStyle = green;
+        ctx32.fillRect(startX32 + barWidth32 + spacing32, startY32, barWidth32, barHeight32);
+        
+        // Blue bar
+        ctx32.fillStyle = blue;
+        ctx32.fillRect(startX32 + (barWidth32 + spacing32) * 2, startY32, barWidth32, barHeight32);
+        
+        // 16x16 version
+        const ctx16 = document.getElementById('favicon16').getContext('2d');
+        ctx16.fillStyle = 'white';
+        ctx16.fillRect(0, 0, 16, 16);
+        
+        // Draw three bars for 16x16
+        const barWidth16 = 3;
+        const barHeight16 = 10;
+        const spacing16 = 2;
+        const startX16 = 2;
+        const startY16 = 3;
+        
+        // Red bar
+        ctx16.fillStyle = red;
+        ctx16.fillRect(startX16, startY16, barWidth16, barHeight16);
+        
+        // Green bar
+        ctx16.fillStyle = green;
+        ctx16.fillRect(startX16 + barWidth16 + spacing16, startY16, barWidth16, barHeight16);
+        
+        // Blue bar
+        ctx16.fillStyle = blue;
+        ctx16.fillRect(startX16 + (barWidth16 + spacing16) * 2, startY16, barWidth16, barHeight16);
+        
+        // Convert to data URL for download
+        const link32 = document.createElement('a');
+        link32.download = 'favicon-32.png';
+        link32.href = document.getElementById('favicon32').toDataURL();
+        
+        const link16 = document.createElement('a');
+        link16.download = 'favicon-16.png';
+        link16.href = document.getElementById('favicon16').toDataURL();
+    </script>
+    
+    <br><br>
+    <p>Or copy this SVG code for a scalable version:</p>
+    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="border: 1px solid #ccc;">
+        <rect width="32" height="32" fill="white"/>
+        <rect x="4" y="6" width="6" height="20" fill="#D15651" rx="3"/>
+        <rect x="13" y="6" width="6" height="20" fill="#7FB744" rx="3"/>
+        <rect x="22" y="6" width="6" height="20" fill="#5B9FC0" rx="3"/>
+    </svg>
+</body>
+</html>

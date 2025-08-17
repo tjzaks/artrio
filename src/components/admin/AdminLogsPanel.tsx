@@ -13,7 +13,7 @@ interface AdminLog {
   target_type: string;
   target_id: string;
   description: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
@@ -36,7 +36,7 @@ export default function AdminLogsPanel() {
       if (error) throw error;
       setLogs(data || []);
     } catch (error) {
-      console.error('Error fetching admin logs:', error);
+      logger.error('Error fetching admin logs:', error);
     } finally {
       setLoading(false);
     }

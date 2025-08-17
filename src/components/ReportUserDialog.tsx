@@ -49,7 +49,7 @@ const ReportUserDialog = ({ reportedUserId, reportedUsername }: ReportUserDialog
       setReason('');
       setDescription('');
     } catch (error) {
-      console.error('Error submitting report:', error);
+      logger.error('Error submitting report:', error);
       toast({
         title: 'Error',
         description: 'Failed to submit report. Please try again.',

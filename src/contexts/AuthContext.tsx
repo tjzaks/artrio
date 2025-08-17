@@ -104,12 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setIsAdmin(profile?.is_admin || false);
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      logger.error('Error checking admin status:', error);
       setIsAdmin(false);
     }
   };
 
-  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string }) => {
+  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -117,7 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: {
           username: userData.username,
           birthday: userData.birthday,
-          bio: userData.bio || null
+          bio: userData.bio || null,
+          personality_type: userData.personality_type || null,
+          first_name: userData.first_name || null,
+          last_name: userData.last_name || null
         }
       }
     });
@@ -157,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
 
           if (profileError && !profileError.message.includes('duplicate')) {
-            console.error('Profile creation error:', profileError);
+            logger.error('Profile creation error:', profileError);
           }
 
           // Create sensitive data entry
@@ -169,11 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
 
           if (sensitiveError && !sensitiveError.message.includes('duplicate')) {
-            console.error('Sensitive data creation error:', sensitiveError);
+            logger.error('Sensitive data creation error:', sensitiveError);
           }
         }
       } catch (err) {
-        console.error('Error ensuring profile exists:', err);
+        logger.error('Error ensuring profile exists:', err);
       }
     }
 

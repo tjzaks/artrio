@@ -2,49 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Artrio Design System - Modern, vibrant colors for social connections
-All colors MUST be HSL.
+/* Artrio - Matching the logo's vibrant trio colors
+   Red, Green, Blue theme for social connections
 */
 
 @layer base {
   :root {
+    /* Clean backgrounds */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    /* Artrio brand colors - vibrant purple/blue theme */
-    --primary: 260 100% 65%;
+    --foreground: 200 50% 20%;
+    --background-secondary: 200 20% 98%;
+    
+    /* Artrio Logo Colors */
+    --trio-red: 5 65% 52%; /* #D15651 */
+    --trio-green: 95 40% 55%; /* #7FB744 */
+    --trio-blue: 195 45% 55%; /* #5B9FC0 */
+    
+    /* Primary uses the blue from logo */
+    --primary: 195 45% 55%; /* Artrio Blue */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 260 80% 75%;
-
-    --secondary: 250 30% 95%;
-    --secondary-foreground: 260 100% 45%;
-
-    --muted: 250 20% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 280 60% 92%;
-    --accent-foreground: 260 100% 55%;
-
-    --destructive: 0 84.2% 60.2%;
+    
+    /* Secondary uses the green */
+    --secondary: 95 40% 55%; /* Artrio Green */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Accent uses the red */
+    --accent: 5 65% 52%; /* Artrio Red */
+    --accent-foreground: 0 0% 100%;
+    
+    --muted: 200 10% 96%;
+    --muted-foreground: 200 10% 46%;
+    
+    --destructive: 5 65% 52%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 250 25% 92%;
-    --input: 250 25% 94%;
-    --ring: 260 100% 65%;
-
-    /* Artrio gradients and effects */
-    --gradient-primary: linear-gradient(135deg, hsl(260 100% 65%), hsl(280 90% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(280 60% 92%), hsl(260 40% 96%));
-    --shadow-glow: 0 0 30px hsl(260 80% 75% / 0.3);
-    --shadow-elegant: 0 8px 32px hsl(260 50% 40% / 0.15);
-
-    --radius: 0.5rem;
+    
+    --border: 200 20% 90%;
+    --input: 200 20% 95%;
+    --ring: 195 45% 55%;
+    
+    /* Trio gradients */
+    --gradient-primary: linear-gradient(90deg, 
+      hsl(5 65% 52%) 0%, 
+      hsl(95 40% 55%) 50%,
+      hsl(195 45% 55%) 100%);
+    --gradient-fun: linear-gradient(135deg,
+      hsl(5 65% 52% / 0.1) 0%,
+      hsl(95 40% 55% / 0.1) 50%,
+      hsl(195 45% 55% / 0.1) 100%);
+    
+    /* Soft shadows for depth */
+    --shadow-soft: 0 2px 8px hsl(200 20% 0% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(200 20% 0% / 0.1);
+    --shadow-glow: 0 0 20px hsl(195 45% 55% / 0.2);
+    
+    --radius: 1.25rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -64,35 +75,37 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    /* Dark mode Artrio colors */
-    --primary: 260 85% 70%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --primary-glow: 260 70% 80%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 260 85% 75%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 240 25% 20%;
-    --accent-foreground: 260 85% 75%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 260 85% 70%;
+    /* Dark mode - Logo colors glow */
+    --background: 200 20% 8%;
+    --foreground: 0 0% 98%;
+    --background-secondary: 200 15% 12%;
+    
+    /* Brighter versions for dark mode */
+    --trio-red: 5 75% 60%; 
+    --trio-green: 95 50% 60%;
+    --trio-blue: 195 55% 60%;
+    
+    --primary: 195 55% 60%; /* Brighter blue */
+    --primary-foreground: 200 20% 8%;
+    
+    --secondary: 95 50% 60%; /* Brighter green */
+    --secondary-foreground: 200 20% 8%;
+    
+    --accent: 5 75% 60%; /* Brighter red */
+    --accent-foreground: 200 20% 8%;
+    
+    --muted: 200 10% 20%;
+    --muted-foreground: 200 5% 65%;
+    
+    --destructive: 5 75% 60%;
+    --destructive-foreground: 200 20% 8%;
+    
+    --border: 200 10% 25%;
+    --input: 200 10% 15%;
+    --ring: 195 55% 60%;
+    
+    /* Glowing shadows for dark mode */
+    --shadow-glow: 0 0 30px hsl(195 55% 60% / 0.3);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -114,23 +127,346 @@ All colors MUST be HSL.
   }
 }
 
-/* Artrio custom components and animations */
+/* High School Social App Animations - Fun and playful */
 @layer components {
-  .artrio-gradient {
-    background: var(--gradient-primary);
+  /* Bounce in animation */
+  @keyframes bounce-in {
+    0% { 
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% { 
+      opacity: 1;
+      transform: scale(1);
+    }
   }
   
-  .artrio-glow {
-    box-shadow: var(--shadow-glow);
+  /* Subtle pulse for notifications */
+  @keyframes pulse-soft {
+    0%, 100% { 
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% { 
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
   }
   
-  .artrio-card {
-    box-shadow: var(--shadow-elegant);
-    transition: all 0.3s ease;
+  /* Pop animation for likes/reactions */
+  @keyframes pop {
+    0% { 
+      transform: scale(1);
+    }
+    40% { 
+      transform: scale(1.3) rotate(5deg);
+    }
+    100% { 
+      transform: scale(1) rotate(0);
+    }
   }
   
-  .artrio-card:hover {
+  /* Slide up for messages */
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Color shift for fun */
+  @keyframes color-shift {
+    0% { 
+      filter: hue-rotate(0deg);
+    }
+    100% { 
+      filter: hue-rotate(30deg);
+    }
+  }
+  
+  /* Clean card styles */
+  .card-clean {
+    @apply bg-white dark:bg-gray-900 rounded-2xl;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+  }
+  
+  .card-clean:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  /* Trio gradient backgrounds */
+  .gradient-trio {
+    background: var(--gradient-primary);
+    color: white;
+  }
+  
+  .gradient-fun {
+    background: var(--gradient-fun);
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Glow effects matching logo colors */
+  .glow-red {
+    box-shadow: 0 0 20px hsl(var(--trio-red) / 0.3);
+  }
+  
+  .glow-blue {
+    box-shadow: 0 0 20px hsl(var(--trio-blue) / 0.3);
+  }
+  
+  .glow-green {
+    box-shadow: 0 0 20px hsl(var(--trio-green) / 0.3);
+  }
+  
+  /* Neon text effect */
+  .text-neon {
+    text-shadow: 
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor;
+  }
+  
+  /* Interactive elements with bounce */
+  .interactive {
+    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    cursor: pointer;
+  }
+  
+  .interactive:hover {
+    transform: scale(1.05);
+  }
+  
+  .interactive:active {
+    transform: scale(0.95);
+  }
+  
+  /* Animated entrance */
+  .animate-in {
+    animation: bounce-in 0.4s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  /* Pulse for live/online indicators */
+  .pulse {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+  
+  /* Pop effect for reactions */
+  .pop-on-click:active {
+    animation: pop 0.3s ease-out;
+  }
+  
+  /* Badge styles matching logo colors */
+  .badge-red {
+    background: hsl(var(--trio-red));
+    color: white;
+  }
+  
+  .badge-blue {
+    background: hsl(var(--trio-blue));
+    color: white;
+  }
+  
+  .badge-green {
+    background: hsl(var(--trio-green));
+    color: white;
+  }
+  
+  /* Online indicator with trio green */
+  .online-dot {
+    @apply w-3 h-3 rounded-full;
+    background: hsl(var(--trio-green));
+    box-shadow: 0 0 0 2px white, 0 0 10px hsl(var(--trio-green) / 0.5);
+  }
+  
+  /* Message bubbles */
+  .bubble-sent {
+    background: hsl(var(--trio-blue));
+    color: white;
+    @apply rounded-3xl rounded-br-md;
+    animation: slide-up 0.2s ease-out;
+  }
+  
+  .bubble-received {
+    @apply bg-muted text-foreground rounded-3xl rounded-bl-md;
+    animation: slide-up 0.2s ease-out;
+  }
+
+  /* Friendly rounded corners */
+  .rounded-lg {
+    border-radius: 1.5rem !important;
+  }
+  
+  .rounded-md {
+    border-radius: 1rem !important;
+  }
+  
+  .rounded-sm {
+    border-radius: 0.75rem !important;
+  }
+  
+  .rounded-xl {
+    border-radius: 2rem !important;
+  }
+  
+  .rounded-2xl {
+    border-radius: 2.5rem !important;
+  }
+  
+  .rounded-3xl {
+    border-radius: 3rem !important;
+  }
+  
+  /* Clean navigation bar */
+  .navigation-glass {
+    @apply bg-white/95 dark:bg-gray-900/95 backdrop-blur-md;
+    border-bottom: 1px solid hsl(var(--border));
+    z-index: 100;
+  }
+  
+  .toolbar-glass {
+    @apply bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm;
+    border-top: 1px solid hsl(var(--border));
+  }
+  
+  /* Content cards with subtle depth */
+  .content-card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+  }
+  
+  .content-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  /* Fun message bubbles */
+  .message-bubble {
+    @apply rounded-3xl;
+    transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+  
+  .message-bubble:active {
+    transform: scale(0.98);
+  }
+  
+  /* Fun button styles */
+  button {
+    @apply rounded-full font-medium;
+    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+  }
+  
+  button:hover:not(:disabled) {
+    transform: scale(1.05);
+  }
+  
+  button:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  
+  /* Primary button with gradient */
+  button.primary {
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 15px hsl(328 85% 58% / 0.3);
+  }
+  
+  button.primary:hover {
+    box-shadow: 0 6px 20px hsl(328 85% 58% / 0.4);
+  }
+  
+  /* Ghost buttons for minimal look */
+  button.ghost {
+    @apply bg-transparent hover:bg-muted;
+  }
+  
+  /* Clean input fields */
+  input, textarea, select {
+    @apply rounded-2xl bg-muted border-0;
+    padding: 0.875rem 1.25rem;
+    transition: all 0.2s ease;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+    background: white;
+    transform: scale(1.02);
+  }
+  
+  /* Fun placeholder animation */
+  input::placeholder, textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+    transition: opacity 0.2s;
+  }
+  
+  input:focus::placeholder, textarea:focus::placeholder {
+    opacity: 0.5;
+  }
+  
+  /* Clean focus states */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+    animation: bounce-in 0.3s ease-out;
+  }
+  
+  /* Minimal scrollbars */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 2px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+  
+  /* Smooth transitions globally */
+  * {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  /* Accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* Fun hover states */
+  [role="button"]:hover,
+  .clickable:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+  }
+  
+  /* Active/pressed state */
+  [role="button"]:active,
+  .clickable:active {
+    transform: scale(0.98);
   }
 }

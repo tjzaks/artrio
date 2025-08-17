@@ -33,7 +33,7 @@ export function useRealtimeNotifications() {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Real-time notification received:', payload);
+          logger.log('Real-time notification received:', payload);
           const notification = payload.new as any;
           
           // Show different types of notifications
@@ -79,7 +79,7 @@ export function useRealtimeNotifications() {
           filter: `user1_id=eq.${user.id},user2_id=eq.${user.id},user3_id=eq.${user.id},user4_id=eq.${user.id},user5_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('New trio formed with user:', payload);
+          logger.log('New trio formed with user:', payload);
           // This is a backup notification in case the trigger doesn't work
           toast({
             title: "🎉 New trio formed!",
@@ -89,14 +89,14 @@ export function useRealtimeNotifications() {
         }
       )
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+        logger.log('Realtime subscription status:', status);
         if (status === 'SUBSCRIBED') {
           setIsSubscribed(true);
         }
       });
 
     return () => {
-      console.log('Cleaning up realtime subscription');
+      logger.log('Cleaning up realtime subscription');
       supabase.removeChannel(channel);
       setIsSubscribed(false);
     };

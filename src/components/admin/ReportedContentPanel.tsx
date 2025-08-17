@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '@/utils/logger';
 
 interface ReportedContent {
   id: string;
@@ -42,7 +43,7 @@ export default function ReportedContentPanel() {
       if (error) throw error;
       setReports(data || []);
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      logger.error('Error fetching reports:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -85,7 +86,7 @@ export default function ReportedContentPanel() {
       setSelectedReport(null);
       setResolutionNotes('');
     } catch (error) {
-      console.error('Error updating report:', error);
+      logger.error('Error updating report:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -166,54 +167,96 @@ export default function ReportedContentPanel() {
         </div>
 
         {selectedReport && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <CardTitle>Review Report</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p><strong>Reason:</strong> {selectedReport.reason}</p>
-                  <p><strong>Type:</strong> {selectedReport.content_type}</p>
-                  {selectedReport.description && (
-                    <p><strong>Description:</strong> {selectedReport.description}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Resolution Notes</label>
-                  <Textarea
-                    value={resolutionNotes}
-                    onChange={(e) => setResolutionNotes(e.target.value)}
-                    placeholder="Add notes about your decision..."
-                  />
-                </div>
-                <div className="flex gap-2">
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" 
+              onClick={() => {
+                setSelectedReport(null);
+                setResolutionNotes('');
+              }}
+            />
+            
+            {/* Modal */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none">
+              <Card className="w-full max-w-md pointer-events-auto bg-background border shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Review Report</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedReport(null);
+                        setResolutionNotes('');
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Reason:</span>
+                      <Badge variant="destructive">{selectedReport.reason}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Type:</span>
+                      <span className="text-sm">{selectedReport.content_type}</span>
+                    </div>
+                    {selectedReport.description && (
+                      <div>
+                        <span className="text-sm font-medium">Description:</span>
+                        <p className="text-sm text-muted-foreground mt-1">{selectedReport.description}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Resolution Notes</label>
+                    <Textarea
+                      value={resolutionNotes}
+                      onChange={(e) => setResolutionNotes(e.target.value)}
+                      placeholder="Add notes about your decision..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={() => updateReportStatus(selectedReport.id, 'resolved', resolutionNotes)}
+                      className="flex-1"
+                      variant="default"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Resolve
+                    </Button>
+                    <Button
+                      onClick={() => updateReportStatus(selectedReport.id, 'dismissed', resolutionNotes)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Dismiss
+                    </Button>
+                  </div>
+                  
                   <Button
-                    onClick={() => updateReportStatus(selectedReport.id, 'resolved', resolutionNotes)}
-                    className="flex-1"
+                    variant="secondary"
+                    onClick={() => {
+                      setSelectedReport(null);
+                      setResolutionNotes('');
+                    }}
+                    className="w-full"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Resolve
+                    Cancel
                   </Button>
-                  <Button
-                    onClick={() => updateReportStatus(selectedReport.id, 'dismissed', resolutionNotes)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Dismiss
-                  </Button>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => setSelectedReport(null)}
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

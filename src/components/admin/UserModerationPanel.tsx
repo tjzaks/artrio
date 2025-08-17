@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Search, Ban, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '@/utils/logger';
 
 interface Profile {
   id: string;
@@ -55,7 +56,7 @@ export default function UserModerationPanel() {
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      console.error('Error searching users:', error);
+      logger.error('Error searching users:', error);
     }
   };
 
@@ -70,7 +71,7 @@ export default function UserModerationPanel() {
       if (error) throw error;
       setModerationActions(data || []);
     } catch (error) {
-      console.error('Error fetching moderation history:', error);
+      logger.error('Error fetching moderation history:', error);
     }
   };
 
@@ -126,7 +127,7 @@ export default function UserModerationPanel() {
       setDuration('');
       await fetchModerationHistory(selectedUser.user_id);
     } catch (error) {
-      console.error('Error applying moderation action:', error);
+      logger.error('Error applying moderation action:', error);
       toast({
         variant: "destructive",
         title: "Error",
