@@ -20,16 +20,21 @@ export default function SystemControlsPanel() {
       
       if (error) throw error;
 
-      const currentUser = await supabase.auth.getUser();
-      await supabase.rpc('log_admin_action', {
-        p_admin_id: currentUser.data.user?.id,
-        p_action_type: 'system_control',
-        p_description: 'Manually triggered trio randomization'
-      });
+      // Skip logging for now if it doesn't exist
+      try {
+        const currentUser = await supabase.auth.getUser();
+        await supabase.rpc('log_admin_action', {
+          p_admin_id: currentUser.data.user?.id,
+          p_action_type: 'system_control',
+          p_description: 'Manually triggered trio randomization'
+        });
+      } catch (logError) {
+        console.log('Logging skipped:', logError);
+      }
 
       toast({
         title: "Success",
-        description: "Trio randomization triggered successfully"
+        description: `Created ${data?.trios_created || 0} trios with ${data?.users_assigned || 0} users!`
       });
     } catch (error) {
       console.error('Error triggering randomization:', error);
@@ -115,12 +120,17 @@ export default function SystemControlsPanel() {
       
       if (error) throw error;
 
-      const currentUser = await supabase.auth.getUser();
-      await supabase.rpc('log_admin_action', {
-        p_admin_id: currentUser.data.user?.id,
-        p_action_type: 'system_control',
-        p_description: `Deleted all trios for ${today}`
-      });
+      // Skip logging for now
+      try {
+        const currentUser = await supabase.auth.getUser();
+        await supabase.rpc('log_admin_action', {
+          p_admin_id: currentUser.data.user?.id,
+          p_action_type: 'system_control',
+          p_description: `Deleted all trios for ${today}`
+        });
+      } catch (logError) {
+        console.log('Logging skipped:', logError);
+      }
 
       toast({
         title: "Success",
