@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,7 @@ const Auth = () => {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameDebounceTimer, setUsernameDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Redirect if already authenticated
   if (user) {
@@ -77,11 +78,11 @@ const Auth = () => {
 
     setCheckingUsername(true);
     try {
-      // Check if username exists in profiles table
+      // Check if username exists in profiles table (case-insensitive)
       const { data, error } = await supabase
         .from('profiles')
         .select('username')
-        .eq('username', usernameToCheck)
+        .ilike('username', usernameToCheck)  // ilike for case-insensitive
         .single();
 
       if (error && error.code === 'PGRST116') {
@@ -224,9 +225,9 @@ const Auth = () => {
           return;
         }
 
-        // Check username availability first
+        // Check username availability first (and lowercase it)
         const isUsernameAvailable = await checkUsernameAvailability(username);
-        let finalUsername = username;
+        let finalUsername = username.toLowerCase();
         
         if (!isUsernameAvailable) {
           // Auto-generate a unique username
@@ -384,15 +385,34 @@ const Auth = () => {
             {!isForgotPassword && (
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  minLength={6}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                    minLength={6}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="sr-only">
+                      {showPassword ? "Hide password" : "Show password"}
+                    </span>
+                  </Button>
+                </div>
               </div>
             )}
 
