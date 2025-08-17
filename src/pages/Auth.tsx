@@ -160,8 +160,10 @@ const Auth = () => {
     setIsSubmitting(true);
 
     try {
+      // Use production URL for password reset redirect
+      const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${redirectUrl}/reset-password`,
       });
 
       if (error) {
