@@ -169,10 +169,28 @@ export default function SystemControlsPanel() {
     try {
       const today = new Date().toISOString().split('T')[0];
       
+      // First check if there are any trios for today
+      const { data: existingTrios, error: fetchError } = await supabase
+        .from('trios')
+        .select('id')
+        .eq('date', today);
+      
+      if (fetchError) throw fetchError;
+      
+      if (!existingTrios || existingTrios.length === 0) {
+        toast({
+          title: "No Trios Found",
+          description: "No trios exist for today"
+        });
+        return;
+      }
+      
+      // Delete trios using their IDs (safer approach)
+      const trioIds = existingTrios.map(t => t.id);
       const { error } = await supabase
         .from('trios')
         .delete()
-        .eq('date', today);
+        .in('id', trioIds);
       
       if (error) throw error;
 
@@ -182,7 +200,7 @@ export default function SystemControlsPanel() {
         await supabase.rpc('log_admin_action', {
           p_admin_id: currentUser.data.user?.id,
           p_action_type: 'system_control',
-          p_description: `Deleted all trios for ${today}`
+          p_description: `Deleted ${existingTrios.length} trios for ${today}`
         });
       } catch (logError) {
         console.log('Logging skipped:', logError);
@@ -190,14 +208,14 @@ export default function SystemControlsPanel() {
 
       toast({
         title: "Success",
-        description: "Today's trios deleted successfully"
+        description: `Deleted ${existingTrios.length} trios for today`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting trios:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete today's trios"
+        description: error.message || "Failed to delete today's trios"
       });
     } finally {
       setButtonLoading('deleteTrios', false);
