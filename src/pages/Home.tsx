@@ -121,8 +121,8 @@ const Home = () => {
         // Fetch profiles for all trio members
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, user_id, username, bio, avatar_url')
-          .in('user_id', userIds);
+          .select('id, username, bio, avatar_url')
+          .in('id', userIds);
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError);

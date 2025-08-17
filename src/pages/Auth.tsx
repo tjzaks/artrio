@@ -9,6 +9,7 @@ import { AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { validateEmail, validatePassword, validateUsername, sanitize } from '@/utils/validation';
 
 const Auth = () => {
   const { user, signUp, signIn, loading } = useAuth();
