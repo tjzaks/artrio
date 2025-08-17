@@ -304,7 +304,24 @@ const Auth = () => {
         
         // Check if it's a username (no @ symbol)
         if (!loginIdentifier.includes('@')) {
-          // First try the RPC function (if it exists)
+          // First check if username exists
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('username')
+            .ilike('username', loginIdentifier)
+            .single();
+          
+          if (profileError || !profile) {
+            toast({
+              title: 'Login failed',
+              description: 'Username not found',
+              variant: 'destructive'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Try the RPC function first
           try {
             const { data: userEmail, error: lookupError } = await supabase
               .rpc('get_email_from_username', { input_username: loginIdentifier });
@@ -312,22 +329,38 @@ const Auth = () => {
             if (!lookupError && userEmail) {
               emailToUse = userEmail;
             } else {
-              // Fallback: since we can't get email directly, show helpful error
+              // Show helpful message with workaround
               toast({
-                title: 'Database setup incomplete',
-                description: 'Please run COMPLETE_AUTH_SETUP.sql in Supabase SQL Editor to enable username login',
+                title: 'Username login not fully configured',
+                description: 'Please login with your email address instead, or ask admin to run COMPLETE_AUTH_SETUP.sql',
                 variant: 'destructive'
               });
               setIsSubmitting(false);
               return;
             }
           } catch (err) {
-            // If RPC doesn't exist, show error
-            toast({
-              title: 'Database setup incomplete',
-              description: 'Please run COMPLETE_AUTH_SETUP.sql in Supabase SQL Editor to enable username login',
-              variant: 'destructive'
-            });
+            // RPC doesn't exist - show email addresses for known users
+            const knownEmails: Record<string, string> = {
+              'tyler': 'szakacsmediacompany@gmail.com',
+              'jonny b': 'jonnyb@example.com',
+              'tobyszaks': 'Check your email used during signup',
+              'joshy b': 'Check your email used during signup'
+            };
+            
+            const email = knownEmails[loginIdentifier.toLowerCase()];
+            if (email) {
+              toast({
+                title: 'Use email to login',
+                description: `Please login with email: ${email}`,
+                variant: 'destructive'
+              });
+            } else {
+              toast({
+                title: 'Username login not available',
+                description: 'Please login with your email address instead',
+                variant: 'destructive'
+              });
+            }
             setIsSubmitting(false);
             return;
           }
@@ -384,14 +417,14 @@ const Auth = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="loginIdentifier">Username</Label>
+                <Label htmlFor="loginIdentifier">Email or Username</Label>
                 <Input
                   id="loginIdentifier"
                   type="text"
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   required
-                  placeholder="Enter your username"
+                  placeholder="Enter your email or username"
                 />
               </div>
             )}
