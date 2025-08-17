@@ -108,12 +108,20 @@ const Home = () => {
       }
       
       // Fetch today's trio using PROFILE ID, not auth user ID
-      const { data: trio, error: trioError } = await supabase
+      // Use multiple queries to find the trio (PostgREST OR syntax issue workaround)
+      const { data: trios, error: trioError } = await supabase
         .from('trios')
         .select('*')
-        .eq('date', today)
-        .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id},user3_id.eq.${profile.id},user4_id.eq.${profile.id},user5_id.eq.${profile.id}`)
-        .single();
+        .eq('date', today);
+      
+      // Find the trio that contains this user
+      const trio = trios?.find(t => 
+        t.user1_id === profile.id ||
+        t.user2_id === profile.id ||
+        t.user3_id === profile.id ||
+        t.user4_id === profile.id ||
+        t.user5_id === profile.id
+      );
 
       if (trioError && trioError.code !== 'PGRST116') {
         console.error('Error fetching trio:', trioError);
