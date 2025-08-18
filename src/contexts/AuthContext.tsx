@@ -15,7 +15,11 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize from localStorage to prevent flashing
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('artrio-auth-user');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -29,6 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         userRef.current = session?.user ?? null;
+        
+        // Store user in localStorage to prevent flashing
+        if (session?.user) {
+          localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
+        } else {
+          localStorage.removeItem('artrio-auth-user');
+        }
         
         // Check admin status when user changes
         if (session?.user) {
@@ -53,9 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       userRef.current = session?.user ?? null;
       
+      // Store user in localStorage
       if (session?.user) {
+        localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
         checkAdminStatus(session.user.id);
         await updatePresence(true, session.user.id);
+      } else {
+        localStorage.removeItem('artrio-auth-user');
       }
       
       setLoading(false);
