@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
 import { logger } from '@/utils/logger';
+import { 
   Users, 
   Shuffle, 
   Trash2, 
@@ -69,8 +69,6 @@ const AdminDashboard = () => {
           if (trio.user1_id) usersInTrios++;
           if (trio.user2_id) usersInTrios++;
           if (trio.user3_id) usersInTrios++;
-          if (trio.user4_id) usersInTrios++;
-          if (trio.user5_id) usersInTrios++;
         });
       }
 
@@ -90,6 +88,10 @@ const AdminDashboard = () => {
     setLastAction('Randomizing trios...');
     
     try {
+      // Check current user
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user);
+
       // First, delete today's existing trios
       const today = new Date().toISOString().split('T')[0];
       const { error: deleteError } = await supabase
@@ -106,12 +108,14 @@ const AdminDashboard = () => {
         .from('profiles')
         .select('id, username');
 
+      console.log('Profiles query result:', { profiles, profileError });
+
       if (profileError) throw profileError;
 
       if (!profiles || profiles.length < 3) {
         toast({
           title: 'Not enough users',
-          description: 'Need at least 3 users to create trios',
+          description: `Need at least 3 users to create trios (found ${profiles?.length || 0})`,
           variant: 'destructive'
         });
         return;
@@ -122,20 +126,27 @@ const AdminDashboard = () => {
       
       // Create trios (groups of 3)
       const trios = [];
-      for (let i = 0; i < shuffled.length - 2; i += 3) {
-        const trio = {
-          user1_id: shuffled[i].id,
-          user2_id: shuffled[i + 1].id,
-          user3_id: shuffled[i + 2].id,
-          user4_id: shuffled[i + 3]?.id || null,
-          user5_id: shuffled[i + 4]?.id || null,
-          date: today
-        };
-        
-        // Skip if we don't have at least 3 users for this trio
+      for (let i = 0; i < shuffled.length; i += 3) {
+        // Only create a trio if we have at least 3 users left
         if (i + 2 < shuffled.length) {
+          const trio = {
+            user1_id: shuffled[i].id,
+            user2_id: shuffled[i + 1].id,
+            user3_id: shuffled[i + 2].id,
+            date: today
+          };
+          trios.push(trio);
+        } else if (i + 1 < shuffled.length) {
+          // Create a duo if we have 2 users left
+          const trio = {
+            user1_id: shuffled[i].id,
+            user2_id: shuffled[i + 1].id,
+            user3_id: null,
+            date: today
+          };
           trios.push(trio);
         }
+        // If only 1 user left, skip them
       }
 
       if (trios.length === 0) {
