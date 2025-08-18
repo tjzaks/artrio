@@ -24,5 +24,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
     storageKey: 'artrio-auth-token',
     flowType: 'pkce'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
+
+// Helper function to ensure user is authenticated before making RPC calls
+export const authenticatedRpc = async (functionName: string, args: any = {}) => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !session?.user) {
+    throw new Error('Authentication required. Please log in again.');
+  }
+  
+  return supabase.rpc(functionName, args);
+};

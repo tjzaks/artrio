@@ -11,6 +11,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<Session | null>;
+  ensureAuthenticated: () => Promise<User | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -228,6 +230,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const refreshSession = async (): Promise<Session | null> => {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        logger.error('Session refresh failed:', error);
+        return null;
+      }
+      
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        userRef.current = session.user;
+        localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
+        localStorage.setItem('artrio-auth-session', JSON.stringify(session));
+      }
+      
+      return session;
+    } catch (error) {
+      logger.error('Error refreshing session:', error);
+      return null;
+    }
+  };
+
+  const ensureAuthenticated = async (): Promise<User | null> => {
+    try {
+      // First check current session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        logger.error('Error getting session:', error);
+        return null;
+      }
+      
+      if (session?.user) {
+        // Update state if session exists
+        if (session.user.id !== user?.id) {
+          setSession(session);
+          setUser(session.user);
+          userRef.current = session.user;
+        }
+        return session.user;
+      }
+      
+      // Try to refresh session if no current session
+      const refreshedSession = await refreshSession();
+      return refreshedSession?.user || null;
+    } catch (error) {
+      logger.error('Error ensuring authentication:', error);
+      return null;
+    }
+  };
+
   const value = {
     user,
     session,
@@ -235,7 +289,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin,
     signUp,
     signIn,
-    signOut
+    signOut,
+    refreshSession,
+    ensureAuthenticated
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper } from 'lucide-react';
+import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import HealthCheck from '@/components/HealthCheck';
+import Stories from '@/components/Stories';
 
 interface Profile {
   id: string;
@@ -31,9 +32,7 @@ interface Trio {
   date: string;
   user1_id: string;
   user2_id: string;
-  user3_id: string;
-  user4_id: string | null;
-  user5_id: string | null;
+  user3_id: string | null;
   profiles: Profile[];
 }
 
@@ -120,13 +119,18 @@ const Home = () => {
         .select('*')
         .eq('date', today);
       
-      // Find the trio that contains this user (using auth user ID)
+      // First get the user's profile to find their profile ID
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      // Find the trio that contains this user (using profile id)
       const trio = trios?.find(t => 
-        t.user1_id === user?.id ||
-        t.user2_id === user?.id ||
-        t.user3_id === user?.id ||
-        t.user4_id === user?.id ||
-        t.user5_id === user?.id
+        t.user1_id === userProfile?.id ||
+        t.user2_id === userProfile?.id ||
+        t.user3_id === userProfile?.id
       );
 
       if (trioError && trioError.code !== 'PGRST116') {
@@ -135,20 +139,18 @@ const Home = () => {
       }
 
       if (trio) {
-        // Collect all user IDs, filtering out null values
-        const userIds = [
+        // Collect all profile IDs, filtering out null values
+        const profileIds = [
           trio.user1_id,
           trio.user2_id,
-          trio.user3_id,
-          trio.user4_id,
-          trio.user5_id
+          trio.user3_id
         ].filter(Boolean);
 
-        // Fetch profiles for all trio members (using user_id, not id)
+        // Fetch profiles for all trio members (using profile id)
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, user_id, username, bio, avatar_url')
-          .in('user_id', userIds);
+          .in('id', profileIds);
 
         if (profilesError) {
           logger.error('Error fetching profiles:', profilesError);
@@ -386,34 +388,42 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
-      <header className="sticky top-0 z-40 navigation-glass p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
-            {isSubscribed && (
-              <Badge className="badge-green text-xs px-2 py-0 pulse">
-                Live
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <NotificationBell />
-            <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2">
-              <MessageSquare className="h-4 w-4" />
-            </Button>
-            {isAdmin && (
-              <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
-                <Shield className="h-4 w-4" />
+      <header className="sticky top-0 z-40 navigation-glass">
+        <div className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
+              {isSubscribed && (
+                <Badge className="badge-green text-xs px-2 py-0 pulse">
+                  Live
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
+                <UserPlus className="h-4 w-4" />
               </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="h-8 px-2">
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={signOut} className="h-8 px-2">
-              <LogOut className="h-4 w-4" />
-            </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2">
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+              {isAdmin && (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
+                  <Shield className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="h-8 px-2">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 px-2">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
+        
+        {/* Stories Bar */}
+        <Stories trioMemberIds={currentTrio?.profiles.map(p => p.user_id) || []} />
       </header>
 
       <main className="p-4 space-y-4 pb-20">

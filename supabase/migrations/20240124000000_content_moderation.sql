@@ -142,8 +142,8 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_check_result JSON;
 BEGIN
-  -- Skip moderation for DMs (where is_dm = true or chat_type = 'dm')
-  IF NEW.is_dm = true OR NEW.chat_type = 'dm' THEN
+  -- Skip moderation check if content is null (media-only posts)
+  IF NEW.content IS NULL THEN
     RETURN NEW;
   END IF;
   

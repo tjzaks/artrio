@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Admin from "./pages/Admin";
 import Messages from "./pages/Messages";
+import Friends from "./pages/Friends";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Health from "./pages/Health";
@@ -63,6 +64,11 @@ const App = () => {
               <Route path="/messages" element={
                 <ProtectedRoute>
                   <Messages />
+                </ProtectedRoute>
+              } />
+              <Route path="/friends" element={
+                <ProtectedRoute>
+                  <Friends />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -41,17 +41,17 @@ export default function SystemControlsPanel() {
         logger.log('Logging skipped:', logError);
       }
 
-      // Only show success if we actually created trios
-      if (data?.trios_created > 0) {
+      // Check the response from the RPC function
+      if (data?.success) {
         toast({
           title: "Success",
-          description: `Created ${data.trios_created} trios with ${data.users_assigned} users!`
+          description: data.message || `Created ${data.created} trios!`
         });
       } else {
         toast({
           variant: "destructive",
           title: "No Trios Created",
-          description: data?.error || "No users available for trio creation"
+          description: data?.message || "Failed to create trios"
         });
       }
     } catch (error) {
@@ -193,15 +193,15 @@ export default function SystemControlsPanel() {
         logger.log('Logging skipped:', logError);
       }
 
-      if (data?.deleted_count > 0) {
+      if (data?.success && data?.deleted > 0) {
         toast({
           title: "Success",
-          description: `Deleted ${data.deleted_count} trios for today`
+          description: data.message || `Deleted ${data.deleted} trios for today`
         });
       } else {
         toast({
           title: "No Trios Found",
-          description: "No trios exist for today to delete"
+          description: data?.message || "No trios exist for today to delete"
         });
       }
     } catch (error) {
