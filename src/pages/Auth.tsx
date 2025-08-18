@@ -74,14 +74,7 @@ const Auth = () => {
   const [usernameDebounceTimer, setUsernameDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [personalityPage, setPersonalityPage] = useState(0);
-  const [sessionId] = useState(() => {
-    // Generate a unique session ID for this signup attempt
-    const stored = sessionStorage.getItem('signup_session_id');
-    if (stored) return stored;
-    const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    sessionStorage.setItem('signup_session_id', newId);
-    return newId;
-  });
+  // Session ID no longer needed - removed username reservation logic
 
   // Redirect if already authenticated
   if (user) {
@@ -124,7 +117,7 @@ const Auth = () => {
     return new Date(year, month, day);
   };
 
-  const checkUsernameAvailability = async (usernameToCheck: string, shouldReserve: boolean = false) => {
+  const checkUsernameAvailability = async (usernameToCheck: string) => {
     if (!usernameToCheck || usernameToCheck.length < 3) {
       setUsernameAvailable(null);
       return true;
@@ -132,11 +125,18 @@ const Auth = () => {
 
     setCheckingUsername(true);
     try {
-      // Use the check_username_available function which checks both profiles and reservations
-      const { data, error } = await supabase.rpc('check_username_available', {
-        p_username: usernameToCheck,
-        p_session_id: sessionId
-      });
+      // Simple check - just see if username exists in profiles table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', usernameToCheck.toLowerCase())
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // No rows returned = username is available
+        setUsernameAvailable(true);
+        return true;
+      }
 
       if (error) {
         logger.error('Error checking username:', error);
@@ -144,24 +144,9 @@ const Auth = () => {
         return false;
       }
 
-      const isAvailable = data === true;
-      setUsernameAvailable(isAvailable);
-
-      // If available and we should reserve it (when moving to next step)
-      if (isAvailable && shouldReserve) {
-        const { data: reserveData, error: reserveError } = await supabase.rpc('reserve_username', {
-          p_username: usernameToCheck,
-          p_session_id: sessionId
-        });
-
-        if (reserveError || !reserveData?.success) {
-          logger.error('Error reserving username:', reserveError);
-          setUsernameAvailable(false);
-          return false;
-        }
-      }
-
-      return isAvailable;
+      // If we got data, username is taken
+      setUsernameAvailable(false);
+      return false;
     } catch (error) {
       logger.error('Error checking username:', error);
       setUsernameAvailable(null);
@@ -339,7 +324,7 @@ const Auth = () => {
         }
         
         // Clear session ID after successful signup
-        sessionStorage.removeItem('signup_session_id');
+        // Session cleanup no longer needed
         
         setEmail('');
         setPassword('');
@@ -465,19 +450,7 @@ const Auth = () => {
   };
 
   const handleNext = async () => {
-    // If we're on the username step and moving forward, reserve the username
-    if (currentStepData?.fields[0] === 'username' && username) {
-      const isAvailable = await checkUsernameAvailability(username, true); // true = reserve it
-      if (!isAvailable) {
-        toast({
-          title: 'Username no longer available',
-          description: 'Someone else just took that username. Please choose another.',
-          variant: 'destructive'
-        });
-        return;
-      }
-    }
-    
+    // Simply move to next step - no username reservation needed
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     } else {

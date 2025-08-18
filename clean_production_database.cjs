@@ -40,12 +40,13 @@ async function cleanDatabase() {
       console.log(`  - ${p.username || 'No username'} (ID: ${p.id}, Created: ${p.created_at})`);
     });
 
-    // List of usernames to keep (dummy users)
-    const keepUsernames = ['dummy1', 'dummy2', 'testuser', 'demo'];
-    
-    // Filter out dummy users
-    const profilesToDelete = profiles?.filter(p => 
-      !keepUsernames.includes(p.username?.toLowerCase())
+    // Filter out dummy users (keep those with _12 suffix and "Jonny B" which seems to be dummy data)
+    const profilesToDelete = profiles?.filter(p => {
+      const username = p.username?.toLowerCase() || '';
+      // Keep dummy users (those with _12 suffix) and the original "Jonny B"
+      const isDummy = username.endsWith('_12') || username === 'jonny b';
+      return !isDummy; // Delete those that are NOT dummy users
+    }
     ) || [];
 
     console.log(`\n⚠️  Will delete ${profilesToDelete.length} non-dummy profiles:`);
