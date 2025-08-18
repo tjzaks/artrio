@@ -4,8 +4,8 @@ import type { Database } from './types';
 
 // Use environment variables, with fallback for development
 // IMPORTANT: In production, always use environment variables!
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://nqwijkvpzyadpsegvgbm.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xd2lqa3ZwenlhZHBzZWd2Z2JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzODc3NjcsImV4cCI6MjA3MDk2Mzc2N30.7QDR-iANA7YS5c9NUJWDMLj9AkoBDPrs6Heq-LeAepg";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://siqmwgeriobtlnkxfeas.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpcW13Z2VyaW9idGxua3hmZWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0NTA3MTMsImV4cCI6MjA3MTAyNjcxM30.Wt-9b6ohRw4hpTwT_ewov5sVWmYTFPOFtvxEOZWD8wM";
 
 // Warn in development if using defaults
 if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY)) {
