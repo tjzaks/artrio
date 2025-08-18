@@ -5,11 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "cp .env.local .env && vite",
+    "dev:prod": "cp .env.production .env && vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "npx serve dist -s -l ${PORT:-3000}"
+    "start": "npx serve dist -s -l ${PORT:-3000}",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:studio": "open http://127.0.0.1:54323",
+    "db:setup": "node setup-local-db.cjs",
+    "db:reset": "supabase db reset && npm run db:setup"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",
