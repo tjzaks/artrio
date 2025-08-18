@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  X, Type, Send, ChevronDown, Camera as CameraIcon, Grid3x3
+  X, Type, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -9,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
+import NativeGallery from './NativeGallery';
 
 interface StoryCreatorProps {
   open: boolean;
@@ -52,12 +54,37 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
   const [showTextTools, setShowTextTools] = useState(false);
   const [recentPhotos, setRecentPhotos] = useState<string[]>([]);
 
-  // Request photo permissions on mount
+  // Request photo permissions and load recent photos on mount
   useEffect(() => {
     if (open) {
       requestPhotoPermissions();
+      loadRecentPhotos();
     }
   }, [open]);
+
+  const loadRecentPhotos = () => {
+    try {
+      const stored = localStorage.getItem('recentStoryPhotos');
+      if (stored) {
+        const photos = JSON.parse(stored);
+        setRecentPhotos(photos.slice(0, 9)); // Keep only last 9 photos
+      }
+    } catch (error) {
+      console.error('Error loading recent photos:', error);
+    }
+  };
+
+  const saveToRecentPhotos = (imageUrl: string) => {
+    try {
+      const stored = localStorage.getItem('recentStoryPhotos');
+      const existing = stored ? JSON.parse(stored) : [];
+      const updated = [imageUrl, ...existing.filter((p: string) => p !== imageUrl)].slice(0, 9);
+      localStorage.setItem('recentStoryPhotos', JSON.stringify(updated));
+      setRecentPhotos(updated);
+    } catch (error) {
+      console.error('Error saving recent photo:', error);
+    }
+  };
 
   const requestPhotoPermissions = async () => {
     try {
@@ -82,6 +109,7 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       
       if (image.dataUrl) {
         setSelectedImage(image.dataUrl);
+        saveToRecentPhotos(image.dataUrl);
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -101,6 +129,7 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       
       if (image.dataUrl) {
         setSelectedImage(image.dataUrl);
+        saveToRecentPhotos(image.dataUrl);
       }
     } catch (error) {
       console.error('Photo selection error:', error);
@@ -268,87 +297,52 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       />
       
       <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent side="bottom" className="h-screen p-0 bg-black">
+        <SheetContent side="bottom" className="h-screen p-0 bg-black" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           {!selectedImage ? (
-            // Gallery View
-            <div className="h-full flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="text-white"
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-                
-                <h2 className="text-white font-semibold">Add to story</h2>
-                
-                <div className="w-10" />
-              </div>
+            // Use native photo gallery on iOS, fallback for web
+            Capacitor.getPlatform() === 'ios' ? (
+              <NativeGallery
+                onPhotoSelect={(photo) => {
+                  setSelectedImage(photo);
+                  saveToRecentPhotos(photo);
+                }}
+                onClose={onClose}
+              />
+            ) : (
+              // Fallback gallery for web/Android
+              <div className="h-full flex flex-col">
+                <div className="flex items-center justify-between p-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="text-white"
+                  >
+                    <X className="h-6 w-6" />
+                  </Button>
+                  
+                  <h2 className="text-white font-semibold">Add to story</h2>
+                  
+                  <div className="w-10" />
+                </div>
 
-              {/* Add yours button */}
-              <div className="px-4 mb-4">
-                <button 
-                  onClick={handleCameraCapture}
-                  className="w-full bg-gray-800 rounded-xl p-4 flex items-center gap-3 hover:bg-gray-700 transition"
-                >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 flex items-center justify-center">
-                    <span className="text-white text-xl">+</span>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <Button onClick={handleCameraCapture} size="lg">
+                      Take Photo
+                    </Button>
+                    <Button onClick={handlePhotoSelect} size="lg" variant="secondary">
+                      Choose from Library
+                    </Button>
                   </div>
-                  <span className="text-white font-medium">Add yours</span>
-                </button>
-              </div>
-
-              {/* Recents Header */}
-              <div className="flex items-center justify-between px-4 pb-2">
-                <button className="flex items-center gap-1 text-white">
-                  <span className="font-medium">Recents</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <button className="p-2">
-                  <Grid3x3 className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              {/* Image Grid */}
-              <div className="flex-1 overflow-y-auto bg-black">
-                <div className="grid grid-cols-3 gap-0.5">
-                  {/* Camera Button */}
-                  <button
-                    onClick={handleCameraCapture}
-                    className="aspect-square bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition"
-                  >
-                    <CameraIcon className="h-8 w-8 text-gray-400" />
-                  </button>
-                  
-                  {/* Select from Library Button */}
-                  <button
-                    onClick={handlePhotoSelect}
-                    className="aspect-square bg-gray-900 hover:bg-gray-800 transition flex items-center justify-center"
-                  >
-                    <div className="text-center">
-                      <div className="text-3xl mb-1">🖼️</div>
-                      <p className="text-gray-400 text-xs">Select</p>
-                    </div>
-                  </button>
-                  
-                  {/* Placeholder cells */}
-                  {[...Array(25)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-square bg-gray-900"
-                    />
-                  ))}
                 </div>
               </div>
-            </div>
+            )
           ) : (
             // Edit View
             <div className="h-full flex flex-col">
               {/* Header */}
-              <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between p-4">
+              <div className="absolute left-0 right-0 z-40 flex items-center justify-between p-4" style={{ top: 'env(safe-area-inset-top)' }}>
                 <Button
                   variant="ghost"
                   size="icon"

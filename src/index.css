@@ -1,3 +1,6 @@
+/* Import safe area support */
+@import './styles/safe-area.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

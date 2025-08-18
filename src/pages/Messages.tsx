@@ -101,6 +101,7 @@ const Messages = () => {
       if (!authenticatedUser) {
         logger.warn('User not authenticated when fetching conversations');
         setConversations([]);
+        setLoading(false);
         return;
       }
       
@@ -118,6 +119,8 @@ const Messages = () => {
         
         logger.info('Successfully fetched conversations:', data?.length || 0);
         setConversations(data || []);
+        setLoading(false);
+        return; // Success - exit early
       } catch (rpcError) {
         logger.warn('RPC failed, trying fallback method:', rpcError);
         
@@ -185,14 +188,24 @@ const Messages = () => {
         setConversations(processedConvs);
         logger.info('Successfully fetched conversations using fallback method:', processedConvs.length);
       }
-    } catch (error) {
+      
+      // If we reach here, the primary method succeeded
+      setLoading(false);
+    } catch (error: any) {
       logger.error('Error fetching conversations:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load conversations',
-        variant: 'destructive'
-      });
-    } finally {
+      
+      // Only show error toast for actual errors, not empty results
+      // Check if it's a real error vs just no data
+      if (error?.code && error?.code !== 'PGRST116') { // PGRST116 = no rows returned
+        toast({
+          title: 'Error', 
+          description: 'Failed to load conversations. Please try again.',
+          variant: 'destructive'
+        });
+      }
+      
+      // Even on error, set empty conversations so UI shows empty state
+      setConversations([]);
       setLoading(false);
     }
   };
@@ -667,10 +680,28 @@ const Messages = () => {
           {loading ? (
             <div className="p-4 text-center text-muted-foreground">Loading...</div>
           ) : filteredConversations.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No conversations yet</p>
-              <p className="text-sm mt-2">Start chatting with your trio members!</p>
+            <div className="p-8 text-center">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
+              <h3 className="text-lg font-semibold mb-2">
+                {searchTerm ? 'No conversations found' : 'Welcome to Messages!'}
+              </h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                {searchTerm 
+                  ? 'Try searching for a different username' 
+                  : conversations.length === 0 
+                    ? 'Start your first conversation by clicking the + button above'
+                    : 'No conversations match your search'}
+              </p>
+              {!searchTerm && conversations.length === 0 && (
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowNewMessage(true)}
+                  className="mt-2"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start Your First Chat
+                </Button>
+              )}
             </div>
           ) : (
             filteredConversations.map((conv) => (

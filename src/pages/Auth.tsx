@@ -13,6 +13,7 @@ import { validateEmail, validatePassword, validateUsername, sanitize } from '@/u
 import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import { cn } from '@/lib/utils';
+import { WelcomeModal } from '@/components/WelcomeModal';
 
 const PERSONALITY_TYPES = [
   { value: 'creative', label: 'Creative soul', icon: Palette, color: 'from-purple-500 to-pink-500' },
@@ -75,6 +76,8 @@ const Auth = () => {
   const [usernameDebounceTimer, setUsernameDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [personalityPage, setPersonalityPage] = useState(0);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [welcomeUsername, setWelcomeUsername] = useState('');
   // Session ID no longer needed - removed username reservation logic
 
   // Redirect if already authenticated
@@ -318,10 +321,9 @@ const Auth = () => {
           });
           setIsSignUp(false);
         } else {
-          toast({
-            title: 'Welcome to Artrio!',
-            description: 'Your account has been created and you\'re now logged in.'
-          });
+          // Show welcome modal for new signups
+          setWelcomeUsername(username);
+          setShowWelcomeModal(true);
         }
         
         // Clear session ID after successful signup
@@ -1119,6 +1121,13 @@ const Auth = () => {
           </div>
         </div>
       </div>
+
+      {/* Welcome Modal */}
+      <WelcomeModal 
+        isOpen={showWelcomeModal} 
+        onClose={() => setShowWelcomeModal(false)}
+        username={welcomeUsername}
+      />
     </div>
   );
 };

@@ -1,0 +1,56 @@
+/* iOS Safe Area Support */
+:root {
+  /* Define safe area variables for fallback */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
+
+/* Global fix: Add safe area padding to the entire app */
+#root {
+  /* Top padding for status bar */
+  padding-top: env(safe-area-inset-top);
+  /* Bottom padding for home indicator */
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Side padding for landscape orientation */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  /* Ensure full height */
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* For pages that need to opt-out of root padding */
+.no-safe-padding {
+  margin-top: calc(-1 * env(safe-area-inset-top));
+  margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+  margin-left: calc(-1 * env(safe-area-inset-left));
+  margin-right: calc(-1 * env(safe-area-inset-right));
+}
+
+/* Utility classes for safe areas */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.px-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* For sticky headers on iOS - they should stick to safe area top */
+.safe-top {
+  top: env(safe-area-inset-top);
+}
+
+/* Remove double padding from navigation-glass since #root handles it */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .navigation-glass {
+    /* Removed padding-top since #root handles it */
+  }
+}
