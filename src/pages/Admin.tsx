@@ -116,12 +116,11 @@ const Admin = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today);
 
-      // Get recent users (last 10)
+      // Get ALL users sorted by most recent first
       const { data: recentProfiles } = await supabase
         .from('profiles')
         .select('username, created_at')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
 
       const recentUsers = recentProfiles?.map(profile => ({
         username: profile.username,
@@ -278,10 +277,10 @@ const Admin = () => {
               </Card>
             </div>
 
-            {/* Recent Users */}
+            {/* All Users */}
             <Card>
               <CardHeader className="flex items-center justify-between">
-                <CardTitle>Recent Users</CardTitle>
+                <CardTitle>All Users ({stats?.recentUsers.length || 0})</CardTitle>
                 <Button 
                   onClick={fetchAdminStats}
                   variant="outline"

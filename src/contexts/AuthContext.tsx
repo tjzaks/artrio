@@ -226,8 +226,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear all state first
     setIsAdmin(false);
+    setUser(null);
+    setSession(null);
+    
+    // Clear all localStorage
+    localStorage.clear();
+    
+    // Sign out from Supabase
     await supabase.auth.signOut();
+    
+    // Force a hard reload to the auth page
+    window.location.replace('/auth');
   };
 
   const refreshSession = async (): Promise<Session | null> => {

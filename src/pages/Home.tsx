@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper, UserPlus } from 'lucide-react';
+import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -72,11 +72,15 @@ const Home = () => {
   const [mediaUrl, setMediaUrl] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [showHealthCheck, setShowHealthCheck] = useState(false);
+  const [inQueue, setInQueue] = useState(false);
+  const [queueCount, setQueueCount] = useState(0);
+  const [joiningQueue, setJoiningQueue] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchTodaysTrio();
       checkPostRateLimit();
+      checkQueueStatus();
     }
   }, [user]);
 
@@ -330,6 +334,66 @@ const Home = () => {
   const handleMediaUploaded = (url: string, type: 'image' | 'video') => {
     setMediaUrl(url);
     setMediaType(type);
+  };
+
+  const checkQueueStatus = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_queue_status');
+      if (!error && data) {
+        setInQueue(data.in_queue);
+        setQueueCount(data.queue_count);
+      }
+    } catch (error) {
+      logger.error('Error checking queue status:', error);
+    }
+  };
+
+  const joinQueue = async () => {
+    setJoiningQueue(true);
+    try {
+      const { data, error } = await supabase.rpc('join_trio_queue');
+      
+      if (error) throw error;
+      
+      if (data?.action === 'trio_created' || data?.action === 'duo_created') {
+        toast({
+          title: 'Success!',
+          description: data.message
+        });
+        // Refresh the trio
+        await fetchTodaysTrio();
+      } else if (data?.action === 'queued') {
+        setInQueue(true);
+        setQueueCount(data.queue_position);
+        // No toast notification when joining queue
+      }
+    } catch (error) {
+      logger.error('Error joining queue:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to join queue',
+        variant: 'destructive'
+      });
+    } finally {
+      setJoiningQueue(false);
+    }
+  };
+
+  const leaveQueue = async () => {
+    try {
+      const { error } = await supabase.rpc('leave_trio_queue');
+      if (!error) {
+        setInQueue(false);
+        setQueueCount(0);
+        toast({
+          title: 'Trio Matching Canceled',
+          description: "Artrio isn't the same without Trios!",
+          className: 'gradient-toast'
+        });
+      }
+    } catch (error) {
+      logger.error('Error leaving queue:', error);
+    }
   };
 
   const handleReplySubmit = async (postId: string) => {
@@ -634,12 +698,97 @@ const Home = () => {
           </>
         ) : (
           <Card>
-            <CardContent className="p-6 text-center">
-              <h2 className="text-lg font-semibold mb-2">Matching you with others...</h2>
-              <p className="text-muted-foreground text-sm">
-                You'll be added to a group soon.<br />
-                New matches happen throughout the day!
-              </p>
+            <CardContent className="p-6 text-center space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold mb-2">
+                  {inQueue ? 'Waiting for match...' : 'No trio yet'}
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  {inQueue 
+                    ? `${3 - queueCount} more ${3 - queueCount === 1 ? 'person' : 'people'} needed for a trio`
+                    : 'Join the queue to get matched instantly when others are ready'}
+                </p>
+              </div>
+              
+              {inQueue ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="relative h-20 w-32">
+                      {/* Animated Artrio logo */}
+                      <style jsx>{`
+                        @keyframes fadeInOut1 {
+                          0%, 100% { opacity: 0.3; }
+                          33% { opacity: 1; }
+                        }
+                        @keyframes fadeInOut2 {
+                          0%, 100% { opacity: 0.3; }
+                          66% { opacity: 1; }
+                        }
+                        @keyframes fadeInOut3 {
+                          0%, 100% { opacity: 0.3; }
+                          75% { opacity: 1; }
+                        }
+                      `}</style>
+                      <div className="flex items-center justify-center h-full gap-2">
+                        <div 
+                          className="w-6 h-16 rounded-full"
+                          style={{ 
+                            backgroundColor: '#D73935',
+                            animation: 'fadeInOut1 2s infinite'
+                          }}
+                        />
+                        <div 
+                          className="w-6 h-16 rounded-full"
+                          style={{ 
+                            backgroundColor: '#7BB146',
+                            animation: 'fadeInOut2 2s infinite'
+                          }}
+                        />
+                        <div 
+                          className="w-6 h-16 rounded-full"
+                          style={{ 
+                            backgroundColor: '#1BA0CC',
+                            animation: 'fadeInOut3 2s infinite'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-center space-y-1">
+                      <span className="text-sm font-medium block">Finding your Trio</span>
+                      <span className="text-xs text-muted-foreground">
+                        Matching you with the right people
+                      </span>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={leaveQueue}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Stop Searching
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  onClick={joinQueue}
+                  disabled={joiningQueue}
+                  size="lg"
+                  className="w-full max-w-xs"
+                >
+                  {joiningQueue ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    <>
+                      <Users className="mr-2 h-4 w-4" />
+                      Find my Trio
+                    </>
+                  )}
+                </Button>
+              )}
+
             </CardContent>
           </Card>
         )}
