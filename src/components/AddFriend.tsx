@@ -49,12 +49,12 @@ export default function AddFriend() {
         // Check friendship status for each result
         const resultsWithStatus = await Promise.all(
           results.map(async (profile) => {
+            // Check for friendship in both directions
             const { data: friendship } = await supabase
               .from('friendships')
               .select('status')
-              .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`)
-              .or(`user_id.eq.${profile.id},friend_id.eq.${profile.id}`)
-              .single();
+              .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${profile.id}),and(user_id.eq.${profile.id},friend_id.eq.${userProfile.id})`)
+              .maybeSingle();
 
             return {
               ...profile,
@@ -83,7 +83,38 @@ export default function AddFriend() {
         .eq('user_id', user?.id)
         .single();
 
-      if (!userProfile) return;
+      if (!userProfile) {
+        toast({
+          title: 'Error',
+          description: 'Could not find your profile',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Check if friendship already exists
+      const { data: existingFriendship } = await supabase
+        .from('friendships')
+        .select('id, status')
+        .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${friendProfileId}),and(user_id.eq.${friendProfileId},friend_id.eq.${userProfile.id})`)
+        .single();
+
+      if (existingFriendship) {
+        if (existingFriendship.status === 'pending') {
+          toast({
+            title: 'Request already sent',
+            description: 'Your friend request is pending',
+            variant: 'destructive'
+          });
+        } else if (existingFriendship.status === 'accepted') {
+          toast({
+            title: 'Already friends',
+            description: 'You are already friends with this user',
+            variant: 'destructive'
+          });
+        }
+        return;
+      }
 
       const { error } = await supabase
         .from('friendships')
@@ -93,7 +124,10 @@ export default function AddFriend() {
           status: 'pending'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Friend request error:', error);
+        throw error;
+      }
 
       toast({
         title: 'Friend request sent!',
@@ -104,11 +138,11 @@ export default function AddFriend() {
       setSearchResults(prev => prev.map(r => 
         r.id === friendProfileId ? { ...r, request_pending: true } : r
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending friend request:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send friend request',
+        description: error?.message || 'Failed to send friend request',
         variant: 'destructive'
       });
     }
