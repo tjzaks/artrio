@@ -14,6 +14,7 @@ import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import NotificationBell from '@/components/NotificationBell';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
+import { cleanErrorMessage } from '@/utils/errorMessages';
 
 interface Profile {
   id: string;
@@ -282,7 +283,7 @@ const Home = () => {
           title: 'Error',
           description: error.message === 'new row violates row-level security policy for table "posts"' 
             ? 'Please wait 10 minutes between posts to prevent spam.'
-            : error.message,
+            : cleanErrorMessage(error),
           variant: 'destructive'
         });
         return;
@@ -329,7 +330,7 @@ const Home = () => {
       if (error) {
         toast({
           title: 'Error',
-          description: error.message,
+          description: cleanErrorMessage(error),
           variant: 'destructive'
         });
         return;

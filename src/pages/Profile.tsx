@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { cleanErrorMessage } from '@/utils/errorMessages';
 
 interface Profile {
   id: string;
@@ -229,7 +230,7 @@ const Profile = () => {
       if (uploadError) {
         toast({
           title: 'Upload failed',
-          description: uploadError.message,
+          description: cleanErrorMessage(uploadError),
           variant: 'destructive'
         });
         return;
@@ -313,7 +314,7 @@ const Profile = () => {
         if (error) {
           toast({
             title: 'Error',
-            description: error.message,
+            description: cleanErrorMessage(error),
             variant: 'destructive'
           });
           return;
@@ -332,7 +333,7 @@ const Profile = () => {
         if (error) {
           toast({
             title: 'Error',
-            description: error.message,
+            description: cleanErrorMessage(error),
             variant: 'destructive'
           });
           return;

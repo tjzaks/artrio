@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { validateEmail, validatePassword, validateUsername, sanitize } from '@/utils/validation';
 import { logger } from '@/utils/logger';
+import { cleanErrorMessage } from '@/utils/errorMessages';
 import { cn } from '@/lib/utils';
 
 const PERSONALITY_TYPES = [
@@ -215,7 +216,7 @@ const Auth = () => {
       if (error) {
         toast({
           title: 'Error',
-          description: error.message,
+          description: cleanErrorMessage(error),
           variant: 'destructive'
         });
       } else {
@@ -407,7 +408,7 @@ const Auth = () => {
       if (error) {
         toast({
           title: 'Sign In Error',
-          description: error.message,
+          description: cleanErrorMessage(error),
           variant: 'destructive'
         });
       }
