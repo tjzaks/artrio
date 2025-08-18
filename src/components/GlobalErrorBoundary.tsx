@@ -36,6 +36,35 @@ class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Ignore navigation-related and transient errors
+    const ignorableErrors = [
+      'Cannot read properties of null',
+      'Cannot read properties of undefined', 
+      'ResizeObserver loop limit exceeded',
+      'ResizeObserver loop completed',
+      'Non-Error promise rejection captured',
+      'Load failed',
+      'Failed to fetch'
+    ];
+    
+    const errorString = error?.message || error?.toString() || '';
+    const shouldIgnore = ignorableErrors.some(msg => 
+      errorString.includes(msg)
+    );
+    
+    if (shouldIgnore) {
+      console.log('Ignoring transient error:', errorString);
+      // Reset state without showing error UI
+      setTimeout(() => {
+        this.setState({
+          hasError: false,
+          error: null,
+          errorInfo: null,
+        });
+      }, 0);
+      return;
+    }
+    
     // Log error to console in development
     if (import.meta.env.DEV) {
       logger.error('Error caught by boundary:', error, errorInfo);

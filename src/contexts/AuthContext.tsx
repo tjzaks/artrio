@@ -20,9 +20,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('artrio-auth-user');
     return stored ? JSON.parse(stored) : null;
   });
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [session, setSession] = useState<Session | null>(() => {
+    const stored = localStorage.getItem('artrio-auth-session');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [loading, setLoading] = useState(() => {
+    // Only show loading if we don't have cached auth state
+    const hasStoredUser = localStorage.getItem('artrio-auth-user');
+    return !hasStoredUser;
+  });
+  const [isAdmin, setIsAdmin] = useState(() => {
+    const stored = localStorage.getItem('artrio-is-admin');
+    return stored === 'true';
+  });
   const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
   const userRef = useRef<User | null>(null);
 
@@ -34,11 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         userRef.current = session?.user ?? null;
         
-        // Store user in localStorage to prevent flashing
+        // Store auth state in localStorage to prevent flashing
         if (session?.user) {
           localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
+          localStorage.setItem('artrio-auth-session', JSON.stringify(session));
         } else {
           localStorage.removeItem('artrio-auth-user');
+          localStorage.removeItem('artrio-auth-session');
+          localStorage.removeItem('artrio-is-admin');
         }
         
         // Check admin status when user changes
@@ -117,10 +130,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .single();
       
-      setIsAdmin(profile?.is_admin || false);
+      const isAdminUser = profile?.is_admin || false;
+      setIsAdmin(isAdminUser);
+      localStorage.setItem('artrio-is-admin', isAdminUser.toString());
     } catch (error) {
       logger.error('Error checking admin status:', error);
       setIsAdmin(false);
+      localStorage.setItem('artrio-is-admin', 'false');
     }
   };
 
