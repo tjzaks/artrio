@@ -75,18 +75,24 @@ export default function AddFriend() {
 
   // Send friend request
   const sendFriendRequest = async (friendProfileId: string) => {
+    console.log('Sending friend request to profile:', friendProfileId);
+    console.log('Current user:', user?.id);
+    
     try {
       // Get current user's profile
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user?.id)
         .single();
 
-      if (!userProfile) {
+      console.log('User profile result:', { userProfile, profileError });
+
+      if (!userProfile || profileError) {
+        console.error('Profile error:', profileError);
         toast({
           title: 'Error',
-          description: 'Could not find your profile',
+          description: 'Could not find your profile. Please try logging in again.',
           variant: 'destructive'
         });
         return;
@@ -97,7 +103,7 @@ export default function AddFriend() {
         .from('friendships')
         .select('id, status')
         .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${friendProfileId}),and(user_id.eq.${friendProfileId},friend_id.eq.${userProfile.id})`)
-        .single();
+        .maybeSingle();
 
       if (existingFriendship) {
         if (existingFriendship.status === 'pending') {
@@ -116,18 +122,33 @@ export default function AddFriend() {
         return;
       }
 
-      const { error } = await supabase
+      console.log('Attempting to insert friendship:', {
+        user_id: userProfile.id,
+        friend_id: friendProfileId,
+        status: 'pending'
+      });
+
+      const { data: insertResult, error } = await supabase
         .from('friendships')
         .insert({
           user_id: userProfile.id,
           friend_id: friendProfileId,
           status: 'pending'
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Friend request error:', error);
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
+      
+      console.log('Friend request successful:', insertResult);
 
       toast({
         title: 'Friend request sent!',
