@@ -290,24 +290,9 @@ const Auth = () => {
         return;
       }
 
-      const isUsernameAvailable = await checkUsernameAvailability(username);
-      let finalUsername = username.toLowerCase();
-      
-      if (!isUsernameAvailable) {
-        toast({
-          title: 'Username taken',
-          description: 'Finding an available username for you...',
-        });
-        finalUsername = await generateUniqueUsername(username);
-        setUsername(finalUsername);
-        toast({
-          title: 'Username updated',
-          description: `Your username has been changed to: ${finalUsername}`,
-        });
-      }
-
+      // Just use the username directly - let database handle uniqueness
       const { error } = await signUp(email, password, {
-        username: finalUsername,
+        username: username.toLowerCase(),
         birthday: format(birthday, 'yyyy-MM-dd'),
         bio: description || '',
         personality_type: personalityType,
@@ -320,7 +305,9 @@ const Auth = () => {
         
         let errorMessage = error.message;
         
-        if (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already registered')) {
+        if (error.message.includes('username') && (error.message.includes('duplicate') || error.message.includes('unique'))) {
+          errorMessage = 'That username is already taken. Please choose another.';
+        } else if (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already registered')) {
           errorMessage = 'This email is already registered. Try signing in instead.';
         } else if (error.message.includes('Database error') || error.message.includes('profiles')) {
           errorMessage = 'Database error. Please try again in a moment.';
@@ -336,14 +323,6 @@ const Auth = () => {
           variant: 'destructive'
         });
       } else {
-        // Release the username reservation on successful signup
-        if (finalUsername) {
-          await supabase.rpc('release_username_reservation', {
-            p_username: finalUsername,
-            p_session_id: sessionId
-          });
-        }
-        
         const { error: signInError } = await signIn(email, password);
         
         if (signInError) {
