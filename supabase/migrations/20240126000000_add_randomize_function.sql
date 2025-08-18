@@ -81,9 +81,14 @@ BEGIN
       
       created_count := created_count + 1;
     ELSIF remaining_count = 1 THEN
-      -- Single user left - add to last trio if possible, or skip
-      -- For simplicity, we'll skip the single user
-      NULL;
+      -- Create a solo group for the single user
+      SELECT id INTO user1 FROM temp_users LIMIT 1;
+      DELETE FROM temp_users WHERE id = user1;
+      
+      INSERT INTO public.trios (user1_id, user2_id, user3_id, date)
+      VALUES (user1, NULL, NULL, today);
+      
+      created_count := created_count + 1;
     END IF;
   END;
   

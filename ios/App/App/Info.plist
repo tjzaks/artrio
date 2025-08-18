@@ -45,5 +45,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Artrio needs access to your photos to create and share stories</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Artrio needs permission to save photos to your library</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Artrio needs camera access to capture photos for stories</string>
 </dict>
 </plist>

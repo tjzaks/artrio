@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  X, Type, Send, ChevronDown, Camera, MoreHorizontal
+  X, Type, Send, ChevronDown, Camera, MoreHorizontal, Grid3x3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -250,50 +250,42 @@ export default function SimpleStoryCreator({ open, onClose, onSuccess }: StoryCr
             {/* Recents Header */}
             <div className="flex items-center justify-between px-4 pb-2">
               <button className="flex items-center gap-1 text-white">
-                <span>Recents</span>
+                <span className="font-medium">Recents</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
               <button className="p-2">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
+                <Grid3x3 className="w-5 h-5 text-white" />
               </button>
             </div>
 
             {/* Image Grid */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto bg-black">
               <div className="grid grid-cols-3 gap-0.5">
                 {/* Camera Button */}
                 <button
                   onClick={() => cameraInputRef.current?.click()}
                   className="aspect-square bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition"
                 >
-                  <Camera className="h-10 w-10 text-gray-400" />
+                  <Camera className="h-8 w-8 text-gray-400" />
                 </button>
                 
-                {/* Gallery Button - Allow multiple selection */}
+                {/* Select from Library Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square bg-gray-900 hover:bg-gray-800 transition col-span-2 row-span-2"
+                  className="aspect-square bg-gray-900 hover:bg-gray-800 transition flex items-center justify-center"
                 >
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-2">🖼️</div>
-                      <p className="text-gray-400 text-sm">Select photos</p>
-                      <p className="text-gray-500 text-xs mt-1">Tap to choose</p>
-                    </div>
+                  <div className="text-center">
+                    <div className="text-3xl mb-1">🖼️</div>
+                    <p className="text-gray-400 text-xs">Select</p>
                   </div>
                 </button>
                 
-                {/* Placeholder images */}
-                {[...Array(20)].map((_, i) => (
-                  <button
+                {/* Empty grid cells for now - will be populated with actual photos */}
+                {[...Array(25)].map((_, i) => (
+                  <div
                     key={i}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square bg-gray-800 hover:opacity-80 transition"
-                  >
-                    <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-900" />
-                  </button>
+                    className="aspect-square bg-gray-900"
+                  />
                 ))}
               </div>
             </div>

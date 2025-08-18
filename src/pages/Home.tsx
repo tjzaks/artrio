@@ -434,7 +434,11 @@ const Home = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="h-5 w-5" style={{color: 'hsl(195 45% 55%)'}} />
-                  Today's Trio
+                  {currentTrio.profiles.length === 1 
+                    ? "Flying Solo Today" 
+                    : currentTrio.profiles.length === 2 
+                    ? "Your Duo Today" 
+                    : "Today's Trio"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -470,6 +474,13 @@ const Home = () => {
                     </div>
                   ))}
                 </div>
+                {currentTrio.profiles.length < 3 && (
+                  <div className="mt-3 text-sm text-muted-foreground text-center">
+                    {currentTrio.profiles.length === 1 
+                      ? "🔄 Waiting for more people to join..." 
+                      : "🔄 Looking for one more person to complete your trio..."}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -624,10 +635,10 @@ const Home = () => {
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
-              <h2 className="text-lg font-semibold mb-2">No trio yet today</h2>
+              <h2 className="text-lg font-semibold mb-2">Matching you with others...</h2>
               <p className="text-muted-foreground text-sm">
-                Trios form throughout the day.<br />
-                Check back soon!
+                You'll be added to a group soon.<br />
+                New matches happen throughout the day!
               </p>
             </CardContent>
           </Card>
