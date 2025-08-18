@@ -10,6 +10,7 @@ import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle }
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 interface Profile {
   id: string;
@@ -39,8 +40,8 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    username: '',
-    bio: '',
+    username: user?.user_metadata?.username || '',
+    bio: user?.user_metadata?.bio || '',
     avatar_url: ''
   });
   const [originalUsername, setOriginalUsername] = useState('');
@@ -56,21 +57,29 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      // Fetch profile data
+      logger.log('Fetching profile for user:', user?.id);
+      
+      // Fetch profile data - use .single() to ensure we get exactly one
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user?.id)
-        .maybeSingle();
+        .single();
 
-      if (profileError) {
+      if (profileError && profileError.code !== 'PGRST116') {
         logger.error('Error fetching profile:', profileError);
-        toast({
-          title: 'Error',
-          description: 'Failed to load profile',
-          variant: 'destructive'
-        });
-        return;
+        
+        // If it's a "no rows" error, the profile doesn't exist yet
+        if (profileError.code === 'PGRST116') {
+          logger.log('No profile found for user:', user?.id);
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to load profile',
+            variant: 'destructive'
+          });
+          return;
+        }
       }
 
       // Fetch sensitive data (birthday) - only accessible by the user themselves
@@ -109,13 +118,51 @@ const Profile = () => {
           setUsernameChangeWarning('You\'ve used all 3 free username changes. Additional changes cost $5.');
         }
       } else {
-        // No profile exists - this might happen if signup didn't create one
-        logger.log('No profile found, user will need to create one');
-        setFormData({
-          username: '',
-          bio: '',
-          avatar_url: ''
-        });
+        // Profile should exist from signup - if not, try to create it from user metadata
+        logger.log('Profile not found, attempting to create from user metadata');
+        
+        // Get user metadata from auth
+        const metadata = user?.user_metadata;
+        if (metadata?.username) {
+          // Create the profile that should have been created during signup
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              username: metadata.username,
+              bio: metadata.bio || '',
+              avatar_url: null
+            })
+            .select()
+            .single();
+          
+          if (newProfile && !createError) {
+            setProfile(newProfile);
+            setFormData({
+              username: newProfile.username,
+              bio: newProfile.bio || '',
+              avatar_url: newProfile.avatar_url || ''
+            });
+            setOriginalUsername(newProfile.username);
+          } else if (createError?.message?.includes('duplicate')) {
+            // Profile exists but query failed, retry
+            setTimeout(() => fetchProfile(), 1000);
+          } else {
+            // Fallback - show form with metadata
+            setFormData({
+              username: metadata.username || '',
+              bio: metadata.bio || '',
+              avatar_url: ''
+            });
+          }
+        } else {
+          // Last resort - empty form
+          setFormData({
+            username: '',
+            bio: '',
+            avatar_url: ''
+          });
+        }
       }
 
       if (sensitiveData) {
@@ -393,7 +440,7 @@ const Profile = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              {profile ? 'Edit Profile' : 'Create Your Profile'}
+              Profile Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
