@@ -157,11 +157,7 @@ const Home = () => {
         // Fetch posts for this trio
         await fetchTrioPosts(trio.id);
       } else {
-        // No trio for today - this would typically be handled by a daily cron job
-        toast({
-          title: 'No trio today',
-          description: 'Check back later for your daily trio!'
-        });
+        // No trio for today - just show the empty state, no toast
       }
     } catch (error) {
       logger.error('Error:', error);
