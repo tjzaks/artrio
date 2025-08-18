@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Users, Trash2, RefreshCw } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 export default function SystemControlsPanel() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});

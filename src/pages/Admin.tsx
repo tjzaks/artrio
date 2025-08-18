@@ -8,6 +8,7 @@ import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings,
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 import ReportedContentPanel from '@/components/admin/ReportedContentPanel';
 import UserModerationPanel from '@/components/admin/UserModerationPanel';
 import SystemControlsPanel from '@/components/admin/SystemControlsPanel';

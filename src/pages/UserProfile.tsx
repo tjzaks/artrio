@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ProfileSkeleton from '@/components/ProfileSkeleton';
 import ReportUserDialog from '@/components/ReportUserDialog';
+import { logger } from '@/utils/logger';
 
 interface UserProfile {
   id: string;

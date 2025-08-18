@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Camera, Image, Video, X, Upload } from 'lucide-react';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { logger } from '@/utils/logger';
 
 interface MediaUploadProps {
   onMediaUploaded: (mediaUrl: string, mediaType: 'image' | 'video') => void;
