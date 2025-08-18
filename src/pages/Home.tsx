@@ -15,6 +15,7 @@ import NotificationBell from '@/components/NotificationBell';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
+import HealthCheck from '@/components/HealthCheck';
 
 interface Profile {
   id: string;
@@ -71,6 +72,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [mediaUrl, setMediaUrl] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [showHealthCheck, setShowHealthCheck] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -78,6 +80,19 @@ const Home = () => {
       checkPostRateLimit();
     }
   }, [user]);
+
+  // Add keyboard shortcut for health check (Ctrl/Cmd + H + H)
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+        e.preventDefault();
+        setShowHealthCheck(!showHealthCheck);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [showHealthCheck]);
 
   useEffect(() => {
     if (!canPost && secondsUntilNextPost > 0) {
@@ -370,6 +385,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
       <header className="sticky top-0 z-40 navigation-glass p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

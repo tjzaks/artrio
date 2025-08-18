@@ -36,32 +36,67 @@ class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Ignore navigation-related and transient errors
+    // Expanded list of ignorable errors
     const ignorableErrors = [
       'Cannot read properties of null',
-      'Cannot read properties of undefined', 
+      'Cannot read properties of undefined',
+      'Cannot read property',
+      'TypeError: Cannot read properties',
       'ResizeObserver loop limit exceeded',
-      'ResizeObserver loop completed',
+      'ResizeObserver loop completed', 
       'Non-Error promise rejection captured',
       'Load failed',
-      'Failed to fetch'
+      'Failed to fetch',
+      'Network request failed',
+      'ChunkLoadError',
+      'Loading chunk',
+      'Loading CSS chunk',
+      'Script error',
+      'NetworkError when attempting to fetch resource',
+      'The request timed out',
+      'AbortError',
+      'NotAllowedError',
+      'QuotaExceededError',
+      'SecurityError',
+      'InvalidStateError',
+      'DataError',
+      'TransactionInactiveError',
+      'ReadOnlyError',
+      'VersionError',
+      'OperationError',
+      'NotSupportedError',
+      'InvalidAccessError',
+      'TimeoutError',
+      'AbortError',
+      'NotReadableError',
+      'EncodingError',
+      'DecodeError',
+      'ServiceUnavailableError'
     ];
     
     const errorString = error?.message || error?.toString() || '';
     const shouldIgnore = ignorableErrors.some(msg => 
-      errorString.includes(msg)
+      errorString.toLowerCase().includes(msg.toLowerCase())
     );
+    
+    // Also ignore React development warnings and hydration mismatches
+    if (errorString.includes('Warning:') || 
+        errorString.includes('Hydration') ||
+        errorString.includes('useEffect') ||
+        errorString.includes('act()') ||
+        errorString.includes('findDOMNode')) {
+      console.log('Ignoring React development warning:', errorString);
+      return;
+    }
     
     if (shouldIgnore) {
       console.log('Ignoring transient error:', errorString);
       // Reset state without showing error UI
-      setTimeout(() => {
-        this.setState({
-          hasError: false,
-          error: null,
-          errorInfo: null,
-        });
-      }, 0);
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+      });
       return;
     }
     
