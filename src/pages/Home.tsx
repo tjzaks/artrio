@@ -892,7 +892,7 @@ const Home = () => {
             <CardContent className="p-6 text-center space-y-4">
               <div>
                 <h2 className="text-lg font-semibold mb-2">
-                  {inQueue ? 'Waiting for match...' : 'No trio yet'}
+                  {inQueue ? 'Looking for your Trio' : 'No trio yet'}
                 </h2>
                 <p className="text-muted-foreground text-sm">
                   {inQueue 
@@ -944,8 +944,7 @@ const Home = () => {
                         />
                       </div>
                     </div>
-                    <div className="text-center space-y-1">
-                      <span className="text-sm font-medium block">Finding your Trio</span>
+                    <div className="text-center">
                       <span className="text-xs text-muted-foreground">
                         Matching you with the right people
                       </span>
