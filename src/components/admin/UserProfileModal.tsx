@@ -79,23 +79,45 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       // Fetch auth user data (email) using admin RPC function
       let authUser: any = null;
       try {
-        const { data: userData, error: authError } = await supabase
-          .rpc('get_user_email_for_admin', { target_user_id: userId });
+        const { data: authData, error: authError } = await supabase
+          .rpc('admin_get_user_email', { target_user_id: userId });
         
-        if (!authError && userData && userData.length > 0) {
-          authUser = userData[0];
+        if (!authError && authData && !authData.error) {
+          authUser = authData;
+        } else {
+          // Fallback to the old function if new one doesn't exist yet
+          const { data: userData, error: fallbackError } = await supabase
+            .rpc('get_user_email_for_admin', { target_user_id: userId });
+          
+          if (!fallbackError && userData && userData.length > 0) {
+            authUser = userData[0];
+          }
         }
       } catch (error) {
         logger.warn('Could not fetch auth user data:', error);
       }
       
-      if (authUser || true) { // Continue even if we can't get email
-        // Fetch sensitive data (birthday)
-        const { data: sensitiveData } = await supabase
+      // Fetch sensitive data (birthday) - try admin function first
+      let sensitiveData: any = null;
+      try {
+        const { data: sensitiveResponse } = await supabase
+          .rpc('admin_get_sensitive_data', { target_user_id: userId });
+        
+        if (sensitiveResponse && !sensitiveResponse.error) {
+          sensitiveData = sensitiveResponse;
+        }
+      } catch (error) {
+        // Fallback to direct query (will only work for own data)
+        const { data: fallbackData } = await supabase
           .from('sensitive_user_data')
           .select('birthday')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
+        
+        sensitiveData = fallbackData;
+      }
+      
+      if (authUser || sensitiveData) { // Continue if we have any data
 
         // Calculate age
         let age = null;
@@ -110,10 +132,10 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
         }
 
         setAccountInfo({
-          email: authUser.email || '',
+          email: authUser?.email || 'Unable to load',
           birthday: sensitiveData?.birthday || null,
           age: age,
-          last_sign_in: authUser.last_sign_in_at || null
+          last_sign_in: authUser?.last_sign_in_at || null
         });
       }
 
