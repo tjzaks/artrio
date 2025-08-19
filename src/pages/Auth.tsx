@@ -63,6 +63,7 @@ const Auth = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [birthdayText, setBirthdayText] = useState('');
   const [description, setDescription] = useState('');
@@ -286,7 +287,8 @@ const Auth = () => {
         bio: description || '',
         personality_type: personalityType,
         first_name: firstName,
-        last_name: lastName
+        last_name: lastName,
+        phone_number: phoneNumber || null
       });
 
       if (error) {
@@ -334,6 +336,7 @@ const Auth = () => {
         setUsername('');
         setBirthdayText('');
         setDescription('');
+        setPhoneNumber('');
       }
     } catch (error) {
       toast({
@@ -661,8 +664,17 @@ const Auth = () => {
                         />
                       </div>
                     </div>
+                    <div>
+                      <Input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="Phone number (optional)"
+                        className="text-base sm:text-lg p-4 sm:p-5 md:p-6"
+                      />
+                    </div>
                     <p className="text-[10px] text-center text-muted-foreground">
-                      (Your real name stays private)
+                      (Your real name and phone number stay private)
                     </p>
                   </div>
                 )}

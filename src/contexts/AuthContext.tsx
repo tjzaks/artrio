@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string }) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string; phone_number?: string | null }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
+  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string; phone_number?: string | null }) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -154,7 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bio: userData.bio || null,
           personality_type: userData.personality_type || null,
           first_name: userData.first_name || null,
-          last_name: userData.last_name || null
+          last_name: userData.last_name || null,
+          phone_number: userData.phone_number || null
         }
       }
     });

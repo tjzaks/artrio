@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText, Phone, Mail, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +22,14 @@ interface AdminStats {
   totalPosts: number;
   todaysPosts: number;
   recentUsers: Array<{
+    id: string;
+    user_id: string;
     username: string;
+    bio: string | null;
+    avatar_url: string | null;
+    phone_number: string | null;
     created_at: string;
+    is_admin: boolean;
     ageRange: string;
   }>;
 }
@@ -116,15 +122,21 @@ const Admin = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today);
 
-      // Get ALL users sorted by most recent first
+      // Get ALL users with detailed information sorted by most recent first
       const { data: recentProfiles } = await supabase
         .from('profiles')
-        .select('username, created_at')
+        .select('id, user_id, username, bio, avatar_url, phone_number, created_at, is_admin')
         .order('created_at', { ascending: false });
 
       const recentUsers = recentProfiles?.map(profile => ({
+        id: profile.id,
+        user_id: profile.user_id,
         username: profile.username,
+        bio: profile.bio,
+        avatar_url: profile.avatar_url,
+        phone_number: profile.phone_number,
         created_at: profile.created_at,
+        is_admin: profile.is_admin,
         ageRange: 'Hidden' // Age information is now protected
       })) || [];
 
@@ -292,17 +304,64 @@ const Admin = () => {
               <CardContent>
                 <div className="space-y-4">
                   {stats?.recentUsers.map((user, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{user.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Joined {new Date(user.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">
-                          {user.ageRange}
-                        </Badge>
+                    <div key={index} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-lg">@{user.username}</p>
+                            {user.is_admin && (
+                              <Badge variant="destructive" className="text-xs">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              <span>ID: {user.user_id?.slice(-8) || 'N/A'}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
+                            </div>
+                            
+                            {user.phone_number && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-4 w-4" />
+                                <span>{user.phone_number}</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Mail className="h-4 w-4" />
+                              <span>Auth ID: {user.user_id?.slice(0, 8)}...</span>
+                            </div>
+                          </div>
+                          
+                          {user.bio && (
+                            <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                              <strong>Bio:</strong> {user.bio}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge variant="outline">
+                            {user.ageRange}
+                          </Badge>
+                          {user.avatar_url && (
+                            <div className="w-12 h-12 rounded-full bg-muted border overflow-hidden">
+                              <img 
+                                src={user.avatar_url} 
+                                alt={`${user.username} avatar`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )) || (
