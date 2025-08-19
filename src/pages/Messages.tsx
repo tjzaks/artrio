@@ -837,13 +837,19 @@ const Messages = () => {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Avatar>
+                <Avatar 
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/user/${selectedConversation.other_user.id}`)}
+                >
                   <AvatarImage src={selectedConversation.other_user.avatar_url || undefined} />
                   <AvatarFallback>
                     {selectedConversation.other_user.username.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div 
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/user/${selectedConversation.other_user.id}`)}
+                >
                   <p className="font-medium">@{selectedConversation.other_user.username}</p>
                   <p className="text-xs text-muted-foreground">
                     {selectedConversation.awaiting_response && !selectedConversation.can_send_message 
