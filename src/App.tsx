@@ -31,6 +31,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [appReady, setAppReady] = useState(false);
 
   // Only show splash on initial app load
   useEffect(() => {
@@ -39,12 +40,19 @@ const App = () => {
     if (hasShownSplash) {
       setShowSplash(false);
     }
+    
+    // Mark app as ready after a short delay to ensure everything loads
+    setTimeout(() => setAppReady(true), 100);
   }, []);
 
   const handleSplashComplete = () => {
     sessionStorage.setItem('hasShownSplash', 'true');
     setShowSplash(false);
   };
+
+  if (!appReady) {
+    return null; // Prevent flash of content
+  }
 
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
