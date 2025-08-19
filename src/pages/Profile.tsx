@@ -531,12 +531,8 @@ const Profile = () => {
               {profile && (
                 <p className="text-xs text-muted-foreground">
                   {profile.username_change_count === 0 || !profile.username_change_count
-                    ? 'You have 3 free username changes available'
-                    : profile.username_change_count === 1
-                    ? 'You have 2 free username changes remaining'
-                    : profile.username_change_count === 2
-                    ? 'You have 1 free username change remaining'
-                    : 'You\'ve used all free username changes'}
+                    ? 'You have 1 free username change available'
+                    : 'You\'ve used your free username change'}
                 </p>
               )}
             </div>
