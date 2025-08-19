@@ -140,14 +140,13 @@ const Admin = () => {
         }
       }
       
-      // Insert new trios
+      // Insert new trios using admin function to bypass RLS
       if (trios.length > 0) {
         logger.log('Attempting to create trios:', trios);
         
+        // Use RPC function that bypasses RLS for admin operations
         const { error: insertError, data } = await supabase
-          .from('trios')
-          .insert(trios)
-          .select();
+          .rpc('create_admin_trios', { trio_data: trios });
         
         if (insertError) {
           logger.error('Error inserting trios:', insertError);
@@ -155,6 +154,15 @@ const Admin = () => {
           toast({
             title: 'Error',
             description: insertError.message || 'Failed to create trios',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        if (data && !data.success) {
+          toast({
+            title: 'Error',
+            description: data.error || 'Failed to create trios',
             variant: 'destructive'
           });
           return;

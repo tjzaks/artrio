@@ -176,22 +176,32 @@ export default function Messages() {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading messages:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to load messages',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       setMessages(data || []);
       
-      // Mark messages as read
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user?.id);
+      // Mark messages as read (don't throw error if this fails)
+      if (data && data.length > 0) {
+        await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user?.id);
+      }
         
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading messages:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load messages',
+        description: error.message || 'Failed to load messages',
         variant: 'destructive'
       });
     }
