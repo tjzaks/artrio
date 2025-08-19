@@ -12,6 +12,7 @@ import AddFriend from '@/components/AddFriend';
 
 interface Friend {
   id: string;
+  user_id: string;
   username: string;
   avatar_url?: string;
   bio?: string;
@@ -61,8 +62,8 @@ export default function Friends() {
         .from('friendships')
         .select(`
           *,
-          user:profiles!friendships_user_id_fkey(id, username, avatar_url, bio),
-          friend:profiles!friendships_friend_id_fkey(id, username, avatar_url, bio)
+          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio),
+          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
         `)
         .eq('status', 'accepted')
         .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
@@ -230,7 +231,7 @@ export default function Friends() {
                       <div className="flex items-center justify-between">
                         <div 
                           className="flex items-center gap-3 flex-1"
-                          onClick={() => navigate(`/user/${friend.id}`)}
+                          onClick={() => navigate(`/user/${friend.user_id}`)}
                         >
                           <Avatar>
                             <AvatarImage src={friend.avatar_url} />
