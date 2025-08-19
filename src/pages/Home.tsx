@@ -75,6 +75,7 @@ const Home = () => {
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  // FORCE NOTIFICATIONS TO ALWAYS BE 0
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [pendingFriendRequests, setPendingFriendRequests] = useState<number>(0);
 
@@ -299,6 +300,11 @@ const Home = () => {
   };
 
   const fetchNotificationCounts = async () => {
+    // DISABLED - Always keep at 0
+    setUnreadMessages(0);
+    setPendingFriendRequests(0);
+    return;
+    
     if (!user) return;
     
     console.log('=== fetchNotificationCounts START ===');
@@ -689,24 +695,22 @@ const Home = () => {
               )}
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2 relative">
                 <User className="h-4 w-4" />
+                {/* DISABLED BADGE
                 {pendingFriendRequests > 0 && (
                   <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     FR:{pendingFriendRequests}
                   </div>
                 )}
+                */}
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => {
-                  // Force clear notifications immediately
-                  setUnreadMessages(0);
-                  navigate('/messages');
-                }} 
+                onClick={() => navigate('/messages')} 
                 className="h-8 px-2 relative"
               >
                 <MessageSquare className="h-4 w-4" />
-                {/* DEBUG: Always show badge with actual value */}
+                {/* DISABLED BADGE
                 <div 
                   className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center"
                   onClick={(e) => {
@@ -717,6 +721,7 @@ const Home = () => {
                 >
                   M:{unreadMessages}
                 </div>
+                */}
               </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
