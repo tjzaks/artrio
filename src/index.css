@@ -10,6 +10,25 @@
 */
 
 @layer base {
+  /* Prevent mobile scrolling issues */
+  html, body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
+  #root {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Support for dynamic viewport height on mobile */
+  @supports (height: 100dvh) {
+    #root {
+      min-height: 100dvh;
+    }
+  }
+  
   :root {
     /* Clean backgrounds */
     --background: 0 0% 100%;
