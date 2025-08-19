@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
+import { LogOut, Send, Users, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -75,9 +75,11 @@ const Home = () => {
   const [inQueue, setInQueue] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     if (user) {
+      fetchUserProfile();
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
@@ -111,6 +113,24 @@ const Home = () => {
       return () => clearInterval(timer);
     }
   }, [canPost, secondsUntilNextPost]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile) {
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      logger.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchTodaysTrio = async () => {
     try {
@@ -479,12 +499,17 @@ const Home = () => {
       <header className="sticky top-0 z-40 navigation-glass">
         <div className="p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
               {isSubscribed && (
                 <Badge className="badge-green text-xs px-2 py-0 pulse">
                   Live
                 </Badge>
+              )}
+              {userProfile && (
+                <div className="text-sm font-medium">
+                  Hey @{userProfile.username}
+                </div>
               )}
             </div>
             <div className="flex items-center gap-1">
@@ -500,8 +525,19 @@ const Home = () => {
                   <Shield className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="h-8 px-2">
-                <Settings className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/profile')} 
+                className="h-8 w-8 p-0 rounded-full hover:bg-muted"
+                title="Your Profile"
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={userProfile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {userProfile?.username?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 px-2">
                 <LogOut className="h-4 w-4" />
