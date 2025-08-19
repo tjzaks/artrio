@@ -4,21 +4,29 @@ const config: CapacitorConfig = {
   appId: 'com.szakacsmedia.artrio',
   appName: 'Artrio',
   webDir: 'dist',
+  ios: {
+    preferredContentMode: 'mobile',
+    backgroundColor: '#000000',
+    contentInset: 'automatic',
+    scrollEnabled: false,
+    allowsLinkPreview: false,
+    overrideUserAgent: 'Artrio iOS App'
+  },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 3000,
+      launchShowDuration: 0, // We'll handle splash in the app
       launchAutoHide: true,
-      backgroundColor: "#ffffffff",
+      backgroundColor: "#000000",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
-      showSpinner: true,
-      androidSpinnerStyle: "large",
-      iosSpinnerStyle: "small",
-      spinnerColor: "#999999",
+      showSpinner: false,
       splashFullScreen: true,
-      splashImmersive: true,
-      layoutName: "launch_screen",
-      useDialog: true,
+      splashImmersive: true
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true
     },
     Camera: {
       permissions: ['camera', 'photos']
