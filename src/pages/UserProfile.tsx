@@ -274,13 +274,29 @@ const UserProfile = () => {
           .single();
 
         if (userProfile && targetProfile) {
-          // Delete friendship
-          const { error } = await supabase
+          // Delete friendship - need to check both directions
+          const { data: existingFriendship, error: findError } = await supabase
             .from('friendships')
-            .delete()
-            .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${targetProfile.id}),and(user_id.eq.${targetProfile.id},friend_id.eq.${userProfile.id})`);
+            .select('id')
+            .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${targetProfile.id}),and(user_id.eq.${targetProfile.id},friend_id.eq.${userProfile.id})`)
+            .single();
 
-          if (error) throw error;
+          if (findError) {
+            console.error('Error finding friendship:', findError);
+            throw findError;
+          }
+
+          if (existingFriendship) {
+            const { error: deleteError } = await supabase
+              .from('friendships')
+              .delete()
+              .eq('id', existingFriendship.id);
+
+            if (deleteError) {
+              console.error('Error deleting friendship:', deleteError);
+              throw deleteError;
+            }
+          }
 
           setFriendStatus('none');
           setUnfriendClicks(0);
