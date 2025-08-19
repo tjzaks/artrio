@@ -29,11 +29,17 @@ Example of good explanation:
 ## PROJECT MEMORY - IMPORTANT
 
 **ALWAYS follow these git workflow rules for this project:**
-1. **BEFORE starting any work**: 
+1. **CONTINUOUSLY SYNC LOCAL FILES** (Keep Toby's computer up-to-date):
+   - At the START of EVERY session: Full sync check
+   - PERIODICALLY during work: Check for Tyler's updates (every 10-15 mins)
    - Check BOTH branches for updates: `git fetch --all`
    - Review recent commits on main: `git log --oneline -10 origin/main`
    - Review recent commits on dev: `git log --oneline -10 origin/dev`
-   - Pull the latest changes from dev: `git pull origin dev`
+   - Pull ALL changes immediately: 
+     - `git pull origin dev` (always)
+     - If Tyler made changes to main that affect dev, merge them:
+       - `git merge origin/main` (if needed)
+   - VERIFY files are synced: Check that local files match GitHub
 2. Work on the `dev` branch (Toby works here)
 3. After making any code changes, AUTOMATICALLY commit and push to the dev branch
 4. **COMMIT MESSAGES FOR TYLER** - Structure commits to help Tyler understand:
@@ -66,6 +72,18 @@ Example of good explanation:
 - **Toby**: Works on `dev` branch
 - Always check BOTH branches for updates as features may be developed in parallel
 - Tyler may merge important fixes directly to main that need to be pulled into dev
+
+**KEEPING TOBY'S FILES IN SYNC** (CRITICAL):
+- **PROACTIVE SYNCING**: Don't wait for Toby to ask - automatically pull Tyler's changes
+- **REGULAR CHECKS**: Every 10-15 minutes during work sessions, silently check for updates
+- **MERGE STRATEGY**: If Tyler updates main with important fixes:
+  1. Pull latest dev: `git pull origin dev`
+  2. Fetch all: `git fetch --all`
+  3. If main has critical updates: `git merge origin/main`
+  4. Resolve any conflicts (explain simply to Toby what's happening)
+  5. Push merged changes: `git push origin dev`
+- **NOTIFY TOBY**: When pulling Tyler's changes, say something like:
+  "Hey, I just grabbed Tyler's latest updates - you now have [describe what changed in simple terms]"
 
 This is a standing instruction for all work in this repository.
 
