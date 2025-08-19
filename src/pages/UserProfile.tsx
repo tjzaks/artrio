@@ -301,10 +301,10 @@ const UserProfile = () => {
         setUnfriendClicks(0);
       }
     } else {
-      // Set timer to reset clicks after 3 seconds
+      // Set timer to reset clicks after 8 seconds
       const timer = setTimeout(() => {
         setUnfriendClicks(0);
-      }, 3000);
+      }, 8000);
       setUnfriendTimer(timer);
     }
   };
