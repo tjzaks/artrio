@@ -288,16 +288,27 @@ const Home = () => {
       
       if (conversations && conversations.length > 0) {
         const conversationIds = conversations.map(c => c.id);
-        const { count: unreadCount } = await supabase
+        
+        // Debug: Log what we're querying
+        console.log('Checking unread messages for conversations:', conversationIds);
+        
+        const { data: unreadMessages, count: unreadCount, error: messageError } = await supabase
           .from('messages')
-          .select('*', { count: 'exact', head: true })
+          .select('id, conversation_id, sender_id, is_read', { count: 'exact' })
           .in('conversation_id', conversationIds)
           .eq('is_read', false)
           .neq('sender_id', user.id);
         
+        if (messageError) {
+          console.error('Error fetching unread messages:', messageError);
+        }
+        
+        console.log('Unread messages found:', unreadMessages);
+        console.log('Unread count:', unreadCount);
+        
         setUnreadMessages(unreadCount || 0);
       } else {
-        // No conversations, so no unread messages
+        console.log('No conversations found for user');
         setUnreadMessages(0);
       }
       

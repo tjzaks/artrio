@@ -679,8 +679,7 @@ const Auth = () => {
                           onChange={(e) => setFirstName(e.target.value)}
                           placeholder="First name"
                           className="text-base sm:text-lg p-4 sm:p-5 md:p-6"
-                          autoFocus
-                        />
+                                                  />
                       </div>
                       <div>
                         <Input
@@ -707,8 +706,7 @@ const Auth = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your.email@example.com"
                       className="text-lg p-6 text-center"
-                      autoFocus
-                    />
+                                          />
                   </div>
                 )}
 
@@ -724,8 +722,7 @@ const Auth = () => {
                         "text-lg p-6 text-center",
                         phoneError && "border-red-500 focus:border-red-500"
                       )}
-                      autoFocus
-                    />
+                                          />
                     {phoneError && (
                       <p className="text-xs text-red-500 text-center">{phoneError}</p>
                     )}
@@ -775,8 +772,7 @@ const Auth = () => {
                         }}
                         placeholder="@username"
                         className="text-lg p-6 text-center pr-12"
-                        autoFocus
-                      />
+                                              />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         {checkingUsername && (
                           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -811,8 +807,7 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Create a password"
                         className="text-lg p-6 pr-12"
-                        autoFocus
-                      />
+                                              />
                       <Button
                         type="button"
                         variant="ghost"
@@ -974,8 +969,7 @@ const Auth = () => {
                       placeholder="MM/DD/YYYY"
                       className="text-lg p-6 text-center font-mono"
                       maxLength={10}
-                      autoFocus
-                    />
+                                          />
                     <p className="text-sm text-center text-muted-foreground">
                       We'll celebrate with you! 🥳
                     </p>
@@ -1119,8 +1113,7 @@ const Auth = () => {
                       placeholder="Tell your trio something fun about yourself..."
                       className="w-full min-h-[120px] p-4 text-base rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                       maxLength={150}
-                      autoFocus
-                    />
+                                          />
                     <div className="space-y-1">
                       <p className="text-xs text-center text-muted-foreground">
                         {description.length}/150 characters

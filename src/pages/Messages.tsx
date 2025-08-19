@@ -54,6 +54,10 @@ export default function Messages() {
     if (user) {
       loadConversations();
       const unsubscribe = subscribeToMessages();
+      
+      // Clear all notifications when opening messages page
+      clearAllNotifications();
+      
       return () => {
         unsubscribe();
       };
@@ -219,14 +223,19 @@ export default function Messages() {
       
       setMessages(data || []);
       
-      // Mark messages as read (don't throw error if this fails)
+      // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('messages')
           .update({ is_read: true })
           .eq('conversation_id', conversationId)
-          .neq('sender_id', user?.id)
-          .eq('is_read', false); // Only update unread messages
+          .neq('sender_id', user?.id); // Only mark messages from other users as read
+        
+        if (updateError) {
+          console.error('Error marking messages as read:', updateError);
+        } else {
+          console.log('Marked messages as read in conversation:', conversationId);
+        }
       }
         
     } catch (error: any) {
@@ -279,6 +288,37 @@ export default function Messages() {
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!user) return;
+    
+    try {
+      // Get all conversations for this user
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      
+      if (conversations && conversations.length > 0) {
+        const conversationIds = conversations.map(c => c.id);
+        
+        // Mark all messages as read
+        const { error } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', user.id);
+        
+        if (error) {
+          console.error('Error clearing notifications:', error);
+        } else {
+          console.log('Cleared all message notifications');
+        }
+      }
+    } catch (error) {
+      console.error('Error in clearAllNotifications:', error);
     }
   };
 
