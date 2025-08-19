@@ -90,6 +90,16 @@ const Messages = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Fetch messages when a conversation is selected
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+      markAsRead(selectedConversation.id);
+    } else {
+      setMessages([]);
+    }
+  }, [selectedConversation]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
