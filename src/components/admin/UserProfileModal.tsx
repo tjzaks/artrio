@@ -76,23 +76,20 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // Fetch auth user data (email) - using a different approach since admin API might not be available
-      // We'll get the email from the auth.users table via RPC or fallback
+      // Fetch auth user data (email) using admin RPC function
       let authUser: any = null;
       try {
-        // Try to get user email via profile relationship
-        const { data: userData } = await supabase
-          .from('auth.users')
-          .select('email, last_sign_in_at')
-          .eq('id', userId)
-          .single();
+        const { data: userData, error: authError } = await supabase
+          .rpc('get_user_email_for_admin', { target_user_id: userId });
         
-        authUser = userData;
+        if (!authError && userData && userData.length > 0) {
+          authUser = userData[0];
+        }
       } catch (error) {
         logger.warn('Could not fetch auth user data:', error);
       }
       
-      if (authUser) {
+      if (authUser || true) { // Continue even if we can't get email
         // Fetch sensitive data (birthday)
         const { data: sensitiveData } = await supabase
           .from('sensitive_user_data')
