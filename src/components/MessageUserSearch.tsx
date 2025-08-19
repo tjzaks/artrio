@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ interface User {
 export default function MessageUserSearch() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
@@ -69,39 +71,44 @@ export default function MessageUserSearch() {
   };
 
   const startConversation = async (targetUser: User) => {
-    console.log('Starting conversation with user:', {
-      targetUserId: targetUser.user_id,
-      targetUsername: targetUser.username,
-      currentUserId: user?.id
-    });
-
     if (!user?.id) {
-      console.error('No current user ID');
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to send messages',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!targetUser.user_id) {
+      toast({
+        title: 'Error',
+        description: 'Invalid user selected',
+        variant: 'destructive'
+      });
       return;
     }
 
     try {
       // Check if conversation already exists
-      const query = `and(user1_id.eq.${user.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user.id})`;
-      console.log('Query:', query);
-      
       const { data: existing, error: queryError } = await supabase
         .from('conversations')
         .select('id')
-        .or(query);
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user.id})`);
 
       if (queryError) {
-        console.error('Query error:', queryError);
+        toast({
+          title: 'Error finding conversation',
+          description: queryError.message,
+          variant: 'destructive'
+        });
+        return;
       }
-
-      console.log('Existing conversations:', existing);
 
       let conversationId;
       
       // Check if we found an existing conversation
       if (!existing || existing.length === 0) {
-        console.log('Creating new conversation between:', user.id, 'and', targetUser.user_id);
-        
         // Create new conversation
         const { data: newConv, error } = await supabase
           .from('conversations')
@@ -113,18 +120,15 @@ export default function MessageUserSearch() {
           .single();
         
         if (error) {
-          console.error('Error creating conversation:', error);
-          console.error('Insert data was:', {
-            user1_id: user.id,
-            user2_id: targetUser.user_id
+          toast({
+            title: 'Failed to create conversation',
+            description: error.message,
+            variant: 'destructive'
           });
-          alert(`Failed to create conversation: ${error.message}`);
-          throw error;
+          return;
         }
-        console.log('Created conversation:', newConv);
         conversationId = newConv.id;
       } else {
-        console.log('Using existing conversation:', existing[0]);
         conversationId = existing[0].id;
       }
 
@@ -133,12 +137,14 @@ export default function MessageUserSearch() {
       setSearchQuery('');
       setUsers([]);
       
-      console.log('Navigating to conversation:', conversationId);
       // Force reload to ensure conversation appears
       window.location.href = `/messages?conversation=${conversationId}`;
-    } catch (error) {
-      console.error('Error in startConversation:', error);
-      alert('Failed to start conversation. Check console for details.');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to start conversation',
+        variant: 'destructive'
+      });
     }
   };
 
