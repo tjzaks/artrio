@@ -105,10 +105,10 @@ const Admin = () => {
         .delete()
         .eq('date', today);
       
-      // Get all users
+      // Get all users - we need profile IDs not user IDs
       const { data: users } = await supabase
         .from('profiles')
-        .select('user_id, username');
+        .select('id, user_id, username');
       
       if (!users || users.length < 3) {
         toast({
@@ -123,12 +123,13 @@ const Admin = () => {
       const shuffled = [...users].sort(() => Math.random() - 0.5);
       
       // Create trios (groups of 5 - matching the schema)
+      // NOTE: The trios table uses auth.users IDs, not profile IDs
       const trios = [];
       for (let i = 0; i < shuffled.length; i += 5) {
         if (i + 2 < shuffled.length) {
           // At minimum we need 3 users for a trio
           const trio: any = {
-            user1_id: shuffled[i].user_id,
+            user1_id: shuffled[i].user_id,  // Using user_id (auth.users ID)
             user2_id: shuffled[i + 1].user_id,
             user3_id: shuffled[i + 2].user_id,
             user4_id: shuffled[i + 3]?.user_id || null,
@@ -141,19 +142,25 @@ const Admin = () => {
       
       // Insert new trios
       if (trios.length > 0) {
-        const { error: insertError } = await supabase
+        logger.log('Attempting to create trios:', trios);
+        
+        const { error: insertError, data } = await supabase
           .from('trios')
-          .insert(trios);
+          .insert(trios)
+          .select();
         
         if (insertError) {
           logger.error('Error inserting trios:', insertError);
+          logger.error('Trio data that failed:', trios);
           toast({
             title: 'Error',
-            description: 'Failed to create trios',
+            description: insertError.message || 'Failed to create trios',
             variant: 'destructive'
           });
           return;
         }
+        
+        logger.log('Successfully created trios:', data);
         
         toast({
           title: 'Trios randomized',
