@@ -36,7 +36,29 @@ Example of good explanation:
    - Pull the latest changes from dev: `git pull origin dev`
 2. Work on the `dev` branch (Toby works here)
 3. After making any code changes, AUTOMATICALLY commit and push to the dev branch
-4. Use descriptive commit messages
+4. **COMMIT MESSAGES FOR TYLER** - Structure commits to help Tyler understand:
+   ```
+   [Brief title of what we did]
+   
+   What we were trying to accomplish:
+   - [Goal 1]
+   - [Goal 2]
+   
+   What we fixed:
+   - ✅ [Fixed issue 1]
+   - ✅ [Fixed issue 2]
+   
+   Challenges/bugs discovered:
+   - 🐛 [Bug we found]
+   - ⚠️ [Issue that needs attention]
+   
+   Still needs fixing:
+   - ❌ [Unresolved issue 1]
+   - ❌ [Unresolved issue 2]
+   
+   Files changed: [List key files]
+   Testing: [How to test the changes]
+   ```
 5. Push changes immediately after committing
 
 **COLLABORATION NOTE**: 
