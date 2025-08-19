@@ -171,8 +171,8 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
       </Button>
 
       {isOpen && (
-        <Card className="absolute right-0 top-12 w-80 z-50 shadow-lg">
-          <CardContent className="p-0">
+        <Card className="absolute right-0 top-12 w-80 z-50 shadow-lg bg-background border">
+          <CardContent className="p-0 bg-background">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-medium">Notifications</h3>
               <div className="flex items-center gap-2">
