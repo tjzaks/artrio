@@ -690,8 +690,8 @@ const Home = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2 relative">
                 <User className="h-4 w-4" />
                 {pendingFriendRequests > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {pendingFriendRequests}
+                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    FR:{pendingFriendRequests}
                   </div>
                 )}
               </Button>
@@ -706,20 +706,17 @@ const Home = () => {
                 className="h-8 px-2 relative"
               >
                 <MessageSquare className="h-4 w-4" />
-                {unreadMessages > 0 && (
-                  <div 
-                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Badge clicked - unreadMessages value:', unreadMessages);
-                      console.log('Type of unreadMessages:', typeof unreadMessages);
-                      alert(`Notification count: ${unreadMessages}\nClick OK to reset to 0`);
-                      setUnreadMessages(0);
-                    }}
-                  >
-                    {unreadMessages > 99 ? '99+' : unreadMessages}
-                  </div>
-                )}
+                {/* DEBUG: Always show badge with actual value */}
+                <div 
+                  className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    alert(`Messages count: ${unreadMessages}\nType: ${typeof unreadMessages}\nClick OK to reset to 0`);
+                    setUnreadMessages(0);
+                  }}
+                >
+                  M:{unreadMessages}
+                </div>
               </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
