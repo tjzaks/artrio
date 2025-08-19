@@ -126,14 +126,27 @@ const Home = () => {
     }
   }, [user]);
 
-  // Refresh notification counts when component regains focus
+  // Refresh notification counts when component regains focus or visibility changes
   useEffect(() => {
     const handleFocus = () => {
-      fetchNotificationCounts();
+      if (user) {
+        fetchNotificationCounts();
+      }
+    };
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchNotificationCounts();
+      }
     };
     
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user]);
 
   // Add keyboard shortcut for health check (Ctrl/Cmd + H + H)
@@ -273,7 +286,7 @@ const Home = () => {
         .select('id')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
       
-      if (conversations) {
+      if (conversations && conversations.length > 0) {
         const conversationIds = conversations.map(c => c.id);
         const { count: unreadCount } = await supabase
           .from('messages')
@@ -283,6 +296,9 @@ const Home = () => {
           .neq('sender_id', user.id);
         
         setUnreadMessages(unreadCount || 0);
+      } else {
+        // No conversations, so no unread messages
+        setUnreadMessages(0);
       }
       
       // Get pending friend requests count
@@ -300,9 +316,14 @@ const Home = () => {
           .eq('status', 'pending');
         
         setPendingFriendRequests(requestCount || 0);
+      } else {
+        setPendingFriendRequests(0);
       }
     } catch (error) {
       logger.error('Error fetching notification counts:', error);
+      // Reset counts on error
+      setUnreadMessages(0);
+      setPendingFriendRequests(0);
     }
   };
 
@@ -614,7 +635,18 @@ const Home = () => {
                   </div>
                 )}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2 relative">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  navigate('/messages');
+                  // Clear message notifications after navigating
+                  setTimeout(() => {
+                    setUnreadMessages(0);
+                  }, 500);
+                }} 
+                className="h-8 px-2 relative"
+              >
                 <MessageSquare className="h-4 w-4" />
                 {unreadMessages > 0 && (
                   <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
