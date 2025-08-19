@@ -351,46 +351,45 @@ const Home = () => {
   const joinQueue = async () => {
     setJoiningQueue(true);
     try {
-      // First get the user's profile_id
-      logger.info('Joining queue for user:', user?.id);
-      
-      const { data: profile, error: profileError } = await supabase
+      // Get the user's profile_id
+      const { data: profile } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user?.id)
         .single();
       
-      if (profileError || !profile) {
-        logger.error('Profile fetch error:', profileError);
-        throw new Error('Could not find user profile');
+      if (!profile) {
+        throw new Error('Profile not found');
       }
-      
-      logger.info('Found profile:', profile.id);
       
       const { data, error } = await supabase.rpc('join_trio_queue', {
         p_profile_id: profile.id
       });
       
-      logger.info('Queue join response:', { data, error });
-      
-      if (error) throw error;
-      
-      // The function returns {success: boolean, matched: boolean, trio_id?: string, queue_position?: number}
-      if (data?.success) {
-        if (data.matched && data.trio_id) {
-          toast({
-            title: 'Success!',
-            description: 'You have been matched with a trio!'
-          });
-          // Refresh the trio
-          await fetchTodaysTrio();
-        } else {
+      if (error) {
+        // Check for specific error types
+        if (error.message?.includes('Already in queue')) {
           setInQueue(true);
-          setQueueCount(data.queue_position || 1);
-          // No toast notification when joining queue
+          return;
         }
+        if (error.message?.includes('Already in a trio')) {
+          await fetchTodaysTrio();
+          return;
+        }
+        throw error;
+      }
+      
+      // Handle success response
+      if (data?.matched) {
+        toast({
+          title: 'Matched!',
+          description: 'You\'ve been matched into a trio!'
+        });
+        await fetchTodaysTrio();
       } else {
-        throw new Error(data?.error || 'Failed to join queue');
+        // Just joined queue
+        setInQueue(true);
+        setQueueCount(data?.queue_position || 1);
       }
     } catch (error) {
       logger.error('Error joining queue:', error);
