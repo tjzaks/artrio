@@ -241,14 +241,17 @@ export default function Messages() {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || sending) return;
 
+    const messageContent = newMessage.trim();
     setSending(true);
+    setNewMessage(''); // Clear input immediately for better UX
+    
     try {
       const { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: selectedConversation.id,
           sender_id: user?.id,
-          content: newMessage.trim(),
+          content: messageContent,
           is_read: false
         })
         .select()
@@ -258,13 +261,16 @@ export default function Messages() {
 
       // Add message to local state immediately
       setMessages(prev => [...prev, data]);
-      setNewMessage('');
       
-      // Update conversation's last message
-      await loadConversations();
+      // Don't reload conversations immediately - let real-time handle it
+      // This prevents the conversation list from jumping around
+      setTimeout(() => {
+        loadConversations();
+      }, 100);
       
     } catch (error) {
       console.error('Error sending message:', error);
+      setNewMessage(messageContent); // Restore message on error
       toast({
         title: 'Error',
         description: 'Failed to send message',
@@ -469,7 +475,10 @@ export default function Messages() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                sendMessage();
+                e.stopPropagation();
+                if (!sending && newMessage.trim()) {
+                  sendMessage();
+                }
               }}
               className="flex gap-2"
             >
@@ -477,7 +486,17 @@ export default function Messages() {
                 placeholder="Type a message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!sending && newMessage.trim()) {
+                      sendMessage();
+                    }
+                  }
+                }}
                 disabled={sending}
+                autoFocus
               />
               <Button type="submit" disabled={sending || !newMessage.trim()}>
                 <Send className="h-4 w-4" />
