@@ -5,14 +5,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## PROJECT MEMORY - IMPORTANT
 
 **ALWAYS follow these git workflow rules for this project:**
-1. **BEFORE starting any work**: Pull the latest changes from the dev branch (`git pull origin dev`)
-2. Check recent commits to understand what updates have been made (`git log --oneline -10`)
-3. Work on the `dev` branch (NOT main)
-4. After making any code changes, AUTOMATICALLY commit and push to the dev branch
-5. Use descriptive commit messages
-6. Push changes immediately after committing
+1. **BEFORE starting any work**: 
+   - Check BOTH branches for updates: `git fetch --all`
+   - Review recent commits on main: `git log --oneline -10 origin/main`
+   - Review recent commits on dev: `git log --oneline -10 origin/dev`
+   - Pull the latest changes from dev: `git pull origin dev`
+2. Work on the `dev` branch (Toby works here)
+3. After making any code changes, AUTOMATICALLY commit and push to the dev branch
+4. Use descriptive commit messages
+5. Push changes immediately after committing
 
-**COLLABORATION NOTE**: This is an actively developed project with multiple contributors (Toby and his brother Tyler). Always sync with the latest changes before starting work to avoid conflicts.
+**COLLABORATION NOTE**: 
+- **Tyler (brother)**: Works primarily on `main` branch, occasionally on `dev`
+- **Toby**: Works on `dev` branch
+- Always check BOTH branches for updates as features may be developed in parallel
+- Tyler may merge important fixes directly to main that need to be pulled into dev
 
 This is a standing instruction for all work in this repository.
 
