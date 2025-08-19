@@ -187,6 +187,53 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!profile) return;
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you absolutely sure you want to permanently delete @${profile.username}'s account?\n\n` +
+      'This action CANNOT be undone. All user data will be permanently removed including:\n' +
+      '• Profile and account information\n' +
+      '• All messages and conversations\n' +
+      '• All posts and replies\n' +
+      '• All friendships and friend requests\n' +
+      '• Authentication credentials\n\n' +
+      'The user will be able to sign up again with the same email/phone after deletion.'
+    );
+    
+    if (!confirmed) return;
+    
+    // Double confirmation for safety
+    const doubleConfirmed = window.confirm(
+      `FINAL CONFIRMATION: Delete @${profile.username}'s account permanently?`
+    );
+    
+    if (!doubleConfirmed) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('admin_delete_user_account', {
+        target_user_id: profile.user_id
+      });
+      
+      if (error) {
+        logger.error('Error deleting account:', error);
+        alert(`Failed to delete account: ${error.message}`);
+        return;
+      }
+      
+      if (data?.success) {
+        alert(`Account @${profile.username} has been permanently deleted.`);
+        onClose(); // Close the modal
+      } else {
+        alert(`Failed to delete account: ${data?.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      logger.error('Error deleting account:', error);
+      alert('An error occurred while deleting the account.');
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
@@ -249,6 +296,14 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                         onClick={handleToggleAdmin}
                       >
                         {profile.is_admin ? 'Remove Admin' : 'Make Admin'}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteAccount}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete Account
                       </Button>
                     </div>
                   </div>

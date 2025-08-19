@@ -83,6 +83,7 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   const totalSteps = 6;
   const progress = (step / totalSteps) * 100;
@@ -147,13 +148,43 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
     return digitsOnly;
   };
 
-  const handlePhoneChange = (value: string) => {
+  const handlePhoneChange = async (value: string) => {
     const formatted = formatPhone(value);
     setFormData(prev => ({ ...prev, phone: formatted }));
     
     // Validate phone number
     if (value && !validatePhone(value)) {
       setPhoneError('Please enter a valid phone number');
+      return;
+    }
+    
+    // Check if phone number is already in use
+    if (validatePhone(value)) {
+      setCheckingPhone(true);
+      setPhoneError(null);
+      
+      // Extract digits only for database check
+      const digitsOnly = value.replace(/\D/g, '');
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('phone_number')
+          .eq('phone_number', digitsOnly)
+          .maybeSingle();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking phone:', error);
+        } else if (data) {
+          setPhoneError('This phone number is already registered');
+        } else {
+          setPhoneError(null);
+        }
+      } catch (error) {
+        console.error('Error checking phone:', error);
+      } finally {
+        setCheckingPhone(false);
+      }
     } else {
       setPhoneError(null);
     }
@@ -271,14 +302,21 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
             
             <div>
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                className={phoneError ? 'border-red-500' : ''}
-              />
+              <div className="relative">
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={formData.phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={phoneError ? 'border-red-500' : ''}
+                />
+                {checkingPhone && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+              </div>
               {phoneError && (
                 <p className="text-xs text-red-500 mt-1">{phoneError}</p>
               )}
