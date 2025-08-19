@@ -226,15 +226,7 @@ const Messages = () => {
   const fetchMessages = async (conversationId: string) => {
     try {
       console.log('Fetching messages for conversation:', conversationId);
-      
-      // Get current user's profile ID for comparison
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-
-      console.log('User profile ID:', userProfile?.id);
+      console.log('Current user auth ID:', user?.id);
 
       const { data, error } = await supabase
         .from('messages')
@@ -250,15 +242,17 @@ const Messages = () => {
       console.log('Fetched messages count:', data?.length || 0);
       if (data && data.length > 0) {
         console.log('First message:', data[0]);
+        console.log('First message sender_id:', data[0].sender_id);
+        console.log('Comparing with user.id:', user?.id);
       }
       
-      // Add user_profile_id to each message for comparison
-      const messagesWithProfile = (data || []).map(msg => ({
+      // Add current_user_id to each message for comparison
+      const messagesWithUserId = (data || []).map(msg => ({
         ...msg,
-        user_profile_id: userProfile?.id
+        current_user_id: user?.id
       }));
       
-      setMessages(messagesWithProfile);
+      setMessages(messagesWithUserId);
     } catch (error) {
       logger.error('Error fetching messages:', error);
       console.error('Full error:', error);
@@ -837,7 +831,7 @@ const Messages = () => {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => {
-                const isOwn = message.sender_id === message.user_profile_id;
+                const isOwn = message.sender_id === message.current_user_id;
                 return (
                   <div
                     key={message.id}
