@@ -608,15 +608,15 @@ const Profile = () => {
               {saving ? 'Saving...' : (profile ? 'Save Profile' : 'Create Profile')}
             </Button>
 
-            {/* Sign Out Button - Small and subtle */}
+            {/* Sign Out Button */}
             <div className="pt-4 border-t">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="destructive"
+                size="default"
                 onClick={signOut}
-                className="w-full text-muted-foreground hover:text-foreground"
+                className="w-full hover:bg-destructive/90 hover:text-white transition-colors"
               >
-                <LogOut className="h-3 w-3 mr-2" />
+                <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </Button>
             </div>
