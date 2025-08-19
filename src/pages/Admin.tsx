@@ -133,7 +133,7 @@ const Admin = () => {
       // Get ALL users sorted by most recent first with more details
       const { data: recentProfiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url, created_at, is_admin, is_banned')
+        .select('user_id, username, avatar_url, created_at, is_admin')
         .order('created_at', { ascending: false });
 
       if (profilesError) {
@@ -152,7 +152,7 @@ const Admin = () => {
         created_at: profile.created_at || new Date().toISOString(),
         ageRange: 'Hidden', // Age information is now protected
         is_admin: profile.is_admin || false,
-        is_banned: profile.is_banned || false
+        is_banned: false // Column doesn't exist yet in production
       }));
       
       logger.log('Mapped recentUsers:', recentUsers.length, recentUsers);
