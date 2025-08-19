@@ -125,10 +125,16 @@ const Admin = () => {
         .gte('created_at', today);
 
       // Get ALL users sorted by most recent first with more details
-      const { data: recentProfiles } = await supabase
+      const { data: recentProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, username, avatar_url, created_at, is_admin, is_banned')
         .order('created_at', { ascending: false });
+
+      if (profilesError) {
+        logger.error('Error fetching profiles:', profilesError);
+      }
+      
+      logger.log('Fetched profiles:', recentProfiles?.length || 0, recentProfiles);
 
       const recentUsers = recentProfiles?.map(profile => ({
         user_id: profile.user_id,
@@ -303,49 +309,55 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {stats?.recentUsers.map((user) => (
-                    <div 
-                      key={user.user_id} 
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => {
-                        setSelectedUserId(user.user_id);
-                        setIsProfileModalOpen(true);
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {user.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">@{user.username}</p>
-                            {user.is_admin && (
-                              <Badge variant="default" className="text-xs bg-purple-600">
-                                Admin
-                              </Badge>
-                            )}
-                            {user.is_banned && (
-                              <Badge variant="destructive" className="text-xs">
-                                Banned
-                              </Badge>
-                            )}
+                  {loading ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      Loading users...
+                    </p>
+                  ) : stats?.recentUsers && stats.recentUsers.length > 0 ? (
+                    stats.recentUsers.map((user) => (
+                      <div 
+                        key={user.user_id} 
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setSelectedUserId(user.user_id);
+                          setIsProfileModalOpen(true);
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {user.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">@{user.username}</p>
+                              {user.is_admin && (
+                                <Badge variant="default" className="text-xs bg-purple-600">
+                                  Admin
+                                </Badge>
+                              )}
+                              {user.is_banned && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Banned
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Joined {new Date(user.created_at).toLocaleDateString()}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            Joined {new Date(user.created_at).toLocaleDateString()}
-                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">
+                            {user.ageRange}
+                          </Badge>
+                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">
-                          {user.ageRange}
-                        </Badge>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  )) || (
+                    ))
+                  ) : (
                     <p className="text-muted-foreground text-center py-4">
                       No users found
                     </p>
