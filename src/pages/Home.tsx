@@ -82,6 +82,16 @@ const Home = () => {
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
+      
+      // Set up subscriptions and store cleanup functions
+      const cleanupTrio = subscribeToTrioUpdates();
+      const cleanupQueue = subscribeToQueueUpdates();
+      
+      // Return cleanup function
+      return () => {
+        if (cleanupTrio) cleanupTrio();
+        if (cleanupQueue) cleanupQueue();
+      };
     }
   }, [user]);
 
@@ -356,17 +366,44 @@ const Home = () => {
       
       if (error) throw error;
       
-      if (data?.action === 'trio_created' || data?.action === 'duo_created') {
+      if (data?.action === 'trio_created') {
         toast({
-          title: 'Success!',
-          description: data.message
+          title: 'Trio Formed! 🎉',
+          description: data.message || 'Your trio is ready! Welcome to your new group.',
+          className: 'gradient-toast'
         });
-        // Refresh the trio
+        // Clear queue state and refresh trio
+        setInQueue(false);
+        setQueueCount(0);
         await fetchTodaysTrio();
+        
+        // Scroll to trio section after a brief delay
+        setTimeout(() => {
+          const trioSection = document.querySelector('.content-card');
+          if (trioSection) {
+            trioSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+        
+      } else if (data?.action === 'duo_created') {
+        toast({
+          title: 'Duo Created! 👥',
+          description: data.message || 'Duo formed! Looking for one more person...',
+          className: 'gradient-toast'
+        });
+        // Clear queue state and refresh trio
+        setInQueue(false);
+        setQueueCount(0);
+        await fetchTodaysTrio();
+        
       } else if (data?.action === 'queued') {
         setInQueue(true);
         setQueueCount(data.queue_position);
-        // No toast notification when joining queue
+        toast({
+          title: 'Joined Queue! ⏳',
+          description: `You're in position ${data.queue_position}. We'll notify you when your trio is ready!`,
+          className: 'gradient-toast'
+        });
       }
     } catch (error) {
       logger.error('Error joining queue:', error);
@@ -395,6 +432,92 @@ const Home = () => {
     } catch (error) {
       logger.error('Error leaving queue:', error);
     }
+  };
+
+  const subscribeToTrioUpdates = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('trio_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trios',
+          filter: `date=eq.${new Date().toISOString().split('T')[0]}`
+        },
+        async (payload) => {
+          const newTrio = payload.new;
+          logger.info('New trio created:', newTrio);
+          
+          // Get user's profile to check if they're in this trio
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+          const isUserInTrio = userProfile && (
+            newTrio.user1_id === userProfile.id ||
+            newTrio.user2_id === userProfile.id ||
+            newTrio.user3_id === userProfile.id
+          );
+
+          if (isUserInTrio) {
+            // User is in the new trio - show success message and refresh
+            toast({
+              title: 'Trio Formed! 🎉',
+              description: 'Your trio is ready! Welcome to your new group.',
+              className: 'gradient-toast'
+            });
+            
+            // Clear queue state
+            setInQueue(false);
+            setQueueCount(0);
+            
+            // Refresh trio data and navigate to home
+            await fetchTodaysTrio();
+            
+            // Add a small delay for better UX, then scroll to trio section
+            setTimeout(() => {
+              const trioSection = document.querySelector('.content-card');
+              if (trioSection) {
+                trioSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 500);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const subscribeToQueueUpdates = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('queue_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trio_queue'
+        },
+        async () => {
+          // Queue changed - update queue status for all users
+          await checkQueueStatus();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handleReplySubmit = async (postId: string) => {
@@ -708,9 +831,19 @@ const Home = () => {
                 </h2>
                 <p className="text-muted-foreground text-sm">
                   {inQueue 
-                    ? `${3 - queueCount} more ${3 - queueCount === 1 ? 'person' : 'people'} needed for a trio`
+                    ? queueCount === 1 
+                      ? '2 more people needed for a trio'
+                      : queueCount === 2
+                      ? '1 more person needed for a trio'
+                      : `${Math.max(0, 3 - queueCount)} more ${Math.max(0, 3 - queueCount) === 1 ? 'person' : 'people'} needed for a trio`
                     : 'Join the queue to get matched instantly when others are ready'}
                 </p>
+                {inQueue && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{queueCount} {queueCount === 1 ? 'person' : 'people'} in queue</span>
+                  </div>
+                )}
               </div>
               
               {inQueue ? (
