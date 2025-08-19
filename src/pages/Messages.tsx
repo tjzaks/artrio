@@ -56,8 +56,8 @@ export default function Messages() {
       loadConversations();
       const unsubscribe = subscribeToMessages();
       
-      // Clear all notifications when opening messages page
-      clearAllNotifications();
+      // Don't clear notifications here - only when a specific conversation is opened
+      // clearAllNotifications();
       
       return () => {
         unsubscribe();
@@ -292,36 +292,8 @@ export default function Messages() {
     }
   };
 
-  const clearAllNotifications = async () => {
-    if (!user) return;
-    
-    try {
-      // Get all conversations for this user
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-      
-      if (conversations && conversations.length > 0) {
-        const conversationIds = conversations.map(c => c.id);
-        
-        // Mark all messages as read
-        const { error } = await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .in('conversation_id', conversationIds)
-          .neq('sender_id', user.id);
-        
-        if (error) {
-          console.error('Error clearing notifications:', error);
-        } else {
-          console.log('Cleared all message notifications');
-        }
-      }
-    } catch (error) {
-      console.error('Error in clearAllNotifications:', error);
-    }
-  };
+  // Removed clearAllNotifications - messages should only be marked as read
+  // when the specific conversation is opened, not when the Messages page loads
 
   const subscribeToMessages = () => {
     const channel = supabase

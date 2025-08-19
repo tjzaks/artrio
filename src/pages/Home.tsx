@@ -827,7 +827,7 @@ const Home = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => {
-                  setUnreadMessages(0); // Clear immediately on click
+                  // Don't clear unread count here - let it persist until conversations are opened
                   navigate('/messages');
                 }} 
                 className="h-8 px-2 relative"
