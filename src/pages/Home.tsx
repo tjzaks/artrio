@@ -352,6 +352,8 @@ const Home = () => {
     setJoiningQueue(true);
     try {
       // First get the user's profile_id
+      logger.info('Joining queue for user:', user?.id);
+      
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -359,12 +361,17 @@ const Home = () => {
         .single();
       
       if (profileError || !profile) {
+        logger.error('Profile fetch error:', profileError);
         throw new Error('Could not find user profile');
       }
+      
+      logger.info('Found profile:', profile.id);
       
       const { data, error } = await supabase.rpc('join_trio_queue', {
         p_profile_id: profile.id
       });
+      
+      logger.info('Queue join response:', { data, error });
       
       if (error) throw error;
       
