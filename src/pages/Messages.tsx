@@ -850,7 +850,7 @@ const Messages = () => {
                 />
                 <Button 
                   type="submit" 
-                  disabled={sending || !newMessage.trim() || selectedConversation.is_blocked || (selectedConversation.awaiting_response && !selectedConversation.can_send_message)}
+                  disabled={sending || !newMessage.trim() || selectedConversation.is_blocked || (!isAdmin && selectedConversation.awaiting_response && !selectedConversation.can_send_message)}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
