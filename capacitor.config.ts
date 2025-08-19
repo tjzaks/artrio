@@ -19,14 +19,16 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 0, // We'll handle splash in the app
+      launchShowDuration: 500, // Show briefly while app loads
       launchAutoHide: true,
-      backgroundColor: "#000000",
+      backgroundColor: "#ffffff",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
       showSpinner: false,
       splashFullScreen: true,
-      splashImmersive: true
+      splashImmersive: true,
+      iosSpinnerStyle: "small",
+      spinnerColor: "#1BA0CC"
     },
     Keyboard: {
       resize: 'body',

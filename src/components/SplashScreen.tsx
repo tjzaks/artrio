@@ -9,11 +9,11 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Show splash for 2 seconds
+    // Show splash for 1.5 seconds (shorter for better UX)
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 300); // Wait for fade out animation
-    }, 2000);
+      setTimeout(onComplete, 200); // Wait for fade out animation
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [onComplete]);

@@ -41,8 +41,8 @@ const App = () => {
       setShowSplash(false);
     }
     
-    // Mark app as ready after a short delay to ensure everything loads
-    setTimeout(() => setAppReady(true), 100);
+    // Mark app as ready immediately
+    setAppReady(true);
   }, []);
 
   const handleSplashComplete = () => {
