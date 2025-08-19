@@ -80,12 +80,43 @@ export default function Messages() {
     }
   }, [searchParams, conversations, loading]);
 
-  // Load messages when conversation is selected
+  // Load messages and subscribe to real-time updates when conversation is selected
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
+      
+      // Subscribe to real-time updates for this specific conversation
+      const channel = supabase
+        .channel(`conversation-${selectedConversation.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${selectedConversation.id}`
+          },
+          (payload) => {
+            const newMsg = payload.new as Message;
+            console.log('New message in conversation:', newMsg);
+            
+            // Add message to the list if it's not from the current user
+            // (messages from current user are already added when sending)
+            if (newMsg.sender_id !== user?.id) {
+              setMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+            }
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        channel.unsubscribe();
+      };
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, user]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -246,7 +277,7 @@ export default function Messages() {
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel('messages')
+      .channel('realtime-messages')
       .on(
         'postgres_changes',
         {
@@ -256,14 +287,14 @@ export default function Messages() {
         },
         (payload) => {
           const newMsg = payload.new as Message;
+          console.log('New message received:', newMsg);
           
           // Add to messages if it's for the current conversation
           setMessages(prev => {
+            // Check if message already exists
             if (prev.some(m => m.id === newMsg.id)) return prev;
-            if (selectedConversation?.id === newMsg.conversation_id) {
-              return [...prev, newMsg];
-            }
-            return prev;
+            // Add message to the list
+            return [...prev, newMsg];
           });
           
           // Refresh conversations to update last message
@@ -272,7 +303,10 @@ export default function Messages() {
       )
       .subscribe();
 
+    console.log('Subscribed to messages channel');
+
     return () => {
+      console.log('Unsubscribing from messages channel');
       channel.unsubscribe();
     };
   };
