@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Send, MessageSquare, Plus, Users } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import MessageUserSearch from '@/components/MessageUserSearch';
 
 interface Message {
   id: string;
@@ -277,14 +278,7 @@ export default function Messages() {
               </Button>
               <h1 className="text-lg font-bold">Messages</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/friends')}
-              className="h-8 w-8 p-0"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <MessageUserSearch />
           </div>
         </header>
 
