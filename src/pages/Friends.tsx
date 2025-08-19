@@ -36,6 +36,7 @@ export default function Friends() {
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('friends');
 
   useEffect(() => {
     if (user) {
@@ -196,7 +197,7 @@ export default function Friends() {
       </header>
 
       <main className="p-4 space-y-4">
-        <Tabs defaultValue="friends" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">
               Friends {friends.length > 0 && `(${friends.length})`}
@@ -214,7 +215,7 @@ export default function Friends() {
                   <p className="text-muted-foreground">No friends yet</p>
                   <Button 
                     className="mt-4"
-                    onClick={() => document.querySelector('[value="add"]')?.click()}
+                    onClick={() => setActiveTab('add')}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add Friends

@@ -113,10 +113,8 @@ const Profile = () => {
         
         // Check if user is approaching or at the change limit
         const changeCount = profileData.username_change_count || 0;
-        if (changeCount === 2) {
-          setUsernameChangeWarning('This is your last free username change. Additional changes will cost $5.');
-        } else if (changeCount >= 3) {
-          setUsernameChangeWarning('You\'ve used all 3 free username changes. Additional changes cost $5.');
+        if (changeCount >= 1) {
+          setUsernameChangeWarning('You\'ve used your free username change. Additional changes cost $5.');
         }
       } else {
         // Profile should exist from signup - if not, try to create it from user metadata
@@ -287,10 +285,10 @@ const Profile = () => {
     // Check if user has exceeded free username changes
     if (profile && formData.username !== originalUsername) {
       const changeCount = profile.username_change_count || 0;
-      if (changeCount >= 3) {
+      if (changeCount >= 1) {
         toast({
           title: 'Payment Required',
-          description: 'You\'ve used all 3 free username changes. Additional changes cost $5.',
+          description: 'You\'ve used your free username change. Additional changes cost $5.',
           variant: 'destructive'
         });
         // In the future, this would trigger a payment flow
