@@ -36,6 +36,8 @@ const UserProfile = () => {
   const [isBirthday, setIsBirthday] = useState(false);
   const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'accepted'>('none');
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [unfriendClicks, setUnfriendClicks] = useState(0);
+  const [unfriendTimer, setUnfriendTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -43,6 +45,13 @@ const UserProfile = () => {
       checkBlockStatus();
       checkFriendStatus();
     }
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (unfriendTimer) {
+        clearTimeout(unfriendTimer);
+      }
+    };
   }, [userId]);
 
   const fetchUserProfile = async () => {
@@ -231,6 +240,72 @@ const UserProfile = () => {
       }
     } catch (error) {
       logger.error('Error checking friend status:', error);
+    }
+  };
+
+  const handleUnfriend = async () => {
+    if (!userId || !user) return;
+
+    // Reset timer on each click
+    if (unfriendTimer) {
+      clearTimeout(unfriendTimer);
+    }
+
+    // Increment click count
+    const newClickCount = unfriendClicks + 1;
+    setUnfriendClicks(newClickCount);
+
+    // If third click, actually unfriend
+    if (newClickCount >= 3) {
+      setSendingRequest(true);
+      try {
+        // Get current user's profile
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        // Get target user's profile
+        const { data: targetProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (userProfile && targetProfile) {
+          // Delete friendship
+          const { error } = await supabase
+            .from('friendships')
+            .delete()
+            .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${targetProfile.id}),and(user_id.eq.${targetProfile.id},friend_id.eq.${userProfile.id})`);
+
+          if (error) throw error;
+
+          setFriendStatus('none');
+          setUnfriendClicks(0);
+          toast({
+            title: 'Unfriended',
+            description: `You are no longer friends with @${profile?.username}`,
+          });
+        }
+      } catch (error) {
+        logger.error('Error unfriending:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to unfriend user',
+          variant: 'destructive'
+        });
+      } finally {
+        setSendingRequest(false);
+        setUnfriendClicks(0);
+      }
+    } else {
+      // Set timer to reset clicks after 3 seconds
+      const timer = setTimeout(() => {
+        setUnfriendClicks(0);
+      }, 3000);
+      setUnfriendTimer(timer);
     }
   };
 
@@ -465,12 +540,15 @@ const UserProfile = () => {
                       )}
                       {friendStatus === 'accepted' && (
                         <Button 
-                          variant="secondary"
+                          variant={unfriendClicks > 0 ? "destructive" : "secondary"}
                           className="flex-1"
-                          disabled
+                          onClick={handleUnfriend}
+                          disabled={sendingRequest}
                         >
                           <UserCheck className="h-4 w-4 mr-2" />
-                          Friends
+                          {unfriendClicks === 0 && 'Friends'}
+                          {unfriendClicks === 1 && 'Unfriend?'}
+                          {unfriendClicks === 2 && 'Are you sure?'}
                         </Button>
                       )}
                       <Button 
