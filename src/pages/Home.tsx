@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Users, Shield, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
+import { Send, Users, Shield, MessageSquare, PartyPopper, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -513,7 +513,7 @@ const Home = () => {
                 </div>
               )}
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
-                <UserPlus className="h-4 w-4" />
+                <User className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2">
                 <MessageSquare className="h-4 w-4" />
