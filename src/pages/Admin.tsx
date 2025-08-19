@@ -13,6 +13,7 @@ import ReportedContentPanel from '@/components/admin/ReportedContentPanel';
 import UserModerationPanel from '@/components/admin/UserModerationPanel';
 import SystemControlsPanel from '@/components/admin/SystemControlsPanel';
 import AdminLogsPanel from '@/components/admin/AdminLogsPanel';
+import UserProfileModal from '@/components/admin/UserProfileModal';
 
 interface AdminStats {
   totalUsers: number;
@@ -41,6 +42,8 @@ const Admin = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminStats['recentUsers'][0] | null>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -304,7 +307,14 @@ const Admin = () => {
               <CardContent>
                 <div className="space-y-4">
                   {stats?.recentUsers.map((user, index) => (
-                    <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div 
+                      key={index} 
+                      className="p-4 border rounded-lg space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsUserModalOpen(true);
+                      }}
+                    >
                       <div className="flex items-start justify-between">
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-2">
@@ -391,6 +401,17 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        user={selectedUser}
+        isOpen={isUserModalOpen}
+        onClose={() => {
+          setIsUserModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={fetchAdminStats}
+      />
     </div>
   );
 };
