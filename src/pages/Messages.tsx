@@ -34,6 +34,7 @@ interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
+  user_profile_id?: string; // Added to track current user's profile ID
 }
 
 const Messages = () => {
@@ -222,6 +223,13 @@ const Messages = () => {
 
   const fetchMessages = async (conversationId: string) => {
     try {
+      // Get current user's profile ID for comparison
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -229,7 +237,14 @@ const Messages = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Add user_profile_id to each message for comparison
+      const messagesWithProfile = (data || []).map(msg => ({
+        ...msg,
+        user_profile_id: userProfile?.id
+      }));
+      
+      setMessages(messagesWithProfile);
     } catch (error) {
       logger.error('Error fetching messages:', error);
     }
@@ -365,12 +380,22 @@ const Messages = () => {
           schema: 'public',
           table: 'messages'
         },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as Message;
+          
+          // Get current user's profile ID
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user?.id)
+            .single();
           
           // Add to messages if in current conversation
           if (selectedConversation?.id === newMsg.conversation_id) {
-            setMessages(prev => [...prev, newMsg]);
+            setMessages(prev => [...prev, {
+              ...newMsg,
+              user_profile_id: userProfile?.id
+            }]);
           }
           
           // Update conversation list
@@ -797,7 +822,7 @@ const Messages = () => {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => {
-                const isOwn = message.sender_id === user?.id;
+                const isOwn = message.sender_id === message.user_profile_id;
                 return (
                   <div
                     key={message.id}
