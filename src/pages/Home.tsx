@@ -351,21 +351,39 @@ const Home = () => {
   const joinQueue = async () => {
     setJoiningQueue(true);
     try {
-      const { data, error } = await supabase.rpc('join_trio_queue');
+      // First get the user's profile_id
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (profileError || !profile) {
+        throw new Error('Could not find user profile');
+      }
+      
+      const { data, error } = await supabase.rpc('join_trio_queue', {
+        p_profile_id: profile.id
+      });
       
       if (error) throw error;
       
-      if (data?.action === 'trio_created' || data?.action === 'duo_created') {
-        toast({
-          title: 'Success!',
-          description: data.message
-        });
-        // Refresh the trio
-        await fetchTodaysTrio();
-      } else if (data?.action === 'queued') {
-        setInQueue(true);
-        setQueueCount(data.queue_position);
-        // No toast notification when joining queue
+      // The function returns {success: boolean, matched: boolean, trio_id?: string, queue_position?: number}
+      if (data?.success) {
+        if (data.matched && data.trio_id) {
+          toast({
+            title: 'Success!',
+            description: 'You have been matched with a trio!'
+          });
+          // Refresh the trio
+          await fetchTodaysTrio();
+        } else {
+          setInQueue(true);
+          setQueueCount(data.queue_position || 1);
+          // No toast notification when joining queue
+        }
+      } else {
+        throw new Error(data?.error || 'Failed to join queue');
       }
     } catch (error) {
       logger.error('Error joining queue:', error);
