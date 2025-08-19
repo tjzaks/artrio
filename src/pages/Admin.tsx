@@ -361,9 +361,6 @@ const Admin = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {user.ageRange}
-                          </Badge>
                           <ExternalLink className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
