@@ -534,7 +534,7 @@ const Messages = () => {
         
         // Find and select the new conversation
         const newConv = updatedConvs?.find((c: Conversation) => 
-          c.other_user.id === targetUserId || c.id === data
+          c.other_user.id === targetUserId
         );
         
         if (newConv) {
@@ -617,7 +617,7 @@ const Messages = () => {
         
         // Find and select the conversation
         const targetConv = updatedConvs.find((c: Conversation) => 
-          c.other_user.id === userId || c.id === data
+          c.other_user.id === userId
         );
         
         if (targetConv) {
