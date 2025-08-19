@@ -17,6 +17,7 @@ import Friends from "./pages/Friends";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Health from "./pages/Health";
+import Debug from "./pages/Debug";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ const App = () => {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/health" element={<Health />} />
               <Route path="/api/health" element={<Health />} />
+              <Route path="/debug" element={<Debug />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />

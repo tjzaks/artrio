@@ -473,3 +473,17 @@
     transform: scale(0.98);
   }
 }
+
+/* Gradient toast notification for stopped searching */
+.gradient-toast {
+  background: linear-gradient(135deg, 
+    rgba(27, 160, 204, 0.95) 0%,
+    rgba(27, 160, 204, 0.85) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+}
+
+.gradient-toast * {
+  color: white !important;
+}
