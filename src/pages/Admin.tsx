@@ -93,9 +93,15 @@ const Admin = () => {
       const today = new Date().toISOString().split('T')[0];
 
       // Get total users count
-      const { count: totalUsers } = await supabase
+      const { count: totalUsers, error: countError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        logger.error('Error getting user count:', countError);
+      }
+      
+      logger.log('Total users count:', totalUsers);
 
       // Get total profiles count (should be same as users)
       const { count: totalProfiles } = await supabase
@@ -132,19 +138,24 @@ const Admin = () => {
 
       if (profilesError) {
         logger.error('Error fetching profiles:', profilesError);
+        // Don't continue if there's an error
+        throw profilesError;
       }
       
       logger.log('Fetched profiles:', recentProfiles?.length || 0, recentProfiles);
 
-      const recentUsers = recentProfiles?.map(profile => ({
-        user_id: profile.user_id,
-        username: profile.username,
-        avatar_url: profile.avatar_url,
-        created_at: profile.created_at,
+      // Make sure we have an array, even if it's empty
+      const recentUsers = (recentProfiles || []).map(profile => ({
+        user_id: profile.user_id || '',
+        username: profile.username || 'Unknown',
+        avatar_url: profile.avatar_url || null,
+        created_at: profile.created_at || new Date().toISOString(),
         ageRange: 'Hidden', // Age information is now protected
-        is_admin: profile.is_admin,
-        is_banned: profile.is_banned
-      })) || [];
+        is_admin: profile.is_admin || false,
+        is_banned: profile.is_banned || false
+      }));
+      
+      logger.log('Mapped recentUsers:', recentUsers.length, recentUsers);
 
       setStats({
         totalUsers: totalUsers || 0,
@@ -298,7 +309,7 @@ const Admin = () => {
             {/* All Users */}
             <Card>
               <CardHeader className="flex items-center justify-between">
-                <CardTitle>All Users ({stats?.recentUsers.length || 0})</CardTitle>
+                <CardTitle>All Users ({stats?.recentUsers?.length || 0})</CardTitle>
                 <Button 
                   onClick={fetchAdminStats}
                   variant="outline"
@@ -313,7 +324,7 @@ const Admin = () => {
                     <p className="text-muted-foreground text-center py-4">
                       Loading users...
                     </p>
-                  ) : stats?.recentUsers && stats.recentUsers.length > 0 ? (
+                  ) : stats && stats.recentUsers && Array.isArray(stats.recentUsers) && stats.recentUsers.length > 0 ? (
                     stats.recentUsers.map((user) => (
                       <div 
                         key={user.user_id} 

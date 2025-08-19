@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, authenticatedRpc } from '@/integrations/supabase/client';
 import { format, isToday, isYesterday } from 'date-fns';
 import { logger } from '@/utils/logger';
+import { usePresence } from '@/hooks/usePresence';
 
 interface Conversation {
   id: string;
