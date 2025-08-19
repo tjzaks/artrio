@@ -3,6 +3,7 @@ import { ArrowLeft, UserPlus, Clock, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ClickableAvatar from '@/components/ClickableAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -233,12 +234,12 @@ export default function Friends() {
                           className="flex items-center gap-3 flex-1"
                           onClick={() => navigate(`/user/${friend.user_id}`)}
                         >
-                          <Avatar>
-                            <AvatarImage src={friend.avatar_url} />
-                            <AvatarFallback>
-                              {friend.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                          <ClickableAvatar
+                            userId={friend.user_id}
+                            username={friend.username}
+                            avatarUrl={friend.avatar_url}
+                            size="md"
+                          />
                           <div>
                             <p className="font-medium">@{friend.username}</p>
                             {friend.bio && (
@@ -310,12 +311,18 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={request.requester?.avatar_url} />
-                                <AvatarFallback>
-                                  {request.requester?.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              {request.requester ? (
+                                <ClickableAvatar
+                                  userId={request.requester.id}
+                                  username={request.requester.username}
+                                  avatarUrl={request.requester.avatar_url}
+                                  size="md"
+                                />
+                              ) : (
+                                <Avatar>
+                                  <AvatarFallback>??</AvatarFallback>
+                                </Avatar>
+                              )}
                               <div>
                                 <p className="font-medium">@{request.requester?.username}</p>
                                 <p className="text-sm text-muted-foreground">
@@ -354,12 +361,18 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={request.requested?.avatar_url} />
-                                <AvatarFallback>
-                                  {request.requested?.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              {request.requested ? (
+                                <ClickableAvatar
+                                  userId={request.requested.id}
+                                  username={request.requested.username}
+                                  avatarUrl={request.requested.avatar_url}
+                                  size="md"
+                                />
+                              ) : (
+                                <Avatar>
+                                  <AvatarFallback>??</AvatarFallback>
+                                </Avatar>
+                              )}
                               <div>
                                 <p className="font-medium">@{request.requested?.username}</p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">

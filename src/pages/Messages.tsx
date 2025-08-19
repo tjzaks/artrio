@@ -7,6 +7,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ClickableAvatar from '@/components/ClickableAvatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
@@ -407,12 +408,18 @@ export default function Messages() {
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Avatar>
-                      <AvatarImage src={conv.other_user?.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {conv.other_user?.username?.substring(0, 2).toUpperCase() || '??'}
-                      </AvatarFallback>
-                    </Avatar>
+                    {conv.other_user ? (
+                      <ClickableAvatar
+                        userId={conv.other_user.id}
+                        username={conv.other_user.username}
+                        avatarUrl={conv.other_user.avatar_url}
+                        size="md"
+                      />
+                    ) : (
+                      <Avatar>
+                        <AvatarFallback>??</AvatarFallback>
+                      </Avatar>
+                    )}
                     {conv.other_user?.id && isUserOnline(conv.other_user.id) && (
                       <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                     )}
@@ -449,15 +456,18 @@ export default function Messages() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="relative">
-                <Avatar 
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/user/${selectedConversation.other_user?.id}`)}
-                >
-                  <AvatarImage src={selectedConversation.other_user?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {selectedConversation.other_user?.username?.substring(0, 2).toUpperCase() || '??'}
-                  </AvatarFallback>
-                </Avatar>
+                {selectedConversation.other_user ? (
+                  <ClickableAvatar
+                    userId={selectedConversation.other_user.id}
+                    username={selectedConversation.other_user.username}
+                    avatarUrl={selectedConversation.other_user.avatar_url}
+                    size="md"
+                  />
+                ) : (
+                  <Avatar>
+                    <AvatarFallback>??</AvatarFallback>
+                  </Avatar>
+                )}
                 {selectedConversation.other_user?.id && isUserOnline(selectedConversation.other_user.id) && (
                   <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                 )}

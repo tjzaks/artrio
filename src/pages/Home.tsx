@@ -16,6 +16,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
+import ClickableAvatar from '@/components/ClickableAvatar';
 
 interface Profile {
   id: string;
@@ -91,6 +92,10 @@ const Home = () => {
       checkQueueStatus();
       fetchNotificationCounts();
       
+      // Set up subscriptions and store cleanup functions
+      const cleanupTrio = subscribeToTrioUpdates();
+      const cleanupQueue = subscribeToQueueUpdates();
+      
       // Subscribe to real-time updates for notification counts
       const messagesChannel = supabase
         .channel('notification-messages')
@@ -129,6 +134,8 @@ const Home = () => {
       return () => {
         messagesChannel.unsubscribe();
         friendshipsChannel.unsubscribe();
+        if (cleanupTrio) cleanupTrio();
+        if (cleanupQueue) cleanupQueue();
       };
     } else {
       // Clear counts when no user
@@ -300,22 +307,12 @@ const Home = () => {
   };
 
   const fetchNotificationCounts = async () => {
-    // DISABLED - Always keep at 0
-    setUnreadMessages(0);
-    setPendingFriendRequests(0);
-    return;
-    
     if (!user) return;
     
     console.log('=== fetchNotificationCounts START ===');
     console.log('User ID:', user.id);
     
     try {
-      // Reset counts first
-      console.log('Resetting counts to 0...');
-      setUnreadMessages(0);
-      setPendingFriendRequests(0);
-      
       // Get unread messages count
       const { data: conversations, error: convError } = await supabase
         .from('conversations')
@@ -324,6 +321,7 @@ const Home = () => {
       
       if (convError) {
         console.error('Error fetching conversations:', convError);
+        setUnreadMessages(0);
         return;
       }
       
@@ -346,8 +344,7 @@ const Home = () => {
         } else {
           console.log('Unread messages found:', unreadMessages);
           console.log('Unread count:', unreadCount);
-          console.log('Setting unreadMessages to:', unreadCount ?? 0);
-          // Ensure we set 0 if count is null or undefined
+          // Set the actual count
           setUnreadMessages(unreadCount ?? 0);
         }
       } else {
@@ -579,15 +576,54 @@ const Home = () => {
         throw error;
       }
       
-      // Handle success response
-      if (data?.matched) {
+      // Handle different response types from the queue function
+      if (data?.action === 'trio_created') {
+        toast({
+          title: 'Trio Formed! 🎉',
+          description: data.message || 'Your trio is ready! Welcome to your new group.',
+          className: 'gradient-toast'
+        });
+        // Clear queue state and refresh trio
+        setInQueue(false);
+        setQueueCount(0);
+        await fetchTodaysTrio();
+        
+        // Scroll to trio section after a brief delay
+        setTimeout(() => {
+          const trioSection = document.querySelector('.content-card');
+          if (trioSection) {
+            trioSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+        
+      } else if (data?.action === 'duo_created') {
+        toast({
+          title: 'Duo Created! 👥',
+          description: data.message || 'Duo formed! Looking for one more person...',
+          className: 'gradient-toast'
+        });
+        // Clear queue state and refresh trio
+        setInQueue(false);
+        setQueueCount(0);
+        await fetchTodaysTrio();
+        
+      } else if (data?.action === 'queued') {
+        setInQueue(true);
+        setQueueCount(data.queue_position);
+        toast({
+          title: 'Joined Queue! ⏳',
+          description: `You're in position ${data.queue_position}. We'll notify you when your trio is ready!`,
+          className: 'gradient-toast'
+        });
+      } else if (data?.matched) {
+        // Fallback for old response format
         toast({
           title: 'Matched!',
           description: 'You\'ve been matched into a trio!'
         });
         await fetchTodaysTrio();
       } else {
-        // Just joined queue
+        // Fallback for simple queue join
         setInQueue(true);
         setQueueCount(data?.queue_position || 1);
       }
@@ -618,6 +654,92 @@ const Home = () => {
     } catch (error) {
       logger.error('Error leaving queue:', error);
     }
+  };
+
+  const subscribeToTrioUpdates = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('trio_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'trios',
+          filter: `date=eq.${new Date().toISOString().split('T')[0]}`
+        },
+        async (payload) => {
+          const newTrio = payload.new;
+          logger.info('New trio created:', newTrio);
+          
+          // Get user's profile to check if they're in this trio
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+          const isUserInTrio = userProfile && (
+            newTrio.user1_id === userProfile.id ||
+            newTrio.user2_id === userProfile.id ||
+            newTrio.user3_id === userProfile.id
+          );
+
+          if (isUserInTrio) {
+            // User is in the new trio - show success message and refresh
+            toast({
+              title: 'Trio Formed! 🎉',
+              description: 'Your trio is ready! Welcome to your new group.',
+              className: 'gradient-toast'
+            });
+            
+            // Clear queue state
+            setInQueue(false);
+            setQueueCount(0);
+            
+            // Refresh trio data and navigate to home
+            await fetchTodaysTrio();
+            
+            // Add a small delay for better UX, then scroll to trio section
+            setTimeout(() => {
+              const trioSection = document.querySelector('.content-card');
+              if (trioSection) {
+                trioSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 500);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const subscribeToQueueUpdates = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('queue_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trio_queue'
+        },
+        async () => {
+          // Queue changed - update queue status for all users
+          await checkQueueStatus();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handleReplySubmit = async (postId: string) => {
@@ -695,33 +817,27 @@ const Home = () => {
               )}
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2 relative">
                 <User className="h-4 w-4" />
-                {/* DISABLED BADGE
                 {pendingFriendRequests > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    FR:{pendingFriendRequests}
+                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {pendingFriendRequests}
                   </div>
                 )}
-                */}
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => navigate('/messages')} 
+                onClick={() => {
+                  setUnreadMessages(0); // Clear immediately on click
+                  navigate('/messages');
+                }} 
                 className="h-8 px-2 relative"
               >
                 <MessageSquare className="h-4 w-4" />
-                {/* DISABLED BADGE
-                <div 
-                  className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    alert(`Messages count: ${unreadMessages}\nType: ${typeof unreadMessages}\nClick OK to reset to 0`);
-                    setUnreadMessages(0);
-                  }}
-                >
-                  M:{unreadMessages}
-                </div>
-                */}
+                {unreadMessages > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadMessages}
+                  </div>
+                )}
               </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
@@ -770,16 +886,16 @@ const Home = () => {
                   {currentTrio.profiles.map((profile) => (
                     <div 
                       key={profile.id} 
-                      className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => navigate(`/user/${profile.user_id}`)}
+                      className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0"
                     >
                       <div className="relative">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={profile.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {profile.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <ClickableAvatar
+                          userId={profile.user_id}
+                          username={profile.username}
+                          avatarUrl={profile.avatar_url}
+                          size="lg"
+                          className="h-12 w-12"
+                        />
                         {/* Show birthday indicator if it's their birthday, otherwise show online status */}
                         {profile.is_birthday ? (
                           <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1">
