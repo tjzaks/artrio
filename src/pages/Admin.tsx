@@ -85,6 +85,118 @@ const Admin = () => {
     }
   };
 
+  const handleRandomizeTrios = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to randomize today\'s trios?\n\n' +
+      'This will:\n' +
+      '• Delete all existing trios for today\n' +
+      '• Create new random trios from all active users\n' +
+      '• Notify users of their new trio assignments'
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Delete today's trios
+      await supabase
+        .from('trios')
+        .delete()
+        .eq('date', today);
+      
+      // Get all users
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('user_id, username');
+      
+      if (!users || users.length < 3) {
+        toast({
+          title: 'Not enough users',
+          description: 'Need at least 3 users to create trios',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Shuffle users
+      const shuffled = [...users].sort(() => Math.random() - 0.5);
+      
+      // Create trios (groups of 3)
+      const trios = [];
+      for (let i = 0; i < shuffled.length; i += 3) {
+        if (i + 2 < shuffled.length) {
+          trios.push({
+            user1_id: shuffled[i].user_id,
+            user2_id: shuffled[i + 1].user_id,
+            user3_id: shuffled[i + 2].user_id,
+            date: today
+          });
+        }
+      }
+      
+      // Insert new trios
+      if (trios.length > 0) {
+        await supabase
+          .from('trios')
+          .insert(trios);
+        
+        toast({
+          title: 'Trios randomized',
+          description: `Created ${trios.length} new trios for today`,
+        });
+        
+        await fetchAdminStats();
+      }
+    } catch (error) {
+      logger.error('Error randomizing trios:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to randomize trios',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteAllTrios = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete ALL trios?\n\n' +
+      'This action CANNOT be undone and will:\n' +
+      '• Remove all trio history\n' +
+      '• Reset all trio-related data\n' +
+      '• Affect user experience'
+    );
+    
+    if (!confirmed) return;
+    
+    const doubleConfirmed = window.confirm(
+      'FINAL CONFIRMATION: Delete all trios permanently?'
+    );
+    
+    if (!doubleConfirmed) return;
+    
+    try {
+      await supabase
+        .from('trios')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      toast({
+        title: 'All trios deleted',
+        description: 'All trio data has been permanently removed',
+      });
+      
+      await fetchAdminStats();
+    } catch (error) {
+      logger.error('Error deleting trios:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete trios',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const fetchAdminStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -229,6 +341,38 @@ const Admin = () => {
       </header>
 
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Admin Actions */}
+        <Card className="border-amber-500/20 bg-amber-50/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-amber-600" />
+              <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleRandomizeTrios}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                <Shuffle className="h-3 w-3 mr-1" />
+                Randomize Today's Trios
+              </Button>
+              <Button
+                onClick={handleDeleteAllTrios}
+                variant="outline"
+                size="sm"
+                className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete All Trios
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4">
