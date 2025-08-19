@@ -73,8 +73,11 @@ const Messages = () => {
 
   useEffect(() => {
     if (selectedConversation) {
+      console.log('=== CONVERSATION SELECTED ===');
       console.log('Selected conversation:', selectedConversation);
       console.log('Conversation ID:', selectedConversation.id);
+      console.log('Other user:', selectedConversation.other_user);
+      console.log('Calling fetchMessages with ID:', selectedConversation.id);
       fetchMessages(selectedConversation.id);
       markAsRead(selectedConversation.id);
     }
@@ -226,8 +229,21 @@ const Messages = () => {
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      console.log('Fetching messages for conversation:', conversationId);
+      console.log('=== FETCHING MESSAGES ===');
+      console.log('Conversation ID:', conversationId);
       console.log('Current user auth ID:', user?.id);
+
+      // First check if conversation exists
+      const { data: convCheck, error: convError } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+        
+      console.log('Conversation exists check:', convCheck);
+      if (convError) {
+        console.error('Conversation check error:', convError);
+      }
 
       const { data, error } = await supabase
         .from('messages')
@@ -240,11 +256,20 @@ const Messages = () => {
         throw error;
       }
       
-      console.log('Fetched messages count:', data?.length || 0);
+      console.log('=== MESSAGES FETCHED ===');
+      console.log('Raw messages data:', data);
+      console.log('Messages count:', data?.length || 0);
+      
       if (data && data.length > 0) {
-        console.log('First message:', data[0]);
-        console.log('First message sender_id:', data[0].sender_id);
-        console.log('Comparing with user.id:', user?.id);
+        console.log('First message details:');
+        console.log('- ID:', data[0].id);
+        console.log('- Conversation ID:', data[0].conversation_id);
+        console.log('- Sender ID:', data[0].sender_id);
+        console.log('- Content:', data[0].content);
+        console.log('- Created at:', data[0].created_at);
+        console.log('Current user ID for comparison:', user?.id);
+      } else {
+        console.log('NO MESSAGES FOUND for conversation:', conversationId);
       }
       
       // Add current_user_id to each message for comparison
@@ -253,10 +278,11 @@ const Messages = () => {
         current_user_id: user?.id
       }));
       
+      console.log('Setting messages state with:', messagesWithUserId);
       setMessages(messagesWithUserId);
     } catch (error) {
       logger.error('Error fetching messages:', error);
-      console.error('Full error:', error);
+      console.error('Full error details:', error);
     }
   };
 
@@ -831,8 +857,16 @@ const Messages = () => {
 
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
+              {console.log('=== RENDERING MESSAGES ===', messages)}
+              {console.log('Messages array length:', messages.length)}
+              {messages.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No messages yet. Start the conversation!
+                </div>
+              )}
               {messages.map((message) => {
                 const isOwn = message.sender_id === message.current_user_id;
+                console.log('Rendering message:', message.id, 'isOwn:', isOwn, 'sender:', message.sender_id, 'current:', message.current_user_id);
                 return (
                   <div
                     key={message.id}
