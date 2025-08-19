@@ -80,6 +80,10 @@ const Home = () => {
 
   useEffect(() => {
     if (user) {
+      // Force reset notifications first
+      setUnreadMessages(0);
+      setPendingFriendRequests(0);
+      
       fetchUserProfile();
       fetchTodaysTrio();
       checkPostRateLimit();
@@ -96,7 +100,8 @@ const Home = () => {
             schema: 'public',
             table: 'messages'
           },
-          () => {
+          (payload) => {
+            console.log('New message event:', payload);
             // Refresh notification counts when new messages arrive
             fetchNotificationCounts();
           }
@@ -112,7 +117,8 @@ const Home = () => {
             schema: 'public',
             table: 'friendships'
           },
-          () => {
+          (payload) => {
+            console.log('Friendship event:', payload);
             // Refresh notification counts when friendship status changes
             fetchNotificationCounts();
           }
@@ -123,6 +129,10 @@ const Home = () => {
         messagesChannel.unsubscribe();
         friendshipsChannel.unsubscribe();
       };
+    } else {
+      // Clear counts when no user
+      setUnreadMessages(0);
+      setPendingFriendRequests(0);
     }
   }, [user]);
 
@@ -149,18 +159,30 @@ const Home = () => {
     };
   }, [user]);
 
-  // Add keyboard shortcut for health check (Ctrl/Cmd + H + H)
+  // Add keyboard shortcuts for health check and debug
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
         e.preventDefault();
         setShowHealthCheck(!showHealthCheck);
       }
+      // Debug shortcut: Cmd/Ctrl + D
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+        e.preventDefault();
+        console.log('=== DEBUG NOTIFICATION STATE ===');
+        console.log('unreadMessages:', unreadMessages);
+        console.log('pendingFriendRequests:', pendingFriendRequests);
+        console.log('user:', user);
+        // Force reset
+        console.log('Force resetting notifications to 0...');
+        setUnreadMessages(0);
+        setPendingFriendRequests(0);
+      }
     };
     
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [showHealthCheck]);
+  }, [showHealthCheck, unreadMessages, pendingFriendRequests, user]);
 
   useEffect(() => {
     if (!canPost && secondsUntilNextPost > 0) {
@@ -670,6 +692,8 @@ const Home = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => {
+                  // Force clear notifications immediately
+                  setUnreadMessages(0);
                   navigate('/messages');
                 }} 
                 className="h-8 px-2 relative"
