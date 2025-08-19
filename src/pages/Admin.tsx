@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +14,7 @@ import ReportedContentPanel from '@/components/admin/ReportedContentPanel';
 import UserModerationPanel from '@/components/admin/UserModerationPanel';
 import SystemControlsPanel from '@/components/admin/SystemControlsPanel';
 import AdminLogsPanel from '@/components/admin/AdminLogsPanel';
+import UserProfileModal from '@/components/admin/UserProfileModal';
 
 interface AdminStats {
   totalUsers: number;
@@ -22,9 +24,13 @@ interface AdminStats {
   totalPosts: number;
   todaysPosts: number;
   recentUsers: Array<{
+    user_id: string;
     username: string;
+    avatar_url: string | null;
     created_at: string;
     ageRange: string;
+    is_admin?: boolean;
+    is_banned?: boolean;
   }>;
 }
 
@@ -35,6 +41,8 @@ const Admin = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -116,16 +124,20 @@ const Admin = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today);
 
-      // Get ALL users sorted by most recent first
+      // Get ALL users sorted by most recent first with more details
       const { data: recentProfiles } = await supabase
         .from('profiles')
-        .select('username, created_at')
+        .select('user_id, username, avatar_url, created_at, is_admin, is_banned')
         .order('created_at', { ascending: false });
 
       const recentUsers = recentProfiles?.map(profile => ({
+        user_id: profile.user_id,
         username: profile.username,
+        avatar_url: profile.avatar_url,
         created_at: profile.created_at,
-        ageRange: 'Hidden' // Age information is now protected
+        ageRange: 'Hidden', // Age information is now protected
+        is_admin: profile.is_admin,
+        is_banned: profile.is_banned
       })) || [];
 
       setStats({
@@ -290,19 +302,47 @@ const Admin = () => {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {stats?.recentUsers.map((user, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{user.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Joined {new Date(user.created_at).toLocaleDateString()}
-                        </p>
+                <div className="space-y-3">
+                  {stats?.recentUsers.map((user) => (
+                    <div 
+                      key={user.user_id} 
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setSelectedUserId(user.user_id);
+                        setIsProfileModalOpen(true);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {user.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">@{user.username}</p>
+                            {user.is_admin && (
+                              <Badge variant="default" className="text-xs bg-purple-600">
+                                Admin
+                              </Badge>
+                            )}
+                            {user.is_banned && (
+                              <Badge variant="destructive" className="text-xs">
+                                Banned
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Joined {new Date(user.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
                           {user.ageRange}
                         </Badge>
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
                   )) || (
@@ -331,6 +371,17 @@ const Admin = () => {
             <AdminLogsPanel />
           </TabsContent>
         </Tabs>
+
+        {/* User Profile Modal */}
+        <UserProfileModal
+          userId={selectedUserId}
+          isOpen={isProfileModalOpen}
+          onClose={() => {
+            setIsProfileModalOpen(false);
+            setSelectedUserId(null);
+            fetchAdminStats(); // Refresh stats after potential changes
+          }}
+        />
       </main>
     </div>
   );

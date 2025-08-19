@@ -72,6 +72,8 @@ const Messages = () => {
 
   useEffect(() => {
     if (selectedConversation) {
+      console.log('Selected conversation:', selectedConversation);
+      console.log('Conversation ID:', selectedConversation.id);
       fetchMessages(selectedConversation.id);
       markAsRead(selectedConversation.id);
     }
@@ -223,6 +225,8 @@ const Messages = () => {
 
   const fetchMessages = async (conversationId: string) => {
     try {
+      console.log('Fetching messages for conversation:', conversationId);
+      
       // Get current user's profile ID for comparison
       const { data: userProfile } = await supabase
         .from('profiles')
@@ -230,13 +234,23 @@ const Messages = () => {
         .eq('user_id', user?.id)
         .single();
 
+      console.log('User profile ID:', userProfile?.id);
+
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Messages fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched messages count:', data?.length || 0);
+      if (data && data.length > 0) {
+        console.log('First message:', data[0]);
+      }
       
       // Add user_profile_id to each message for comparison
       const messagesWithProfile = (data || []).map(msg => ({
@@ -247,6 +261,7 @@ const Messages = () => {
       setMessages(messagesWithProfile);
     } catch (error) {
       logger.error('Error fetching messages:', error);
+      console.error('Full error:', error);
     }
   };
 
