@@ -49,7 +49,10 @@ export default function Messages() {
   useEffect(() => {
     if (user) {
       loadConversations();
-      subscribeToMessages();
+      const unsubscribe = subscribeToMessages();
+      return () => {
+        unsubscribe();
+      };
     }
   }, [user]);
 
@@ -67,13 +70,22 @@ export default function Messages() {
 
   const loadConversations = async () => {
     try {
+      if (!user?.id) {
+        console.error('No user ID available');
+        setLoading(false);
+        return;
+      }
+
       // Get all conversations for this user
       const { data: convs, error } = await supabase
         .from('conversations')
         .select('*')
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`);
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching conversations:', error);
+        throw error;
+      }
 
       // For each conversation, get the other user's profile
       const conversationsWithProfiles = await Promise.all(
@@ -116,11 +128,15 @@ export default function Messages() {
       setConversations(conversationsWithProfiles);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load conversations',
-        variant: 'destructive'
-      });
+      // Only show toast for actual errors, not empty results
+      if (error && error.code !== 'PGRST116') {
+        toast({
+          title: 'Error',
+          description: 'Failed to load conversations',
+          variant: 'destructive'
+        });
+      }
+      setConversations([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -221,7 +237,7 @@ export default function Messages() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   };
 
