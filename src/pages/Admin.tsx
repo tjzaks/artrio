@@ -3,17 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, BarChart3, Shield, RefreshCw, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
-import ReportedContentPanel from '@/components/admin/ReportedContentPanel';
-import UserModerationPanel from '@/components/admin/UserModerationPanel';
-import SystemControlsPanel from '@/components/admin/SystemControlsPanel';
-import AdminLogsPanel from '@/components/admin/AdminLogsPanel';
 import UserProfileModal from '@/components/admin/UserProfileModal';
 
 interface AdminStats {
@@ -43,6 +39,7 @@ const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -212,185 +209,154 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="navigation-glass p-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="interactive">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Button>
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+        <div className="max-w-6xl mx-auto p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{stats?.totalUsers || 0} users</span>
+            <span>•</span>
+            <span>{stats?.todaysTrios || 0} trios today</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="moderation" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Moderation
-            </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              System
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Logs
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Registered profiles
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Trios</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalTrios || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    All-time trio formations
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Today's Trios</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.todaysTrios || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Active trios today
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalPosts || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.todaysPosts || 0} posted today
-                  </p>
-                </CardContent>
-              </Card>
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalUsers || 0}</span>
             </div>
+            <p className="text-sm text-muted-foreground">Total Users</p>
+          </Card>
 
-            {/* All Users */}
-            <Card>
-              <CardHeader className="flex items-center justify-between">
-                <CardTitle>All Users ({stats?.recentUsers?.length || 0})</CardTitle>
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalTrios || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Trios</p>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.todaysTrios || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Today's Trios</p>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalPosts || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Posts</p>
+          </Card>
+        </div>
+
+        {/* User Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">User Management</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 w-64"
+                  />
+                </div>
                 <Button 
                   onClick={fetchAdminStats}
                   variant="outline"
                   size="sm"
                 >
-                  Refresh Statistics
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {loading ? (
-                    <p className="text-muted-foreground text-center py-4">
-                      Loading users...
-                    </p>
-                  ) : stats && stats.recentUsers && Array.isArray(stats.recentUsers) && stats.recentUsers.length > 0 ? (
-                    stats.recentUsers.map((user) => (
-                      <div 
-                        key={user.user_id} 
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                        onClick={() => {
-                          setSelectedUserId(user.user_id);
-                          setIsProfileModalOpen(true);
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.avatar_url || undefined} />
-                            <AvatarFallback>
-                              {user.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">@{user.username}</p>
-                              {user.is_admin && (
-                                <Badge variant="default" className="text-xs bg-purple-600">
-                                  Admin
-                                </Badge>
-                              )}
-                              {user.is_banned && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Banned
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Joined {new Date(user.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {stats?.recentUsers?.length || 0} registered users
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {loading ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Loading users...
+                </p>
+              ) : stats && stats.recentUsers && Array.isArray(stats.recentUsers) && stats.recentUsers.length > 0 ? (
+                stats.recentUsers
+                  .filter(user => 
+                    searchTerm === '' || 
+                    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((user) => (
+                  <div 
+                    key={user.user_id} 
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all"
+                    onClick={() => {
+                      setSelectedUserId(user.user_id);
+                      setIsProfileModalOpen(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={user.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {user.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
                         <div className="flex items-center gap-2">
-                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          <p className="font-medium text-sm">@{user.username}</p>
+                          {user.is_admin && (
+                            <Badge variant="default" className="text-xs h-5 px-2 bg-purple-600">
+                              Admin
+                            </Badge>
+                          )}
+                          {user.is_banned && (
+                            <Badge variant="destructive" className="text-xs h-5 px-2">
+                              Banned
+                            </Badge>
+                          )}
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          Joined {new Date(user.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      No users found
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <ReportedContentPanel />
-          </TabsContent>
-
-          <TabsContent value="moderation">
-            <UserModerationPanel />
-          </TabsContent>
-
-          <TabsContent value="system">
-            <SystemControlsPanel />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <AdminLogsPanel />
-          </TabsContent>
-        </Tabs>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  {searchTerm ? 'No users found matching your search' : 'No users found'}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* User Profile Modal */}
         <UserProfileModal
