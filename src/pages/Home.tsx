@@ -75,6 +75,8 @@ const Home = () => {
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   useEffect(() => {
     if (user) {
