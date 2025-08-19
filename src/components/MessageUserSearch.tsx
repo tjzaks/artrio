@@ -71,7 +71,7 @@ export default function MessageUserSearch() {
   const startConversation = async (targetUser: User) => {
     try {
       // Check if conversation already exists
-      const { data: existing, error: findError } = await supabase
+      const { data: existing } = await supabase
         .from('conversations')
         .select('id')
         .or(`and(user1_id.eq.${user?.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user?.id})`);
@@ -99,14 +99,13 @@ export default function MessageUserSearch() {
         conversationId = existing[0].id;
       }
 
-      // Close popover and navigate
+      // Close popover
       setOpen(false);
       setSearchQuery('');
       setUsers([]);
       
-      // Navigate to messages with the conversation ID
-      // Add a reload flag to force conversation list refresh
-      navigate(`/messages?conversation=${conversationId}&reload=true`);
+      // Force reload to ensure conversation appears
+      window.location.href = `/messages?conversation=${conversationId}`;
     } catch (error) {
       console.error('Error creating conversation:', error);
     }
