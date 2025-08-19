@@ -9,9 +9,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AddFriend from '@/components/AddFriend';
+import ClickableAvatar from '@/components/ClickableAvatar';
 
 interface Friend {
   id: string;
+  user_id: string;
   username: string;
   avatar_url?: string;
   bio?: string;
@@ -60,8 +62,8 @@ export default function Friends() {
         .from('friendships')
         .select(`
           *,
-          user:profiles!friendships_user_id_fkey(id, username, avatar_url, bio),
-          friend:profiles!friendships_friend_id_fkey(id, username, avatar_url, bio)
+          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio),
+          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
         `)
         .eq('status', 'accepted')
         .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
@@ -94,7 +96,7 @@ export default function Friends() {
         .from('friendships')
         .select(`
           *,
-          user:profiles!friendships_user_id_fkey(id, username, avatar_url, bio)
+          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio)
         `)
         .eq('friend_id', userProfile.id)
         .eq('status', 'pending');
@@ -108,7 +110,7 @@ export default function Friends() {
         .from('friendships')
         .select(`
           *,
-          friend:profiles!friendships_friend_id_fkey(id, username, avatar_url, bio)
+          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
         `)
         .eq('user_id', userProfile.id)
         .eq('status', 'pending');
@@ -228,12 +230,12 @@ export default function Friends() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={friend.avatar_url} />
-                            <AvatarFallback>
-                              {friend.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                          <ClickableAvatar
+                            userId={friend.user_id}
+                            username={friend.username}
+                            avatarUrl={friend.avatar_url}
+                            size="lg"
+                          />
                           <div>
                             <p className="font-medium">@{friend.username}</p>
                             {friend.bio && (
@@ -270,12 +272,12 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={request.requester?.avatar_url} />
-                                <AvatarFallback>
-                                  {request.requester?.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              <ClickableAvatar
+                                userId={request.requester?.user_id || ''}
+                                username={request.requester?.username || 'Unknown'}
+                                avatarUrl={request.requester?.avatar_url}
+                                size="lg"
+                              />
                               <div>
                                 <p className="font-medium">@{request.requester?.username}</p>
                                 <p className="text-sm text-muted-foreground">
@@ -314,12 +316,12 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarImage src={request.requested?.avatar_url} />
-                                <AvatarFallback>
-                                  {request.requested?.username.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              <ClickableAvatar
+                                userId={request.requested?.user_id || ''}
+                                username={request.requested?.username || 'Unknown'}
+                                avatarUrl={request.requested?.avatar_url}
+                                size="lg"
+                              />
                               <div>
                                 <p className="font-medium">@{request.requested?.username}</p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">

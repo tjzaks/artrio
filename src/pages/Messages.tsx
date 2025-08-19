@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, authenticatedRpc } from '@/integrations/supabase/client';
 import { format, isToday, isYesterday } from 'date-fns';
 import { logger } from '@/utils/logger';
+import ClickableAvatar from '@/components/ClickableAvatar';
 
 interface Conversation {
   id: string;
@@ -649,12 +650,12 @@ const Messages = () => {
                         className="w-full p-3 hover:bg-muted text-left flex items-center gap-3 transition-colors"
                         onClick={() => handleSelectUser(user.user_id, user.username)}
                       >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {user.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <ClickableAvatar
+                          userId={user.user_id}
+                          username={user.username}
+                          avatarUrl={user.avatar_url}
+                          size="md"
+                        />
                         <span className="font-medium">@{user.username}</span>
                       </button>
                     ))}
@@ -713,12 +714,12 @@ const Messages = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={conv.other_user.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {conv.other_user.username.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ClickableAvatar
+                    userId={conv.other_user.id}
+                    username={conv.other_user.username}
+                    avatarUrl={conv.other_user.avatar_url}
+                    size="lg"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="font-medium">@{conv.other_user.username}</p>
@@ -767,12 +768,12 @@ const Messages = () => {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <Avatar>
-                  <AvatarImage src={selectedConversation.other_user.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {selectedConversation.other_user.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <ClickableAvatar
+                  userId={selectedConversation.other_user.id}
+                  username={selectedConversation.other_user.username}
+                  avatarUrl={selectedConversation.other_user.avatar_url}
+                  size="lg"
+                />
                 <div>
                   <p className="font-medium">@{selectedConversation.other_user.username}</p>
                   <p className="text-xs text-muted-foreground">

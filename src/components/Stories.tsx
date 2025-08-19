@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import NativeStoryCreator from './NativeStoryCreator';
+import ClickableAvatar from './ClickableAvatar';
 
 interface Story {
   id: string;
@@ -307,12 +308,13 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
             {/* Story header */}
             <div className="absolute top-0 left-0 right-0 p-4 z-10 bg-gradient-to-b from-black/50 to-transparent">
               <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={selectedStory.profiles.avatar_url} />
-                  <AvatarFallback>
-                    {selectedStory.profiles.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <ClickableAvatar
+                  userId={selectedStory.user_id}
+                  username={selectedStory.profiles.username}
+                  avatarUrl={selectedStory.profiles.avatar_url}
+                  size="md"
+                  showHoverEffect={false}
+                />
                 <span className="text-white font-medium">
                   {selectedStory.profiles.username}
                 </span>

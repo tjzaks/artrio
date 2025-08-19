@@ -17,6 +17,7 @@ import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
+import ClickableAvatar from '@/components/ClickableAvatar';
 
 interface Profile {
   id: string;
@@ -510,16 +511,16 @@ const Home = () => {
                   {currentTrio.profiles.map((profile) => (
                     <div 
                       key={profile.id} 
-                      className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => navigate(`/user/${profile.user_id}`)}
+                      className="flex flex-col items-center gap-2 min-w-0 flex-shrink-0"
                     >
                       <div className="relative">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={profile.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {profile.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <ClickableAvatar
+                          userId={profile.user_id}
+                          username={profile.username}
+                          avatarUrl={profile.avatar_url}
+                          size="lg"
+                          className="h-12 w-12"
+                        />
                         {/* Show birthday indicator if it's their birthday, otherwise show online status */}
                         {profile.is_birthday ? (
                           <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1">
@@ -597,12 +598,13 @@ const Home = () => {
                   <Card key={post.id} className="content-card animate-slide-up">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarImage src={post.profiles.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {post.profiles.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <ClickableAvatar
+                          userId={post.profiles.user_id}
+                          username={post.profiles.username}
+                          avatarUrl={post.profiles.avatar_url}
+                          size="md"
+                          className="flex-shrink-0"
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <p className="font-medium text-sm truncate">@{post.profiles.username}</p>
@@ -640,12 +642,13 @@ const Home = () => {
                         <div className="ml-11 space-y-2 border-l-2 border-muted pl-3">
                           {postReplies.slice(0, 3).map((reply) => (
                             <div key={reply.id} className="flex items-start gap-2">
-                              <Avatar className="h-6 w-6 flex-shrink-0">
-                                <AvatarImage src={reply.profiles.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs">
-                                  {reply.profiles.username.substring(0, 1).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              <ClickableAvatar
+                                userId={reply.profiles.user_id}
+                                username={reply.profiles.username}
+                                avatarUrl={reply.profiles.avatar_url}
+                                size="sm"
+                                className="flex-shrink-0"
+                              />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium text-xs truncate">@{reply.profiles.username}</p>
