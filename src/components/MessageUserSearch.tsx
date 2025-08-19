@@ -165,7 +165,7 @@ export default function MessageUserSearch() {
                 <button
                   key={user.id}
                   onClick={() => startConversation(user)}
-                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/10 transition-all"
+                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-blue-500/10 transition-all"
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar_url || undefined} />
