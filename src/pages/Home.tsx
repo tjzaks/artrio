@@ -301,8 +301,12 @@ const Home = () => {
   const fetchNotificationCounts = async () => {
     if (!user) return;
     
+    console.log('=== fetchNotificationCounts START ===');
+    console.log('User ID:', user.id);
+    
     try {
       // Reset counts first
+      console.log('Resetting counts to 0...');
       setUnreadMessages(0);
       setPendingFriendRequests(0);
       
@@ -336,6 +340,7 @@ const Home = () => {
         } else {
           console.log('Unread messages found:', unreadMessages);
           console.log('Unread count:', unreadCount);
+          console.log('Setting unreadMessages to:', unreadCount ?? 0);
           // Ensure we set 0 if count is null or undefined
           setUnreadMessages(unreadCount ?? 0);
         }
@@ -378,6 +383,8 @@ const Home = () => {
       setUnreadMessages(0);
       setPendingFriendRequests(0);
     }
+    
+    console.log('=== fetchNotificationCounts END ===');
   };
 
   const fetchTrioPosts = async (trioId: string) => {
