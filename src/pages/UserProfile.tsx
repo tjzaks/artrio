@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare, PartyPopper, Cake } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare, PartyPopper, Cake, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -34,11 +34,14 @@ const UserProfile = () => {
   const [blockLoading, setBlockLoading] = useState(false);
   const [birthday, setBirthday] = useState<string | null>(null);
   const [isBirthday, setIsBirthday] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   useEffect(() => {
     if (userId) {
       fetchUserProfile();
       checkBlockStatus();
+      checkFriendStatus();
     }
   }, [userId]);
 
@@ -196,6 +199,122 @@ const UserProfile = () => {
     }
   };
 
+  const checkFriendStatus = async () => {
+    if (!userId || !user) return;
+
+    try {
+      // Get current user's profile
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      // Get target user's profile
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (userProfile && targetProfile) {
+        // Check friendship status
+        const { data: friendship } = await supabase
+          .from('friendships')
+          .select('status')
+          .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${targetProfile.id}),and(user_id.eq.${targetProfile.id},friend_id.eq.${userProfile.id})`)
+          .maybeSingle();
+
+        if (friendship) {
+          setFriendStatus(friendship.status === 'accepted' ? 'accepted' : 'pending');
+        }
+      }
+    } catch (error) {
+      logger.error('Error checking friend status:', error);
+    }
+  };
+
+  const handleAddFriend = async () => {
+    if (!userId || !user || sendingRequest) return;
+
+    setSendingRequest(true);
+    try {
+      // Get current user's profile
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      // Get target user's profile
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!userProfile || !targetProfile) {
+        toast({
+          title: 'Error',
+          description: 'Could not find profile information',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Check if friendship already exists
+      const { data: existingFriendship } = await supabase
+        .from('friendships')
+        .select('id, status')
+        .or(`and(user_id.eq.${userProfile.id},friend_id.eq.${targetProfile.id}),and(user_id.eq.${targetProfile.id},friend_id.eq.${userProfile.id})`)
+        .maybeSingle();
+
+      if (existingFriendship) {
+        if (existingFriendship.status === 'pending') {
+          toast({
+            title: 'Request already sent',
+            description: 'Your friend request is pending',
+          });
+        } else if (existingFriendship.status === 'accepted') {
+          toast({
+            title: 'Already friends',
+            description: 'You are already friends with this user',
+          });
+        }
+        return;
+      }
+
+      // Send friend request
+      const { error } = await supabase
+        .from('friendships')
+        .insert({
+          user_id: userProfile.id,
+          friend_id: targetProfile.id,
+          status: 'pending'
+        });
+
+      if (error) {
+        logger.error('Friend request error:', error);
+        throw error;
+      }
+
+      setFriendStatus('pending');
+      toast({
+        title: 'Friend request sent!',
+        description: `Friend request sent to @${profile?.username}`,
+      });
+    } catch (error) {
+      logger.error('Error sending friend request:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send friend request',
+        variant: 'destructive'
+      });
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -323,9 +442,40 @@ const UserProfile = () => {
                 ) : (
                   <>
                     <div className="flex gap-2">
+                      {friendStatus === 'none' && (
+                        <Button 
+                          onClick={handleAddFriend}
+                          variant="default"
+                          className="flex-1"
+                          disabled={sendingRequest}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          {sendingRequest ? 'Sending...' : 'Add Friend'}
+                        </Button>
+                      )}
+                      {friendStatus === 'pending' && (
+                        <Button 
+                          variant="secondary"
+                          className="flex-1"
+                          disabled
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Request Pending
+                        </Button>
+                      )}
+                      {friendStatus === 'accepted' && (
+                        <Button 
+                          variant="secondary"
+                          className="flex-1"
+                          disabled
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Friends
+                        </Button>
+                      )}
                       <Button 
                         onClick={() => navigate(`/messages?user=${userId}`)}
-                        variant="default"
+                        variant="outline"
                         className="flex-1"
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
@@ -334,28 +484,9 @@ const UserProfile = () => {
                       <Button 
                         onClick={handleShare}
                         variant="outline"
-                        className="flex-1"
+                        size="icon"
                       >
-                        <Share className="h-4 w-4 mr-2" />
-                        Share
-                      </Button>
-                      <Button 
-                        onClick={handleBlock}
-                        variant="outline"
-                        disabled={blockLoading}
-                        className="flex-1"
-                      >
-                        {isBlocked ? (
-                          <>
-                            <UserCheck className="h-4 w-4 mr-2" />
-                            Unblock
-                          </>
-                        ) : (
-                          <>
-                            <UserX className="h-4 w-4 mr-2" />
-                            Block
-                          </>
-                        )}
+                        <Share className="h-4 w-4" />
                       </Button>
                     </div>
                     <ReportUserDialog 
