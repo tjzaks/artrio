@@ -186,6 +186,13 @@ const Home = () => {
         setUnreadMessages(0);
         setPendingFriendRequests(0);
       }
+      
+      // Add Cmd+R or Ctrl+R to force refresh notification counts
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        console.log('=== FORCE REFRESHING NOTIFICATION COUNTS ===');
+        fetchNotificationCounts();
+      }
     };
     
     window.addEventListener('keydown', handleKeydown);
@@ -311,6 +318,7 @@ const Home = () => {
     
     console.log('=== fetchNotificationCounts START ===');
     console.log('User ID:', user.id);
+    console.log('Timestamp:', new Date().toISOString());
     
     try {
       // Get unread messages count

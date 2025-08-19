@@ -226,16 +226,24 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        const { error: updateError } = await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user?.id); // Only mark messages from other users as read
+        // First, let's see what messages need to be marked as read
+        const unreadMessages = data.filter(m => !m.is_read && m.sender_id !== user?.id);
+        console.log(`Found ${unreadMessages.length} unread messages to mark as read in conversation ${conversationId}`);
         
-        if (updateError) {
-          console.error('Error marking messages as read:', updateError);
-        } else {
-          console.log('Marked messages as read in conversation:', conversationId);
+        if (unreadMessages.length > 0) {
+          const { error: updateError, count } = await supabase
+            .from('messages')
+            .update({ is_read: true })
+            .eq('conversation_id', conversationId)
+            .eq('is_read', false)
+            .neq('sender_id', user?.id) // Only mark messages from other users as read
+            .select();
+          
+          if (updateError) {
+            console.error('Error marking messages as read:', updateError);
+          } else {
+            console.log(`Successfully marked ${count} messages as read in conversation:`, conversationId);
+          }
         }
       }
         
@@ -292,8 +300,52 @@ export default function Messages() {
     }
   };
 
-  // Removed clearAllNotifications - messages should only be marked as read
-  // when the specific conversation is opened, not when the Messages page loads
+  // Function to manually clear all unread messages (for debugging)
+  const clearAllUnreadMessages = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('=== MANUALLY CLEARING ALL UNREAD MESSAGES ===');
+      
+      // Get all conversations for this user
+      const { data: userConversations } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      
+      if (userConversations && userConversations.length > 0) {
+        const conversationIds = userConversations.map(c => c.id);
+        
+        // Mark all messages as read
+        const { error, count } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .in('conversation_id', conversationIds)
+          .eq('is_read', false)
+          .neq('sender_id', user.id)
+          .select();
+        
+        if (error) {
+          console.error('Error clearing unread messages:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to clear unread messages',
+            variant: 'destructive'
+          });
+        } else {
+          console.log(`Successfully cleared ${count} unread messages`);
+          toast({
+            title: 'Success',
+            description: `Cleared ${count} unread messages`,
+          });
+          // Force refresh the home page notification count
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.error('Error in clearAllUnreadMessages:', error);
+    }
+  };
 
   const subscribeToMessages = () => {
     const channel = supabase
@@ -351,7 +403,18 @@ export default function Messages() {
               </Button>
               <h1 className="text-lg font-bold">Messages</h1>
             </div>
-            <MessageUserSearch />
+            <div className="flex items-center gap-2">
+              <MessageUserSearch />
+              {/* Debug button - temporary for fixing unread messages issue */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllUnreadMessages}
+                title="Clear all unread messages (Debug)"
+              >
+                Clear Unread
+              </Button>
+            </div>
           </div>
         </header>
 
