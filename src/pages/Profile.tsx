@@ -558,7 +558,9 @@ const Profile = () => {
             {/* Read-only info */}
             {profile && (
               <div className="space-y-4 pt-4 border-t">
-                <h3 className="font-medium">Account Information</h3>
+                <h3 className="font-medium">
+                  Account Information <span className="font-light text-muted-foreground">(Only you can see this)</span>
+                </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Email</p>
