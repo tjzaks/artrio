@@ -18,6 +18,7 @@ export interface SignupData {
   email: string;
   password: string;
   username: string;
+  phone: string;
   birthday: string;
   vibes: string[];
   friendType: string;
@@ -70,6 +71,7 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
     email: '',
     password: '',
     username: '',
+    phone: '',
     birthday: '',
     vibes: [],
     friendType: '',
@@ -80,6 +82,7 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
 
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const totalSteps = 6;
   const progress = (step / totalSteps) * 100;
@@ -114,9 +117,51 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
     }));
   };
 
+  const validatePhone = (phone: string): boolean => {
+    // Remove all non-digit characters for validation
+    const digitsOnly = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid US phone number (10 digits) or international (7-15 digits)
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      return false;
+    }
+    
+    // For US numbers, check if it starts with valid area code (not 0 or 1)
+    if (digitsOnly.length === 10 && (digitsOnly[0] === '0' || digitsOnly[0] === '1')) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const formatPhone = (value: string): string => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Format as US phone number if 10 digits
+    if (digitsOnly.length === 10) {
+      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+    }
+    
+    // Otherwise just return digits with spaces for readability
+    return digitsOnly;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    setFormData(prev => ({ ...prev, phone: formatted }));
+    
+    // Validate phone number
+    if (value && !validatePhone(value)) {
+      setPhoneError('Please enter a valid phone number');
+    } else {
+      setPhoneError(null);
+    }
+  };
+
   const canProceed = () => {
     switch (step) {
-      case 1: return formData.email && formData.password && formData.username;
+      case 1: return formData.email && formData.password && formData.username && formData.phone && !phoneError;
       case 2: return formData.birthday;
       case 3: return formData.vibes.length > 0;
       case 4: return formData.friendType;
@@ -222,6 +267,24 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.phone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className={phoneError ? 'border-red-500' : ''}
+              />
+              {phoneError && (
+                <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                We'll use this to notify you about your trios
+              </p>
             </div>
           </div>
         )}

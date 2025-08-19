@@ -63,6 +63,7 @@ const Auth = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [birthdayText, setBirthdayText] = useState('');
   const [description, setDescription] = useState('');
@@ -78,6 +79,7 @@ const Auth = () => {
   const [personalityPage, setPersonalityPage] = useState(0);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [welcomeUsername, setWelcomeUsername] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   // Session ID no longer needed - removed username reservation logic
 
   // Redirect if already authenticated
@@ -284,6 +286,7 @@ const Auth = () => {
         username: username.toLowerCase(),
         birthday: format(birthday, 'yyyy-MM-dd'),
         bio: description || '',
+        phone: phone ? phone.replace(/\D/g, '') : undefined,
         personality_type: personalityType,
         first_name: firstName,
         last_name: lastName
@@ -332,6 +335,7 @@ const Auth = () => {
         setEmail('');
         setPassword('');
         setUsername('');
+        setPhone('');
         setBirthdayText('');
         setDescription('');
       }
@@ -428,6 +432,7 @@ const Auth = () => {
   const signupSteps = [
     { title: "What's your name?", fields: ['name'] },
     { title: "How can we reach you?", fields: ['email'] },
+    { title: "Your phone number", fields: ['phone'] },
     { title: "Create your username", fields: ['username'] },
     { title: "Secure your account", fields: ['password'] },
     { title: "When's your birthday?", fields: ['birthday'] },
@@ -439,10 +444,36 @@ const Auth = () => {
   const totalSteps = signupSteps.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
+  const validatePhone = (phoneNumber: string): boolean => {
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) return false;
+    if (digitsOnly.length === 10 && (digitsOnly[0] === '0' || digitsOnly[0] === '1')) return false;
+    return true;
+  };
+
+  const formatPhone = (value: string): string => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 10) {
+      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+    }
+    return digitsOnly;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    setPhone(formatted);
+    if (value && !validatePhone(value)) {
+      setPhoneError('Please enter a valid phone number');
+    } else {
+      setPhoneError(null);
+    }
+  };
+
   const canProceed = () => {
     switch (currentStepData?.fields[0]) {
       case 'name': return firstName && lastName;
       case 'email': return email;
+      case 'phone': return phone && validatePhone(phone);
       case 'username': return username && username.length >= 3;
       case 'password': return password && password.length >= 6 && confirmPassword && password === confirmPassword;
       case 'birthday': return birthdayText;
@@ -678,6 +709,29 @@ const Auth = () => {
                       className="text-lg p-6 text-center"
                       autoFocus
                     />
+                  </div>
+                )}
+
+                {/* Phone Field */}
+                {currentStepData.fields[0] === 'phone' && (
+                  <div className="space-y-4">
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className={cn(
+                        "text-lg p-6 text-center",
+                        phoneError && "border-red-500 focus:border-red-500"
+                      )}
+                      autoFocus
+                    />
+                    {phoneError && (
+                      <p className="text-xs text-red-500 text-center">{phoneError}</p>
+                    )}
+                    <p className="text-xs text-center text-muted-foreground">
+                      We'll use this to notify you about your trios
+                    </p>
                   </div>
                 )}
 

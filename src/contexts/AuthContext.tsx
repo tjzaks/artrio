@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string }) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string; phone?: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
+  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; phone?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -190,7 +190,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               user_id: authData.user.id,
               username: userData.username,
               bio: userData.bio || null,
-              avatar_url: null
+              avatar_url: null,
+              phone_number: userData.phone ? userData.phone.replace(/\D/g, '') : null
             });
 
           if (profileError && !profileError.message.includes('duplicate')) {
