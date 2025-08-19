@@ -75,8 +75,8 @@ const Home = () => {
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState<number>(0);
 
   useEffect(() => {
     if (user) {
@@ -280,11 +280,20 @@ const Home = () => {
     if (!user) return;
     
     try {
+      // Reset counts first
+      setUnreadMessages(0);
+      setPendingFriendRequests(0);
+      
       // Get unread messages count
-      const { data: conversations } = await supabase
+      const { data: conversations, error: convError } = await supabase
         .from('conversations')
         .select('id')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      
+      if (convError) {
+        console.error('Error fetching conversations:', convError);
+        return;
+      }
       
       if (conversations && conversations.length > 0) {
         const conversationIds = conversations.map(c => c.id);
@@ -301,34 +310,45 @@ const Home = () => {
         
         if (messageError) {
           console.error('Error fetching unread messages:', messageError);
+          setUnreadMessages(0);
+        } else {
+          console.log('Unread messages found:', unreadMessages);
+          console.log('Unread count:', unreadCount);
+          // Ensure we set 0 if count is null or undefined
+          setUnreadMessages(unreadCount ?? 0);
         }
-        
-        console.log('Unread messages found:', unreadMessages);
-        console.log('Unread count:', unreadCount);
-        
-        setUnreadMessages(unreadCount || 0);
       } else {
         console.log('No conversations found for user');
+        // Explicitly set to 0 when no conversations
         setUnreadMessages(0);
       }
       
       // Get pending friend requests count
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
         .single();
       
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        setPendingFriendRequests(0);
+        return;
+      }
+      
       if (userProfile) {
-        const { count: requestCount } = await supabase
+        const { count: requestCount, error: friendError } = await supabase
           .from('friendships')
           .select('*', { count: 'exact', head: true })
           .eq('friend_id', userProfile.id)
           .eq('status', 'pending');
         
-        setPendingFriendRequests(requestCount || 0);
-      } else {
-        setPendingFriendRequests(0);
+        if (friendError) {
+          console.error('Error fetching friend requests:', friendError);
+          setPendingFriendRequests(0);
+        } else {
+          setPendingFriendRequests(requestCount ?? 0);
+        }
       }
     } catch (error) {
       logger.error('Error fetching notification counts:', error);
@@ -651,10 +671,6 @@ const Home = () => {
                 size="sm" 
                 onClick={() => {
                   navigate('/messages');
-                  // Clear message notifications after navigating
-                  setTimeout(() => {
-                    setUnreadMessages(0);
-                  }, 500);
                 }} 
                 className="h-8 px-2 relative"
               >
