@@ -90,20 +90,20 @@ export default function MessageUserSearch() {
     }
 
     try {
-      // Check if conversation already exists
-      const { data: existing, error: queryError } = await supabase
+      // Check if conversation already exists - using simpler approach
+      const { data: existing1 } = await supabase
         .from('conversations')
         .select('id')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user.id})`);
+        .eq('user1_id', user.id)
+        .eq('user2_id', targetUser.user_id);
 
-      if (queryError) {
-        toast({
-          title: 'Error finding conversation',
-          description: queryError.message,
-          variant: 'destructive'
-        });
-        return;
-      }
+      const { data: existing2 } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('user1_id', targetUser.user_id)
+        .eq('user2_id', user.id);
+
+      const existing = [...(existing1 || []), ...(existing2 || [])];
 
       let conversationId;
       
