@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { usePresence } from '@/hooks/usePresence';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ interface Conversation {
 export default function Messages() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { isUserOnline } = usePresence();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ export default function Messages() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  // Load conversations
+  // Load conversations and handle URL params
   useEffect(() => {
     if (user) {
       loadConversations();
@@ -57,6 +58,17 @@ export default function Messages() {
       };
     }
   }, [user]);
+
+  // Handle conversation from URL params
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (conversationId && conversations.length > 0) {
+      const conv = conversations.find(c => c.id === conversationId);
+      if (conv) {
+        setSelectedConversation(conv);
+      }
+    }
+  }, [searchParams, conversations]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -258,11 +270,21 @@ export default function Messages() {
       {/* Conversations List */}
       <div className={`border-r ${selectedConversation ? 'hidden md:block md:w-96' : 'w-full md:w-96'}`}>
         <header className="sticky top-0 z-40 bg-background p-4 border-b">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h1 className="text-lg font-bold">Messages</h1>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/friends')}
+              className="h-8 w-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
             </Button>
-            <h1 className="text-lg font-bold">Messages</h1>
           </div>
         </header>
 

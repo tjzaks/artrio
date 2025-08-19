@@ -249,9 +249,37 @@ export default function Friends() {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            navigate(`/messages?user=${friend.id}`);
+                            // Create or find conversation then navigate
+                            try {
+                              // Check if conversation exists between these two users
+                              const { data: existing } = await supabase
+                                .from('conversations')
+                                .select('id')
+                                .or(`and(user1_id.eq.${user?.id},user2_id.eq.${friend.user_id}),and(user1_id.eq.${friend.user_id},user2_id.eq.${user?.id})`)
+                                .single();
+
+                              if (!existing) {
+                                // Create new conversation
+                                const { data: newConv, error } = await supabase
+                                  .from('conversations')
+                                  .insert({
+                                    user1_id: user?.id,
+                                    user2_id: friend.user_id
+                                  })
+                                  .select()
+                                  .single();
+                                
+                                if (error) throw error;
+                                navigate(`/messages?conversation=${newConv.id}`);
+                              } else {
+                                navigate(`/messages?conversation=${existing.id}`);
+                              }
+                            } catch (error) {
+                              console.error('Error creating conversation:', error);
+                              navigate('/messages');
+                            }
                           }}
                         >
                           Message
