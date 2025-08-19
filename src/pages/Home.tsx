@@ -700,7 +700,16 @@ const Home = () => {
               >
                 <MessageSquare className="h-4 w-4" />
                 {unreadMessages > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <div 
+                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Badge clicked - unreadMessages value:', unreadMessages);
+                      console.log('Type of unreadMessages:', typeof unreadMessages);
+                      alert(`Notification count: ${unreadMessages}\nClick OK to reset to 0`);
+                      setUnreadMessages(0);
+                    }}
+                  >
                     {unreadMessages > 99 ? '99+' : unreadMessages}
                   </div>
                 )}
