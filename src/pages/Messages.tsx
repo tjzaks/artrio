@@ -63,10 +63,28 @@ export default function Messages() {
   // Handle conversation from URL params
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    if (conversationId && conversations.length > 0) {
-      const conv = conversations.find(c => c.id === conversationId);
-      if (conv) {
-        setSelectedConversation(conv);
+    const shouldReload = searchParams.get('reload');
+    
+    if (shouldReload === 'true') {
+      // Force reload conversations when a new one is created
+      loadConversations().then(() => {
+        // After reload, remove the reload flag from URL
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('reload');
+        navigate(`/messages?${newParams.toString()}`, { replace: true });
+      });
+    }
+    
+    if (conversationId) {
+      // If we have conversations loaded, find and select
+      if (conversations.length > 0) {
+        const conv = conversations.find(c => c.id === conversationId);
+        if (conv) {
+          setSelectedConversation(conv);
+        } else {
+          // Conversation not in list yet, reload
+          loadConversations();
+        }
       }
     }
   }, [searchParams, conversations]);
