@@ -509,7 +509,7 @@ const Home = () => {
             <div className="flex items-center gap-2">
               {userProfile && (
                 <div className="text-sm font-medium mr-2">
-                  Hey @{userProfile.username}
+                  Hey @{userProfile.username}!
                 </div>
               )}
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
