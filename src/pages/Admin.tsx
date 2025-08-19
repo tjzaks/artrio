@@ -122,31 +122,52 @@ const Admin = () => {
       // Shuffle users
       const shuffled = [...users].sort(() => Math.random() - 0.5);
       
-      // Create trios (groups of 3)
+      // Create trios (groups of 5 - matching the schema)
       const trios = [];
-      for (let i = 0; i < shuffled.length; i += 3) {
+      for (let i = 0; i < shuffled.length; i += 5) {
         if (i + 2 < shuffled.length) {
-          trios.push({
+          // At minimum we need 3 users for a trio
+          const trio: any = {
             user1_id: shuffled[i].user_id,
             user2_id: shuffled[i + 1].user_id,
             user3_id: shuffled[i + 2].user_id,
+            user4_id: shuffled[i + 3]?.user_id || null,
+            user5_id: shuffled[i + 4]?.user_id || null,
             date: today
-          });
+          };
+          trios.push(trio);
         }
       }
       
       // Insert new trios
       if (trios.length > 0) {
-        await supabase
+        const { error: insertError } = await supabase
           .from('trios')
           .insert(trios);
         
+        if (insertError) {
+          logger.error('Error inserting trios:', insertError);
+          toast({
+            title: 'Error',
+            description: 'Failed to create trios',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
         toast({
           title: 'Trios randomized',
-          description: `Created ${trios.length} new trios for today`,
+          description: `Created ${trios.length} new trio${trios.length > 1 ? 's' : ''} for today`,
         });
         
+        // Refresh stats to show new trio count
         await fetchAdminStats();
+      } else {
+        toast({
+          title: 'No trios created',
+          description: 'Not enough users to form complete trios',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       logger.error('Error randomizing trios:', error);
