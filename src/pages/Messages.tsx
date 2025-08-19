@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Send, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Plus, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Message {
@@ -78,6 +78,8 @@ export default function Messages() {
         return;
       }
 
+      console.log('Loading conversations for user:', user.id);
+
       // Get all conversations for this user
       const { data: convs, error } = await supabase
         .from('conversations')
@@ -86,8 +88,11 @@ export default function Messages() {
 
       if (error) {
         console.error('Error fetching conversations:', error);
+        console.error('Query was:', `user1_id.eq.${user.id},user2_id.eq.${user.id}`);
         throw error;
       }
+
+      console.log('Found conversations:', convs?.length || 0);
 
       // For each conversation, get the other user's profile
       const conversationsWithProfiles = await Promise.all(
@@ -128,15 +133,12 @@ export default function Messages() {
       );
 
       setConversations(conversationsWithProfiles);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading conversations:', error);
       // Only show toast for actual errors, not empty results
       if (error && error.code !== 'PGRST116') {
-        toast({
-          title: 'Error',
-          description: 'Failed to load conversations',
-          variant: 'destructive'
-        });
+        // Don't show error toast, just log it
+        console.error('Failed to load conversations:', error.message);
       }
       setConversations([]); // Set empty array on error
     } finally {
@@ -268,7 +270,15 @@ export default function Messages() {
           {conversations.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No conversations yet</p>
+              <p className="mb-4">No conversations yet</p>
+              <Button
+                onClick={() => navigate('/friends')}
+                variant="outline"
+                className="mx-auto"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Find Friends to Message
+              </Button>
             </div>
           ) : (
             conversations.map((conv) => (
