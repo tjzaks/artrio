@@ -19,6 +19,7 @@ interface Profile {
   username: string;
   bio: string | null;
   avatar_url: string | null;
+  phone_number: string | null;
   created_at: string;
   updated_at: string;
   username_change_count?: number;
@@ -43,6 +44,7 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     username: user?.user_metadata?.username || '',
     bio: user?.user_metadata?.bio || '',
+    phone_number: user?.user_metadata?.phone_number || '',
     avatar_url: ''
   });
   const [originalUsername, setOriginalUsername] = useState('');
@@ -107,6 +109,7 @@ const Profile = () => {
         setFormData({
           username: profileData.username,
           bio: profileData.bio || '',
+          phone_number: profileData.phone_number || '',
           avatar_url: profileData.avatar_url || ''
         });
         setOriginalUsername(profileData.username);
@@ -132,6 +135,7 @@ const Profile = () => {
               user_id: user.id,
               username: metadata.username,
               bio: metadata.bio || '',
+              phone_number: metadata.phone_number || null,
               avatar_url: null
             })
             .select()
@@ -142,6 +146,7 @@ const Profile = () => {
             setFormData({
               username: newProfile.username,
               bio: newProfile.bio || '',
+              phone_number: newProfile.phone_number || '',
               avatar_url: newProfile.avatar_url || ''
             });
             setOriginalUsername(newProfile.username);
@@ -307,6 +312,7 @@ const Profile = () => {
           .update({
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
+            phone_number: formData.phone_number.trim() || null,
             avatar_url: formData.avatar_url.trim() || null
           })
           .eq('user_id', user?.id);
@@ -327,6 +333,7 @@ const Profile = () => {
             user_id: user?.id,
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
+            phone_number: formData.phone_number.trim() || null,
             avatar_url: formData.avatar_url.trim() || null
           });
 
@@ -558,6 +565,21 @@ const Profile = () => {
                   ? 'Bio will be hidden for users under 18' 
                   : 'Share a bit about yourself with your trio members'
                 }
+              </p>
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Your phone number (optional)"
+                value={formData.phone_number}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Your phone number is private and only visible to you
               </p>
             </div>
 
