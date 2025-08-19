@@ -117,15 +117,15 @@ export default function MessageUserSearch() {
           <Plus className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-3 border-b">
+      <PopoverContent className="w-80 p-0 shadow-lg border bg-background" align="end" sideOffset={8}>
+        <div className="p-3 border-b bg-muted/30">
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search users to message..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-8"
+              className="pl-10 pr-10 h-10"
               autoFocus
             />
             {searchQuery && (
@@ -134,7 +134,7 @@ export default function MessageUserSearch() {
                   setSearchQuery('');
                   setUsers([]);
                 }}
-                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -142,22 +142,26 @@ export default function MessageUserSearch() {
           </div>
         </div>
 
-        <div className="max-h-80 overflow-y-auto">
+        <div className="max-h-80 overflow-y-auto bg-background">
           {loading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              Searching...
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+                <div className="h-2 w-2 bg-primary rounded-full animate-pulse delay-75" />
+                <div className="h-2 w-2 bg-primary rounded-full animate-pulse delay-150" />
+              </div>
             </div>
           ) : users.length > 0 ? (
-            <div className="p-2">
+            <div className="py-2">
               {users.map((user) => (
                 <button
                   key={user.id}
                   onClick={() => startConversation(user)}
-                  className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors"
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback className="text-xs">
                       {user.username.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -168,12 +172,14 @@ export default function MessageUserSearch() {
               ))}
             </div>
           ) : searchQuery.trim() ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No users found
+            <div className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">No users found</p>
+              <p className="text-xs text-muted-foreground mt-1">Try a different search</p>
             </div>
           ) : (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Type to search for users
+            <div className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">Start typing to search</p>
+              <p className="text-xs text-muted-foreground mt-1">Find anyone to message</p>
             </div>
           )}
         </div>
