@@ -225,10 +225,13 @@ export default function Friends() {
             ) : (
               <div className="space-y-2">
                 {friends.map(friend => (
-                  <Card key={friend.id}>
+                  <Card key={friend.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 flex-1"
+                          onClick={() => navigate(`/user/${friend.id}`)}
+                        >
                           <Avatar>
                             <AvatarImage src={friend.avatar_url} />
                             <AvatarFallback>
@@ -242,7 +245,14 @@ export default function Friends() {
                             )}
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/messages?user=${friend.id}`);
+                          }}
+                        >
                           Message
                         </Button>
                       </div>
