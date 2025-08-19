@@ -84,7 +84,56 @@ const Home = () => {
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
+      fetchNotificationCounts();
+      
+      // Subscribe to real-time updates for notification counts
+      const messagesChannel = supabase
+        .channel('notification-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+          },
+          () => {
+            // Refresh notification counts when new messages arrive
+            fetchNotificationCounts();
+          }
+        )
+        .subscribe();
+      
+      const friendshipsChannel = supabase
+        .channel('notification-friendships')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'friendships'
+          },
+          () => {
+            // Refresh notification counts when friendship status changes
+            fetchNotificationCounts();
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        messagesChannel.unsubscribe();
+        friendshipsChannel.unsubscribe();
+      };
     }
+  }, [user]);
+
+  // Refresh notification counts when component regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchNotificationCounts();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   // Add keyboard shortcut for health check (Ctrl/Cmd + H + H)
@@ -211,6 +260,49 @@ const Home = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNotificationCounts = async () => {
+    if (!user) return;
+    
+    try {
+      // Get unread messages count
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+      
+      if (conversations) {
+        const conversationIds = conversations.map(c => c.id);
+        const { count: unreadCount } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .in('conversation_id', conversationIds)
+          .eq('is_read', false)
+          .neq('sender_id', user.id);
+        
+        setUnreadMessages(unreadCount || 0);
+      }
+      
+      // Get pending friend requests count
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userProfile) {
+        const { count: requestCount } = await supabase
+          .from('friendships')
+          .select('*', { count: 'exact', head: true })
+          .eq('friend_id', userProfile.id)
+          .eq('status', 'pending');
+        
+        setPendingFriendRequests(requestCount || 0);
+      }
+    } catch (error) {
+      logger.error('Error fetching notification counts:', error);
     }
   };
 
@@ -514,11 +606,21 @@ const Home = () => {
                   Hey @{userProfile.username}!
                 </div>
               )}
-              <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2 relative">
                 <User className="h-4 w-4" />
+                {pendingFriendRequests > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {pendingFriendRequests}
+                  </div>
+                )}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2 relative">
                 <MessageSquare className="h-4 w-4" />
+                {unreadMessages > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </div>
+                )}
               </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">

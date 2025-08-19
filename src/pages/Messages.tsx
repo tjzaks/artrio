@@ -225,7 +225,8 @@ export default function Messages() {
           .from('messages')
           .update({ is_read: true })
           .eq('conversation_id', conversationId)
-          .neq('sender_id', user?.id);
+          .neq('sender_id', user?.id)
+          .eq('is_read', false); // Only update unread messages
       }
         
     } catch (error: any) {
@@ -326,7 +327,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="h-[100dvh] bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background p-4 border-b flex-shrink-0">
