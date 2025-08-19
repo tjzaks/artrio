@@ -37,7 +37,7 @@ interface Message {
 }
 
 const Messages = () => {
-  const { user, ensureAuthenticated } = useAuth();
+  const { user, ensureAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -262,8 +262,8 @@ const Messages = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || sending) return;
 
-    // Check if user can send message (spam protection)
-    if (selectedConversation.awaiting_response && !selectedConversation.can_send_message) {
+    // Check if user can send message (spam protection - admins bypass this)
+    if (!isAdmin && selectedConversation.awaiting_response && !selectedConversation.can_send_message) {
       toast({
         title: 'Message limit reached',
         description: 'You can send another message after they respond',
@@ -826,7 +826,7 @@ const Messages = () => {
           </ScrollArea>
 
           <div className="border-t p-4">
-            {selectedConversation.awaiting_response && !selectedConversation.can_send_message ? (
+            {!isAdmin && selectedConversation.awaiting_response && !selectedConversation.can_send_message ? (
               <div className="text-center py-3 px-4 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   You've sent a message. Wait for a response to continue the conversation.
@@ -847,7 +847,7 @@ const Messages = () => {
                   placeholder={selectedConversation.is_blocked ? "This user is blocked" : "Type a message..."}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  disabled={sending || selectedConversation.is_blocked || (selectedConversation.awaiting_response && !selectedConversation.can_send_message)}
+                  disabled={sending || selectedConversation.is_blocked || (!isAdmin && selectedConversation.awaiting_response && !selectedConversation.can_send_message)}
                 />
                 <Button 
                   type="submit" 
