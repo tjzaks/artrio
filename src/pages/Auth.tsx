@@ -89,7 +89,7 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-[100dvh] flex items-center justify-center overflow-hidden">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -501,7 +501,7 @@ const Auth = () => {
   if (!isSignUp) {
     // Regular login form
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="h-[100dvh] flex items-center justify-center bg-background p-4 overflow-hidden">
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex justify-center mb-4">
@@ -618,7 +618,7 @@ const Auth = () => {
 
   // Card-based signup flow
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4 sm:p-6 md:p-8">
+    <div className="h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4 sm:p-6 md:p-8 overflow-hidden">
       <div className="w-full max-w-lg px-4 sm:px-0">
         {/* Logo */}
         <div className="flex justify-center mb-8">
