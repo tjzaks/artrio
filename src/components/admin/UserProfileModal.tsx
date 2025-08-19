@@ -119,9 +119,11 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       
       if (authUser || sensitiveData) { // Continue if we have any data
 
-        // Calculate age
-        let age = null;
-        if (sensitiveData?.birthday) {
+        // Use age from backend if available, otherwise calculate it
+        let age = sensitiveData?.age || null;
+        
+        // Fallback: Calculate age if not provided by backend
+        if (!age && sensitiveData?.birthday) {
           const birthDate = new Date(sensitiveData.birthday);
           const today = new Date();
           age = today.getFullYear() - birthDate.getFullYear();
@@ -387,7 +389,7 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">
-                        Age: {accountInfo?.age || 'Unknown'}
+                        Age: {accountInfo?.age ? `${accountInfo.age} years old` : 'Unknown'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
