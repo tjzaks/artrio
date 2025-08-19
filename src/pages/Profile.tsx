@@ -19,6 +19,7 @@ interface Profile {
   username: string;
   bio: string | null;
   avatar_url: string | null;
+  phone_number?: string | null;
   created_at: string;
   updated_at: string;
   username_change_count?: number;
@@ -414,6 +415,15 @@ const Profile = () => {
     return typeof age === 'number' && age < 18;
   };
 
+  const formatPhoneNumber = (phone: string): string => {
+    // Phone is stored as digits only in database
+    if (phone.length === 10) {
+      return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+    }
+    // Return as-is for international numbers
+    return phone;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -565,6 +575,10 @@ const Profile = () => {
                   <div>
                     <p className="text-muted-foreground">Email</p>
                     <p>{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Phone</p>
+                    <p>{profile.phone_number ? formatPhoneNumber(profile.phone_number) : 'Not provided'}</p>
                   </div>
                   {userAge !== null && (
                     <div>
