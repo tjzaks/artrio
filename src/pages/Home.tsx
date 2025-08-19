@@ -6,12 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Users, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
+import { Send, Users, Shield, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
-import NotificationBell from '@/components/NotificationBell';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
@@ -506,14 +505,13 @@ const Home = () => {
                   Live
                 </Badge>
               )}
+            </div>
+            <div className="flex items-center gap-2">
               {userProfile && (
-                <div className="text-sm font-medium">
+                <div className="text-sm font-medium mr-2">
                   Hey @{userProfile.username}
                 </div>
               )}
-            </div>
-            <div className="flex items-center gap-1">
-              <NotificationBell />
               <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
                 <UserPlus className="h-4 w-4" />
               </Button>
