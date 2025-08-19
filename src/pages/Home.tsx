@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
+import { Send, Users, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -56,7 +56,7 @@ interface Reply {
 }
 
 const Home = () => {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isSubscribed } = useRealtimeNotifications();
@@ -538,9 +538,6 @@ const Home = () => {
                     {userProfile?.username?.substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 px-2">
-                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>

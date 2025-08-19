@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ interface SensitiveData {
 }
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -607,6 +607,19 @@ const Profile = () => {
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Saving...' : (profile ? 'Save Profile' : 'Create Profile')}
             </Button>
+
+            {/* Sign Out Button - Small and subtle */}
+            <div className="pt-4 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="w-full text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-3 w-3 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>
