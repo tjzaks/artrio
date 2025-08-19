@@ -284,6 +284,8 @@ const Messages = () => {
       
       logger.info('Sending message:', { conversationId: selectedConversation.id, userId: session.user.id });
       
+      let messageSuccess = false;
+      
       try {
         const { data, error } = await authenticatedRpc('send_message', {
           p_conversation_id: selectedConversation.id,
@@ -295,7 +297,9 @@ const Messages = () => {
           throw error;
         }
         
-        if (!data?.success) {
+        if (data?.success) {
+          messageSuccess = true;
+        } else {
           throw new Error(data?.error || 'Failed to send message');
         }
       } catch (rpcError) {
@@ -320,29 +324,24 @@ const Messages = () => {
           .from('conversations')
           .update({
             last_sender_id: session.user.id,
-            awaiting_response: true,
+            awaiting_response: !isAdmin, // Admins don't trigger waiting
             updated_at: new Date().toISOString()
           })
           .eq('id', selectedConversation.id);
+        
+        messageSuccess = true;
       }
 
-      if (error) throw error;
-
-      if (data?.success) {
+      if (messageSuccess) {
         setNewMessage('');
         // Update conversation state locally
         setSelectedConversation(prev => prev ? {
           ...prev,
-          awaiting_response: true,
-          can_send_message: false
+          awaiting_response: !isAdmin, // Admins don't get restricted
+          can_send_message: isAdmin ? true : false
         } : null);
-        // Message will appear via real-time subscription
-      } else {
-        toast({
-          title: 'Error',
-          description: data?.error || 'Failed to send message',
-          variant: 'destructive'
-        });
+        // Refresh messages
+        await fetchMessages(selectedConversation.id);
       }
     } catch (error) {
       logger.error('Error sending message:', error);
