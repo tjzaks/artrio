@@ -196,8 +196,9 @@ export default function AddFriend() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
+            className="flex-1"
           />
-          <Button onClick={searchUsers} disabled={loading}>
+          <Button onClick={searchUsers} disabled={loading} className="flex-shrink-0">
             <Search className="h-4 w-4" />
           </Button>
         </div>
