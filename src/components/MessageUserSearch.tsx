@@ -69,22 +69,44 @@ export default function MessageUserSearch() {
   };
 
   const startConversation = async (targetUser: User) => {
+    console.log('Starting conversation with user:', {
+      targetUserId: targetUser.user_id,
+      targetUsername: targetUser.username,
+      currentUserId: user?.id
+    });
+
+    if (!user?.id) {
+      console.error('No current user ID');
+      return;
+    }
+
     try {
       // Check if conversation already exists
-      const { data: existing } = await supabase
+      const query = `and(user1_id.eq.${user.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user.id})`;
+      console.log('Query:', query);
+      
+      const { data: existing, error: queryError } = await supabase
         .from('conversations')
         .select('id')
-        .or(`and(user1_id.eq.${user?.id},user2_id.eq.${targetUser.user_id}),and(user1_id.eq.${targetUser.user_id},user2_id.eq.${user?.id})`);
+        .or(query);
+
+      if (queryError) {
+        console.error('Query error:', queryError);
+      }
+
+      console.log('Existing conversations:', existing);
 
       let conversationId;
       
       // Check if we found an existing conversation
       if (!existing || existing.length === 0) {
+        console.log('Creating new conversation between:', user.id, 'and', targetUser.user_id);
+        
         // Create new conversation
         const { data: newConv, error } = await supabase
           .from('conversations')
           .insert({
-            user1_id: user?.id,
+            user1_id: user.id,
             user2_id: targetUser.user_id
           })
           .select()
@@ -92,10 +114,17 @@ export default function MessageUserSearch() {
         
         if (error) {
           console.error('Error creating conversation:', error);
+          console.error('Insert data was:', {
+            user1_id: user.id,
+            user2_id: targetUser.user_id
+          });
+          alert(`Failed to create conversation: ${error.message}`);
           throw error;
         }
+        console.log('Created conversation:', newConv);
         conversationId = newConv.id;
       } else {
+        console.log('Using existing conversation:', existing[0]);
         conversationId = existing[0].id;
       }
 
@@ -104,10 +133,12 @@ export default function MessageUserSearch() {
       setSearchQuery('');
       setUsers([]);
       
+      console.log('Navigating to conversation:', conversationId);
       // Force reload to ensure conversation appears
       window.location.href = `/messages?conversation=${conversationId}`;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('Error in startConversation:', error);
+      alert('Failed to start conversation. Check console for details.');
     }
   };
 
