@@ -123,51 +123,49 @@ export default function MessageUserSearch() {
           <Plus className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0 shadow-lg border bg-background" align="end" sideOffset={8}>
-        <div className="p-3 border-b bg-muted/30">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search users to message..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 h-10"
-              autoFocus
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setUsers([]);
-                }}
-                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+      <PopoverContent className="w-72 p-3 rounded-xl" align="end" sideOffset={5}>
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search users to message..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9 h-9 rounded-lg bg-muted/50 border-0 focus:bg-muted"
+            autoFocus
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setUsers([]);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="max-h-80 overflow-y-auto bg-background">
+        <div className="max-h-64 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              <div className="flex items-center justify-center gap-2">
-                <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
-                <div className="h-2 w-2 bg-primary rounded-full animate-pulse delay-75" />
-                <div className="h-2 w-2 bg-primary rounded-full animate-pulse delay-150" />
+            <div className="py-3 text-center">
+              <div className="flex items-center justify-center gap-1.5">
+                <div className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-pulse" />
+                <div className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-pulse delay-75" />
+                <div className="h-1.5 w-1.5 bg-primary/60 rounded-full animate-pulse delay-150" />
               </div>
             </div>
           ) : users.length > 0 ? (
-            <div className="py-2">
+            <div className="space-y-0.5">
               {users.map((user) => (
                 <button
                   key={user.id}
                   onClick={() => startConversation(user)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/60 transition-colors"
                 >
-                  <Avatar className="h-9 w-9">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback className="text-xs bg-muted">
                       {user.username.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -178,14 +176,12 @@ export default function MessageUserSearch() {
               ))}
             </div>
           ) : searchQuery.trim() ? (
-            <div className="p-6 text-center">
-              <p className="text-sm text-muted-foreground">No users found</p>
-              <p className="text-xs text-muted-foreground mt-1">Try a different search</p>
+            <div className="py-4 text-center">
+              <p className="text-xs text-muted-foreground">No users found</p>
             </div>
           ) : (
-            <div className="p-6 text-center">
-              <p className="text-sm text-muted-foreground">Start typing to search</p>
-              <p className="text-xs text-muted-foreground mt-1">Find anyone to message</p>
+            <div className="py-4 text-center">
+              <p className="text-xs text-muted-foreground">Type to search for users</p>
             </div>
           )}
         </div>
