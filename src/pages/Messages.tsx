@@ -803,8 +803,16 @@ export default function Messages() {
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         } ${isOwn ? 'select-none' : ''}`}
-                        onTouchStart={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
-                        onTouchEnd={isOwn ? handleLongPressEnd : undefined}
+                        onTouchStart={isOwn ? (e) => {
+                          if (!contextMenu) {
+                            handleLongPressStart(e, message.id);
+                          }
+                        } : undefined}
+                        onTouchEnd={isOwn ? (e) => {
+                          if (!contextMenu) {
+                            handleLongPressEnd();
+                          }
+                        } : undefined}
                         onTouchMove={isOwn ? handleLongPressEnd : undefined}
                         onMouseDown={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
                         onMouseUp={isOwn ? handleLongPressEnd : undefined}
@@ -861,7 +869,10 @@ export default function Messages() {
               <div 
                 className="fixed inset-0 z-40" 
                 onClick={closeContextMenu}
-                onTouchStart={closeContextMenu}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  closeContextMenu();
+                }}
               />
               
               {/* Context menu */}
@@ -882,27 +893,24 @@ export default function Messages() {
                     <>
                       <button
                         onClick={() => handleEditFromMenu(contextMenu.messageId)}
-                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm"
                       >
-                        <span>✏️</span>
                         Edit
                       </button>
                       
                       {canUnsendMessage && (
                         <button
                           onClick={() => handleUnsendMessage(contextMenu.messageId)}
-                          className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2 text-orange-600"
+                          className="w-full px-4 py-2 text-left hover:bg-muted text-sm text-orange-600"
                         >
-                          <span>↩️</span>
                           Unsend
                         </button>
                       )}
                       
                       <button
                         onClick={() => handleDeleteMessage(contextMenu.messageId)}
-                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2 text-red-600"
+                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm text-red-600"
                       >
-                        <span>🗑️</span>
                         Delete
                       </button>
                     </>
