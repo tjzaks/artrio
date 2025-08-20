@@ -52,7 +52,7 @@ export function useMessageNotifications() {
     if (!user) return;
 
     const channel = supabase
-      .channel('notification-sync-global')
+      .channel(`notification-sync-${user.id}`)
       .on(
         'postgres_changes',
         {
