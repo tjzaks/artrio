@@ -489,6 +489,14 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: number
       }
+      randomize_trios: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      delete_todays_trios: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

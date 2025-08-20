@@ -17,12 +17,7 @@ export default function SystemControlsPanel() {
   const triggerTrioRandomization = async () => {
     setButtonLoading('randomize', true);
     try {
-      // Try the safe wrapper function that returns text
-      const { data: textData, error: textError } = await supabase.rpc('randomize_trios_safe');
-      
-      // Parse the text response as JSON
-      const data = textData ? JSON.parse(textData) : null;
-      const error = textError;
+      const { data, error } = await supabase.rpc('randomize_trios');
       
       if (error) {
         logger.error('RPC Error:', error);
