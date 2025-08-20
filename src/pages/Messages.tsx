@@ -267,10 +267,7 @@ export default function Messages() {
           is_read: m.is_read
         })));
         
-        // Clear unread count in the conversation list immediately
-        setConversations(prev => prev.map(c => 
-          c.id === conversationId ? { ...c, unread_count: 0 } : c
-        ));
+        // DON'T clear visuals immediately - wait for database confirmation
         
         // Always try to mark messages as read when opening a conversation
         console.log(`[MESSAGES] Attempting to mark all unread messages as read for conversation ${conversationId}...`);
@@ -283,12 +280,13 @@ export default function Messages() {
           .select();
         
         if (updateError) {
-          console.error('[MESSAGES] ERROR marking messages as read:', updateError);
+          console.error('[MESSAGES] ERROR - keeping visual indicators:', updateError);
         } else {
-          console.log(`[MESSAGES] SUCCESS: Marked ${count || 0} messages as read`);
-          console.log('[MESSAGES] Updated messages:', updatedData);
-          
-          // Force refresh the notification count
+          console.log(`[MESSAGES] SUCCESS - clearing visual indicators`);
+          // Clear visuals ONLY after database update succeeds
+          setConversations(prev => prev.map(c => 
+            c.id === conversationId ? { ...c, unread_count: 0 } : c
+          ));
           refreshMessageCount();
         }
       } else {
@@ -503,10 +501,7 @@ export default function Messages() {
                 key={conv.id}
                 onClick={() => {
                   setSelectedConversation(conv);
-                  // Immediately mark this conversation as having no unread messages
-                  setConversations(prev => prev.map(c => 
-                    c.id === conv.id ? { ...c, unread_count: 0 } : c
-                  ));
+                  // DON'T clear visuals immediately - wait for database confirmation
                 }}
                 className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
                   selectedConversation?.id === conv.id ? 'bg-muted/50' : ''
