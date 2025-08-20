@@ -7,7 +7,7 @@ export function useMessageNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const fetchTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // BULLETPROOF: Always query fresh from database, no caching
+  // Use the new notification_counts system
   const fetchUnreadCount = async () => {
     if (!user) {
       setUnreadCount(0);
@@ -15,28 +15,9 @@ export function useMessageNotifications() {
     }
 
     try {
-      // Single query to get unread count
-      // First get conversations, then count unread messages
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-      
-      if (!conversations || conversations.length === 0) {
-        console.log('[Notifications] No conversations found');
-        setUnreadCount(0);
-        return;
-      }
-
-      const conversationIds = conversations.map(c => c.id);
-      
-      // Direct count query - no data fetching, just the count
-      const { count, error } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .in('conversation_id', conversationIds)
-        .eq('is_read', false)
-        .neq('sender_id', user.id);
+      // Use our new get_total_unread_count function
+      const { data, error } = await supabase
+        .rpc('get_total_unread_count', { p_user_id: user.id });
       
       if (error) {
         console.error('[Notifications] Query error:', error);
@@ -44,8 +25,8 @@ export function useMessageNotifications() {
         return;
       }
       
-      const finalCount = count || 0;
-      console.log(`[Notifications] Database says: ${finalCount} unread messages`);
+      const finalCount = data || 0;
+      console.log(`[Notifications] Total unread count: ${finalCount}`);
       setUnreadCount(finalCount);
       
     } catch (error) {
@@ -71,7 +52,7 @@ export function useMessageNotifications() {
     fetchUnreadCount();
   }, [user]);
 
-  // SIMPLE: Listen for ANY change to messages table and refresh
+  // Listen for changes to notification_counts table for this user
   useEffect(() => {
     if (!user) return;
 
@@ -82,10 +63,11 @@ export function useMessageNotifications() {
         {
           event: '*', // Listen to ALL events (INSERT, UPDATE, DELETE)
           schema: 'public',
-          table: 'messages'
+          table: 'notification_counts',
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[Notifications] Messages table changed:', payload.eventType);
+          console.log('[Notifications] Notification counts changed:', payload.eventType);
           // Don't try to be smart - just refresh from DB
           debouncedRefresh();
         }
