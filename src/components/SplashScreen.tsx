@@ -42,7 +42,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             <div className="relative">
               {/* Dynamic shadow that moves */}
               <motion.div
-                className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-32 h-4 bg-black/10 rounded-full blur-xl"
+                className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-6 bg-black/10 rounded-full blur-xl"
                 animate={{
                   scaleX: [1, 1.3, 1],
                   opacity: [0.2, 0.1, 0.2]
@@ -54,240 +54,86 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 }}
               />
 
-              {/* Main bars with enhanced animations */}
-              <div className="relative flex items-center justify-center gap-3">
-                {/* Red Bar */}
-                <motion.div
-                  className="relative"
-                  initial={{ x: -200, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ 
-                    delay: 0.2, 
-                    duration: 0.8,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                >
-                  <motion.div
-                    className="w-16 h-40 rounded-full relative overflow-hidden"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #FF6B6B 0%, #D73935 50%, #B71C1C 100%)',
-                      boxShadow: '0 10px 40px rgba(215, 57, 53, 0.3), inset 0 -5px 10px rgba(0,0,0,0.1)'
-                    }}
-                    animate={{
-                      rotateZ: [0, 5, -5, 0],
-                      scaleY: [1, 1.05, 1]
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  >
-                    {/* Inner glow effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20"
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                    />
-                    
-                    {/* Pulse effect */}
-                    <motion.div
-                      className="absolute -inset-2 bg-red-400 rounded-full blur-xl"
-                      animate={{
-                        opacity: [0, 0.5, 0],
-                        scale: [0.8, 1.2, 0.8]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 0.5
-                      }}
-                    />
-                  </motion.div>
-                </motion.div>
-
-                {/* Green Bar */}
-                <motion.div
-                  className="relative"
-                  initial={{ y: -200, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ 
-                    delay: 0.3, 
-                    duration: 0.8,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                >
-                  <motion.div
-                    className="w-16 h-40 rounded-full relative overflow-hidden"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #95E770 0%, #7BB146 50%, #558B2F 100%)',
-                      boxShadow: '0 10px 40px rgba(123, 177, 70, 0.3), inset 0 -5px 10px rgba(0,0,0,0.1)'
-                    }}
-                    animate={{
-                      scaleY: [1, 1.1, 1],
-                      y: [0, -5, 0]
-                    }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.3
-                    }}
-                  >
-                    {/* Inner glow effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20"
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.3
-                      }}
-                    />
-                    
-                    {/* Pulse effect */}
-                    <motion.div
-                      className="absolute -inset-2 bg-green-400 rounded-full blur-xl"
-                      animate={{
-                        opacity: [0, 0.5, 0],
-                        scale: [0.8, 1.2, 0.8]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 0.8
-                      }}
-                    />
-                  </motion.div>
-                </motion.div>
-
-                {/* Blue Bar */}
-                <motion.div
-                  className="relative"
-                  initial={{ x: 200, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ 
-                    delay: 0.4, 
-                    duration: 0.8,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                >
-                  <motion.div
-                    className="w-16 h-40 rounded-full relative overflow-hidden"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #5FC3E8 0%, #1BA0CC 50%, #0277BD 100%)',
-                      boxShadow: '0 10px 40px rgba(27, 160, 204, 0.3), inset 0 -5px 10px rgba(0,0,0,0.1)'
-                    }}
-                    animate={{
-                      rotateZ: [0, -5, 5, 0],
-                      scaleY: [1, 1.05, 1]
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.6
-                    }}
-                  >
-                    {/* Inner glow effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-t from-transparent to-white/20"
-                      animate={{
-                        opacity: [0.3, 0.6, 0.3]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.6
-                      }}
-                    />
-                    
-                    {/* Pulse effect */}
-                    <motion.div
-                      className="absolute -inset-2 bg-blue-400 rounded-full blur-xl"
-                      animate={{
-                        opacity: [0, 0.5, 0],
-                        scale: [0.8, 1.2, 0.8]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 1.1
-                      }}
-                    />
-                  </motion.div>
-                </motion.div>
-              </div>
-
-              {/* Connecting energy between bars */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-                <motion.circle
-                  cx="50%"
-                  cy="50%"
-                  r="80"
-                  fill="none"
-                  stroke="url(#gradient)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ 
-                    pathLength: 1, 
-                    opacity: [0, 0.3, 0],
-                    rotate: 360
-                  }}
-                  transition={{
-                    pathLength: { duration: 2, delay: 0.8 },
-                    opacity: { duration: 3, repeat: Infinity },
-                    rotate: { duration: 8, repeat: Infinity, ease: "linear" }
-                  }}
-                />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#D73935" />
-                    <stop offset="50%" stopColor="#7BB146" />
-                    <stop offset="100%" stopColor="#1BA0CC" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            
-            {/* Artrio Text */}
-            <motion.div
-              className="mt-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.6 }}
-            >
-              <motion.h1
-                className="text-6xl font-black tracking-tight text-gray-900"
-                animate={{
-                  scale: [1, 1.02, 1]
+              {/* New Artrio Logo Image with animations */}
+              <motion.div
+                className="relative"
+                initial={{ rotateY: 0 }}
+                animate={{ 
+                  rotateY: [0, 10, -10, 0],
+                  scale: [1, 1.05, 1]
                 }}
                 transition={{
-                  duration: 3,
+                  duration: 4,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
               >
-                ARTRIO
-              </motion.h1>
-            </motion.div>
+                <motion.img
+                  src="/artrio-logo.png"
+                  alt="Artrio"
+                  className="w-64 h-64 object-contain"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: 1
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                />
+                
+                {/* Pulse effect around logo */}
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(215, 57, 53, 0.2) 0%, rgba(123, 177, 70, 0.2) 33%, rgba(27, 160, 204, 0.2) 66%, transparent 100%)'
+                  }}
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.5, 0, 0.5]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut"
+                  }}
+                />
+
+                {/* Rotating ring effect */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  <motion.circle
+                    cx="50%"
+                    cy="50%"
+                    r="120"
+                    fill="none"
+                    stroke="url(#gradient)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeDasharray="10 20"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ 
+                      pathLength: 1, 
+                      opacity: [0, 0.3, 0],
+                      rotate: 360
+                    }}
+                    transition={{
+                      pathLength: { duration: 2, delay: 0.8 },
+                      opacity: { duration: 3, repeat: Infinity },
+                      rotate: { duration: 8, repeat: Infinity, ease: "linear" }
+                    }}
+                  />
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#D73935" />
+                      <stop offset="50%" stopColor="#7BB146" />
+                      <stop offset="100%" stopColor="#1BA0CC" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </motion.div>
+            </div>
             
             {/* Tagline */}
             <motion.p
