@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import UserProfileModal from '@/components/admin/UserProfileModal';
-import StorageDebugPanel from '@/components/StorageDebugPanel';
 
 interface AdminStats {
   totalUsers: number;
@@ -351,9 +350,6 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Storage Debug Panel */}
-        <StorageDebugPanel />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
