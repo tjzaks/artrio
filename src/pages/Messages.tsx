@@ -103,6 +103,27 @@ export default function Messages() {
             refreshMessageCount();
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+            filter: `sender_id=eq.${user.id}` // Listen for updates to messages I sent
+          },
+          (payload) => {
+            const updatedMsg = payload.new as Message;
+            
+            // Update the message in our local state if it's been read
+            if (updatedMsg.is_read) {
+              setMessages(prev => prev.map(msg => 
+                msg.id === updatedMsg.id 
+                  ? { ...msg, is_read: true, read_at: updatedMsg.read_at }
+                  : msg
+              ));
+            }
+          }
+        )
         .subscribe();
       
       return () => {
@@ -325,16 +346,6 @@ export default function Messages() {
       }
       
       console.log(`[MESSAGES] Loaded ${data?.length || 0} messages`);
-      // Check if read_at is coming through
-      if (data && data.length > 0) {
-        const firstReadMessage = data.find(m => m.is_read);
-        if (firstReadMessage) {
-          console.log('[MESSAGES] Sample read message:', { 
-            is_read: firstReadMessage.is_read, 
-            read_at: firstReadMessage.read_at 
-          });
-        }
-      }
       setMessages(data || []);
       
       // Mark ALL messages in this conversation as read for the current user
