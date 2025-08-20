@@ -517,13 +517,26 @@ export default function Messages() {
     }
   };
 
-  // Long press handlers
-  const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent, messageId: string) => {
+  // Long press handlers - simplified
+  const handleLongPress = (e: React.TouchEvent | React.MouseEvent, messageId: string) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // Get touch/mouse position
+    let x = 0, y = 0;
+    if ('touches' in e) {
+      const touch = (e as React.TouchEvent).touches[0];
+      x = touch.clientX;
+      y = touch.clientY;
+    } else {
+      x = (e as React.MouseEvent).clientX;
+      y = (e as React.MouseEvent).clientY;
+    }
     
     // Clear any existing timer
     if (longPressTimer) {
       clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
     
     // Set timer for long press (500ms)
@@ -533,32 +546,18 @@ export default function Messages() {
         navigator.vibrate(50);
       }
       
-      // Get touch/mouse position
-      let x = 0, y = 0;
-      if ('touches' in e) {
-        const touch = e.touches[0];
-        x = touch.clientX;
-        y = touch.clientY;
-      } else {
-        x = e.clientX;
-        y = e.clientY;
-      }
-      
       setContextMenu({ messageId, x, y });
-      // Clear the timer since menu is now open
       setLongPressTimer(null);
     }, 500);
     
     setLongPressTimer(timer);
   };
 
-  const handleLongPressEnd = () => {
-    // Only clear timer if menu hasn't opened yet
+  const cancelLongPress = () => {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-    // Don't close the menu here - let user tap to select
   };
 
   const closeContextMenu = () => {
@@ -818,21 +817,15 @@ export default function Messages() {
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         } ${isOwn ? 'select-none' : ''}`}
-                        onTouchStart={isOwn ? (e) => {
-                          if (!contextMenu) {
-                            handleLongPressStart(e, message.id);
-                          }
-                        } : undefined}
-                        onTouchEnd={isOwn ? (e) => {
-                          if (!contextMenu) {
-                            handleLongPressEnd();
-                          }
-                        } : undefined}
-                        onTouchMove={isOwn ? handleLongPressEnd : undefined}
-                        onMouseDown={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
-                        onMouseUp={isOwn ? handleLongPressEnd : undefined}
-                        onMouseLeave={isOwn ? handleLongPressEnd : undefined}
-                        style={{ userSelect: isOwn ? 'none' : 'auto' }}
+                        onTouchStart={isOwn ? (e) => handleLongPress(e, message.id) : undefined}
+                        onTouchEnd={isOwn && !contextMenu ? cancelLongPress : undefined}
+                        onTouchMove={isOwn && !contextMenu ? cancelLongPress : undefined}
+                        onTouchCancel={isOwn && !contextMenu ? cancelLongPress : undefined}
+                        style={{ 
+                          userSelect: isOwn ? 'none' : 'auto',
+                          WebkitTouchCallout: isOwn ? 'none' : 'default',
+                          WebkitUserSelect: isOwn ? 'none' : 'auto'
+                        }}
                       >
                         {isEditing ? (
                           <div className="space-y-2">
@@ -886,10 +879,12 @@ export default function Messages() {
             <>
               {/* Backdrop to close menu */}
               <div 
-                className="fixed inset-0 z-40" 
-                onClick={closeContextMenu}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
+                className="fixed inset-0 z-40 bg-black/5" 
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
                   closeContextMenu();
                 }}
               />
