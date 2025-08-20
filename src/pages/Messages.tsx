@@ -271,18 +271,13 @@ export default function Messages() {
         
         // Always try to mark messages as read when opening a conversation
         console.log(`[MESSAGES] Attempting to mark all unread messages as read for conversation ${conversationId}...`);
-        const { data: updatedData, error: updateError, count } = await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .eq('conversation_id', conversationId)
-          .eq('is_read', false)
-          .neq('sender_id', user?.id) // Only mark messages from other users as read
-          .select();
+        const { data: result, error: updateError } = await supabase
+          .rpc('mark_conversation_read', { p_conversation_id: conversationId });
         
         if (updateError) {
           console.error('[MESSAGES] ERROR - keeping visual indicators:', updateError);
         } else {
-          console.log(`[MESSAGES] SUCCESS - clearing visual indicators`);
+          console.log(`[MESSAGES] SUCCESS - marked ${result?.updated_count || 0} messages as read`);
           // Clear visuals ONLY after database update succeeds
           setConversations(prev => prev.map(c => 
             c.id === conversationId ? { ...c, unread_count: 0 } : c
