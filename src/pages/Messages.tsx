@@ -34,6 +34,7 @@ interface Conversation {
   };
   last_message?: string;
   last_message_at?: string;
+  unread_count?: number;
 }
 
 export default function Messages() {
@@ -114,6 +115,13 @@ export default function Messages() {
                 if (prev.some(m => m.id === newMsg.id)) return prev;
                 return [...prev, newMsg];
               });
+              
+              // Mark as read since the conversation is open
+              supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('id', newMsg.id)
+                .then(() => console.log('Marked new message as read'));
             }
           }
         )
@@ -175,6 +183,14 @@ export default function Messages() {
             .limit(1)
             .single();
 
+          // Get unread message count for this conversation
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', conv.id)
+            .eq('is_read', false)
+            .neq('sender_id', user?.id); // Don't count messages the user sent
+
           return {
             ...conv,
             other_user: profile ? {
@@ -187,7 +203,8 @@ export default function Messages() {
               avatar_url: null
             },
             last_message: lastMsg?.content,
-            last_message_at: lastMsg?.created_at
+            last_message_at: lastMsg?.created_at,
+            unread_count: unreadCount || 0
           };
         })
       );
@@ -247,6 +264,11 @@ export default function Messages() {
           sender_id: m.sender_id,
           is_read: m.is_read
         })));
+        
+        // Clear unread count in the conversation list immediately
+        setConversations(prev => prev.map(c => 
+          c.id === conversationId ? { ...c, unread_count: 0 } : c
+        ));
         
         if (unreadMessages.length > 0) {
           console.log(`[MESSAGES] Attempting to mark ${unreadMessages.length} messages as read...`);
@@ -401,8 +423,25 @@ export default function Messages() {
             return [...prev, newMsg];
           });
           
-          // Refresh conversations to update last message
-          loadConversations();
+          // Update conversation list with new message info
+          setConversations(prev => prev.map(conv => {
+            if (conv.id === newMsg.conversation_id) {
+              // If this isn't the selected conversation and message is from another user, increment unread
+              const shouldIncrementUnread = 
+                selectedConversation?.id !== conv.id && 
+                newMsg.sender_id !== user?.id;
+              
+              return {
+                ...conv,
+                last_message: newMsg.content,
+                last_message_at: newMsg.created_at,
+                unread_count: shouldIncrementUnread 
+                  ? (conv.unread_count || 0) + 1 
+                  : conv.unread_count || 0
+              };
+            }
+            return conv;
+          }));
         }
       )
       .subscribe();
@@ -492,16 +531,30 @@ export default function Messages() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium">@{conv.other_user?.username || 'Unknown'}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <div className="flex items-center gap-2">
+                      <p className={`font-medium ${conv.unread_count && conv.unread_count > 0 ? 'text-primary' : ''}`}>
+                        @{conv.other_user?.username || 'Unknown'}
+                      </p>
+                      {conv.unread_count && conv.unread_count > 0 && (
+                        <div className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                          {conv.unread_count}
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-sm truncate ${conv.unread_count && conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                       {conv.last_message || 'Start a conversation'}
                     </p>
                   </div>
-                  {conv.last_message_at && (
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(conv.last_message_at), 'MMM d')}
-                    </span>
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    {conv.last_message_at && (
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(conv.last_message_at), 'MMM d')}
+                      </span>
+                    )}
+                    {conv.unread_count && conv.unread_count > 0 && (
+                      <div className="h-2 w-2 bg-primary rounded-full" />
+                    )}
+                  </div>
                 </div>
               </div>
             ))
