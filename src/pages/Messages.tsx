@@ -60,8 +60,6 @@ export default function Messages() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   // Track read receipts globally for messages I sent
   const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
-  // Debug state
-  const [debugEvents, setDebugEvents] = useState<string[]>([]);
 
   // Poll for read receipt updates every 2 seconds
   useEffect(() => {
@@ -157,8 +155,6 @@ export default function Messages() {
           },
           (payload) => {
             const updatedMsg = payload.new as Message;
-            const debugMsg = `UPDATE: ${updatedMsg.is_read ? '✓ Read' : 'Unread'} - ${updatedMsg.sender_id === user.id ? 'My msg' : 'Their msg'}`;
-            setDebugEvents(prev => [...prev.slice(-4), debugMsg]);
             
             // Only track read receipts for messages I sent
             if (updatedMsg.sender_id === user.id) {
@@ -169,7 +165,6 @@ export default function Messages() {
                   is_read: updatedMsg.is_read,
                   read_at: updatedMsg.read_at
                 });
-                setDebugEvents(prev => [...prev.slice(-4), `Receipt tracked: ${newMap.size} total`]);
                 return newMap;
               });
             }
@@ -182,9 +177,7 @@ export default function Messages() {
             ));
           }
         )
-        .subscribe((status) => {
-          setDebugEvents(prev => [...prev.slice(-4), `Subscription: ${status}`]);
-        });
+        .subscribe();
       
       return () => {
         channel.unsubscribe();
@@ -257,7 +250,6 @@ export default function Messages() {
               // Mark as read if it's from someone else and conversation is open
               if (updatedMsg.sender_id !== user?.id) {
                 const readTimestamp = new Date().toISOString();
-                setDebugEvents(prev => [...prev.slice(-4), `Marking read: msg ${updatedMsg.id.slice(0,8)}...`]);
                 supabase
                   .from('messages')
                   .update({ 
@@ -265,12 +257,7 @@ export default function Messages() {
                     read_at: readTimestamp 
                   })
                   .eq('id', updatedMsg.id)
-                  .then(({ error }) => {
-                    if (error) {
-                      setDebugEvents(prev => [...prev.slice(-4), `❌ Mark read failed: ${error.message}`]);
-                    } else {
-                      setDebugEvents(prev => [...prev.slice(-4), `✅ Marked read at ${format(new Date(readTimestamp), 'h:mm:ss a')}`]);
-                    }
+                  .then(() => {
                     // Update local state with read timestamp
                     setMessages(prev => prev.map(msg => 
                       msg.id === updatedMsg.id 
@@ -440,28 +427,10 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        setDebugEvents(prev => [...prev.slice(-4), 
-          `ConvID: ${conversationId.slice(0,8)}... UserID: ${user?.id?.slice(0,8)}...`
-        ]);
-        
-        // First, check ALL messages in this conversation
-        const { data: allMessages } = await supabase
-          .from('messages')
-          .select('id, sender_id, is_read')
-          .eq('conversation_id', conversationId);
-        
-        const myMessages = allMessages?.filter(m => m.sender_id === user?.id) || [];
-        const theirMessages = allMessages?.filter(m => m.sender_id !== user?.id) || [];
-        const theirUnread = theirMessages.filter(m => !m.is_read);
-        
-        setDebugEvents(prev => [...prev.slice(-4), 
-          `Total: ${allMessages?.length}, Mine: ${myMessages.length}, Theirs: ${theirMessages.length} (${theirUnread.length} unread)`
-        ]);
-        
         // Batch update all unread messages from the other person
         const readTimestamp = new Date().toISOString();
         
-        const { data: updatedMessages, error: readError } = await supabase
+        const { data: updatedMessages } = await supabase
           .from('messages')
           .update({ 
             is_read: true,
@@ -472,10 +441,7 @@ export default function Messages() {
           .neq('sender_id', user?.id)
           .select();
         
-        if (readError) {
-          setDebugEvents(prev => [...prev.slice(-4), `❌ Batch read failed: ${readError.message}`]);
-        } else if (updatedMessages) {
-          setDebugEvents(prev => [...prev.slice(-4), `✅ Batch marked ${updatedMessages.length} messages as read`]);
+        if (updatedMessages) {
           // Update local state with the read timestamp
           setMessages(prev => prev.map(msg => {
             const updated = updatedMessages.find(um => um.id === msg.id);
@@ -923,75 +889,6 @@ export default function Messages() {
           </div>
           </header>
 
-          {/* Debug Panel - Visual feedback without console */}
-          <div className="bg-muted/50 border-b px-4 py-2 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="text-xs space-y-1 flex-1">
-                {debugEvents.length > 0 ? (
-                  debugEvents.map((event, i) => (
-                    <div key={i} className="font-mono opacity-70">{event}</div>
-                  ))
-                ) : (
-                  <div className="font-mono opacity-50">Waiting for events...</div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    // Check MY messages in this conversation
-                    const { data } = await supabase
-                      .from('messages')
-                      .select('id, is_read, read_at, content')
-                      .eq('conversation_id', selectedConversation?.id)
-                      .eq('sender_id', user?.id)
-                      .order('created_at', { ascending: false })
-                      .limit(3);
-                    
-                    if (data) {
-                      data.forEach(msg => {
-                        const preview = msg.content.slice(0, 20);
-                        setDebugEvents(prev => [...prev.slice(-4), 
-                          `"${preview}..." -> ${msg.is_read ? `✓ Read` : '✗ Unread'}`
-                        ]);
-                      });
-                    }
-                  }}
-                >
-                  Check My Msgs
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    // Force refresh read receipts
-                    const { data } = await supabase
-                      .from('messages')
-                      .select('*')
-                      .eq('conversation_id', selectedConversation?.id)
-                      .eq('sender_id', user?.id);
-                    
-                    if (data) {
-                      setReadReceipts(prev => {
-                        const newMap = new Map(prev);
-                        data.forEach(msg => {
-                          newMap.set(msg.id, {
-                            is_read: msg.is_read,
-                            read_at: msg.read_at
-                          });
-                        });
-                        return newMap;
-                      });
-                      setDebugEvents(prev => [...prev.slice(-4), `✅ Refreshed ${data.length} receipts`]);
-                    }
-                  }}
-                >
-                  Force Refresh
-                </Button>
-              </div>
-            </div>
-          </div>
 
           <ScrollArea className="flex-1 overflow-y-auto p-4">
             <div className="space-y-4">
