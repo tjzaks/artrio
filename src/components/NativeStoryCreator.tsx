@@ -192,20 +192,26 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
 
   const renderImageToCanvas = async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
+      console.log('🎨 Starting canvas render with image:', selectedImage);
+      
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx || !selectedImage) {
+        console.error('🎨 No context or selected image');
         resolve(null);
         return;
       }
 
       const img = new Image();
+      
       img.onload = () => {
+        console.log('🎨 Image loaded successfully, dimensions:', img.width, 'x', img.height);
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
         if (textOverlay) {
+          console.log('🎨 Adding text overlay:', textOverlay.text);
           const x = (textOverlay.position.x / 100) * canvas.width;
           const y = (textOverlay.position.y / 100) * canvas.height;
           
@@ -228,31 +234,66 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
         }
 
         canvas.toBlob((blob) => {
+          console.log('🎨 Canvas converted to blob:', blob?.size, 'bytes');
           resolve(blob);
         }, 'image/jpeg', 0.9);
       };
-      img.src = selectedImage;
+
+      img.onerror = (error) => {
+        console.error('🎨 Image failed to load:', selectedImage, error);
+        console.error('🎨 This usually means CORS issues or invalid file path');
+        resolve(null);
+      };
+
+      // Handle CORS issues and different image sources
+      if (selectedImage.startsWith('data:') || selectedImage.startsWith('blob:')) {
+        console.log('🎨 Loading data/blob URL directly');
+        img.src = selectedImage;
+      } else {
+        console.log('🎨 Loading external URL with CORS handling');
+        img.crossOrigin = 'anonymous';
+        img.src = selectedImage;
+      }
     });
   };
 
   const handleShare = async () => {
     if (!selectedImage || !user) return;
     
+    console.log('📤 Starting story share process');
+    console.log('📤 Selected image:', selectedImage);
+    console.log('📤 User ID:', user.id);
+    
     setUploading(true);
     try {
+      console.log('📤 Step 1: Rendering image to canvas...');
       const imageBlob = await renderImageToCanvas();
-      if (!imageBlob) throw new Error('Failed to process image');
+      
+      if (!imageBlob) {
+        throw new Error('Failed to process image - canvas rendering returned null');
+      }
+      
+      console.log('📤 Step 2: Image blob created successfully, size:', imageBlob.size, 'bytes');
 
       const fileName = `${user.id}-${Date.now()}.jpg`;
+      console.log('📤 Step 3: Uploading to Supabase storage as:', fileName);
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, imageBlob);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('📤 Upload error:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('📤 Step 4: Upload successful, data:', uploadData);
 
       const { data: urlData } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
+        
+      console.log('📤 Step 5: Public URL generated:', urlData.publicUrl);
 
       const { error: dbError } = await supabase
         .from('stories')
@@ -263,7 +304,12 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
           caption: textOverlay?.text || null
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('📤 Database error:', dbError);
+        throw dbError;
+      }
+      
+      console.log('📤 Step 6: Story saved to database successfully!');
 
       toast({
         title: 'Story shared!',
@@ -276,9 +322,23 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       setTextOverlay(null);
       
     } catch (error) {
-      console.error('Error:', error);
+      console.error('📤 SHARE ERROR:', error);
+      
+      // More specific error messages
+      let errorMessage = 'Failed to share';
+      if (error instanceof Error) {
+        if (error.message.includes('canvas')) {
+          errorMessage = 'Failed to process image';
+        } else if (error.message.includes('upload')) {
+          errorMessage = 'Failed to upload image';
+        } else if (error.message.includes('database')) {
+          errorMessage = 'Failed to save story';
+        }
+      }
+      
       toast({
-        title: 'Failed to share',
+        title: errorMessage,
+        description: error instanceof Error ? error.message : 'Please try again',
         variant: 'destructive'
       });
     } finally {
