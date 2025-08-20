@@ -732,6 +732,19 @@ const Home = () => {
                   </div>
                 )}
               </Button>
+              {/* Sync refresh button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log('[HOME] Force sync triggered');
+                  refreshMessageCount();
+                }}
+                className="h-8 px-2"
+                title="Sync notifications"
+              >
+                ↻
+              </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
                   <Shield className="h-4 w-4" />

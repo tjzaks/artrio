@@ -206,16 +206,16 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
 
   return (
     <>
-      <div className="flex gap-2 p-4 overflow-x-auto border-b bg-background/50">
+      <div className="flex gap-4 p-4 overflow-x-auto border-b bg-background/50">
         {/* Add Story button */}
         <div 
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => setShowUpload(true)}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             {myStories.length > 0 ? (
               <Avatar 
-                className="h-16 w-16 ring-2 ring-offset-2 ring-primary cursor-pointer"
+                className="h-16 w-16 ring-2 ring-offset-4 ring-primary cursor-pointer transition-all group-hover:ring-4"
                 onClick={(e) => {
                   e.stopPropagation();
                   viewStory(myStories[0]);
@@ -225,7 +225,7 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
                 <AvatarFallback>You</AvatarFallback>
               </Avatar>
             ) : (
-              <Avatar className="h-16 w-16 border-2 border-dashed border-primary">
+              <Avatar className="h-16 w-16 border-2 border-dashed border-primary transition-all group-hover:border-4">
                 <AvatarFallback>
                   <Plus className="h-6 w-6" />
                 </AvatarFallback>

@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function useMessageNotifications() {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // SIMPLE: Count unread messages where I'm in the conversation and didn't send them
+  // BULLETPROOF: Always query fresh from database, no caching
   const fetchUnreadCount = async () => {
     if (!user) {
       setUnreadCount(0);
@@ -14,98 +15,109 @@ export function useMessageNotifications() {
     }
 
     try {
-      // Step 1: Get my conversations
+      // Single query to get unread count
+      // First get conversations, then count unread messages
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
       
       if (!conversations || conversations.length === 0) {
+        console.log('[Notifications] No conversations found');
         setUnreadCount(0);
         return;
       }
 
-      // Step 2: Count unread messages in those conversations
       const conversationIds = conversations.map(c => c.id);
       
-      // Get the actual messages to debug
-      const { data: unreadMessages, count } = await supabase
+      // Direct count query - no data fetching, just the count
+      const { count, error } = await supabase
         .from('messages')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .in('conversation_id', conversationIds)
         .eq('is_read', false)
         .neq('sender_id', user.id);
       
-      console.log('[Notifications] Debug:', {
-        userId: user.id,
-        conversationCount: conversations.length,
-        conversationIds,
-        unreadCount: count || 0,
-        unreadMessages: unreadMessages || []
-      });
+      if (error) {
+        console.error('[Notifications] Query error:', error);
+        setUnreadCount(0);
+        return;
+      }
       
-      setUnreadCount(count || 0);
+      const finalCount = count || 0;
+      console.log(`[Notifications] Database says: ${finalCount} unread messages`);
+      setUnreadCount(finalCount);
       
     } catch (error) {
       console.error('[Notifications] Error:', error);
       setUnreadCount(0);
     }
   };
+  
+  // Debounced refresh to prevent too many queries
+  const debouncedRefresh = () => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = setTimeout(() => {
+      console.log('[Notifications] Debounced refresh triggered');
+      fetchUnreadCount();
+    }, 500); // Wait 500ms after last change
+  };
 
   // Initial fetch
   useEffect(() => {
+    console.log('[Notifications] User changed, fetching count');
     fetchUnreadCount();
   }, [user]);
 
-  // Real-time subscription for new messages
+  // SIMPLE: Listen for ANY change to messages table and refresh
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel('message-notifications')
+      .channel('notification-sync')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen to ALL events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'messages'
         },
-        async (payload) => {
-          const newMessage = payload.new as any;
-          
-          // Only care about messages sent TO me
-          if (newMessage.sender_id !== user.id) {
-            console.log('[Notifications] New message received, refreshing count');
-            fetchUnreadCount();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages'
-        },
-        async (payload) => {
-          const updatedMessage = payload.new as any;
-          
-          // If a message was marked as read, refresh count
-          if (updatedMessage.is_read) {
-            console.log('[Notifications] Message marked as read, refreshing count');
-            fetchUnreadCount();
-          }
+        (payload) => {
+          console.log('[Notifications] Messages table changed:', payload.eventType);
+          // Don't try to be smart - just refresh from DB
+          debouncedRefresh();
         }
       )
       .subscribe();
 
+    console.log('[Notifications] Subscribed to real-time updates');
+
     return () => {
+      console.log('[Notifications] Unsubscribing from real-time updates');
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
       channel.unsubscribe();
     };
   }, [user]);
 
-  // Manual refresh function
+  // Periodic sync check (every 30 seconds)
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      console.log('[Notifications] Periodic sync check');
+      fetchUnreadCount();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Manual refresh function (immediate, no debounce)
   const refreshCount = () => {
+    console.log('[Notifications] Manual refresh requested');
     fetchUnreadCount();
   };
 
