@@ -321,8 +321,7 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
                     <X className="h-6 w-6" />
                   </Button>
                   
-                  <h2 className="text-white font-semibold">Add to story</h2>
-                  
+                  <div className="w-10" />
                   <div className="w-10" />
                 </div>
 

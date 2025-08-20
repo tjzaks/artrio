@@ -85,22 +85,8 @@ export default function NativeGallery({ onPhotoSelect, onClose }: NativeGalleryP
           <X className="h-6 w-6" />
         </Button>
         
-        <h2 className="text-white font-semibold">Add to story</h2>
-        
         <div className="w-10" />
-      </div>
-
-      {/* Add to story button - Instagram style */}
-      <div className="px-4 mb-4">
-        <button 
-          onClick={handleCameraCapture}
-          className="w-full bg-gray-800 rounded-lg p-3 flex items-center gap-3 hover:bg-gray-700 transition"
-        >
-          <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-orange-500 flex items-center justify-center rounded">
-            <span className="text-white text-xl">+</span>
-          </div>
-          <span className="text-white font-medium">Add to story</span>
-        </button>
+        <div className="w-10" />
       </div>
 
       {/* Recents Header */}
