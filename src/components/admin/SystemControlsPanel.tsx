@@ -56,10 +56,12 @@ export default function SystemControlsPanel() {
       }
     } catch (error) {
       logger.error('Error triggering randomization:', error);
+      // Log more details for debugging
+      console.error('Full error object:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to trigger trio randomization. Please run the SQL script in Supabase."
+        description: error.message || "Failed to trigger trio randomization. Please check the console for details."
       });
     } finally {
       setButtonLoading('randomize', false);
