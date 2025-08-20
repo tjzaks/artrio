@@ -81,6 +81,11 @@ const Home = () => {
   
   // Use the new clean notification hook
   const { unreadCount: unreadMessages, refreshCount: refreshMessageCount } = useMessageNotifications();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[HOME] Notification badge shows:', unreadMessages);
+  }, [unreadMessages]);
 
   useEffect(() => {
     if (user) {
