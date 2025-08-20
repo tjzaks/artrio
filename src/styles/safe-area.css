@@ -48,6 +48,12 @@
   top: env(safe-area-inset-top);
 }
 
+/* iOS sticky header fix - adds padding to account for status bar */
+.ios-sticky-header {
+  padding-top: env(safe-area-inset-top);
+  top: 0;
+}
+
 /* Remove double padding from navigation-glass since #root handles it */
 @supports (padding-top: env(safe-area-inset-top)) {
   .navigation-glass {
