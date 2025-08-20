@@ -55,6 +55,8 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [contextMenu, setContextMenu] = useState<{messageId: string, x: number, y: number} | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Load conversations and handle URL params
   useEffect(() => {
@@ -227,6 +229,16 @@ export default function Messages() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Close context menu when switching conversations or on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+      setContextMenu(null);
+    };
+  }, [selectedConversation, longPressTimer]);
 
   const loadConversations = async () => {
     try {
@@ -525,6 +537,129 @@ export default function Messages() {
     }
   };
 
+  // Long press handlers
+  const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent, messageId: string) => {
+    e.preventDefault();
+    
+    // Clear any existing timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+    }
+    
+    // Set timer for long press (500ms)
+    const timer = setTimeout(() => {
+      // Add haptic feedback for mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      
+      // Get touch/mouse position
+      let x = 0, y = 0;
+      if ('touches' in e) {
+        const touch = e.touches[0];
+        x = touch.clientX;
+        y = touch.clientY;
+      } else {
+        x = e.clientX;
+        y = e.clientY;
+      }
+      
+      setContextMenu({ messageId, x, y });
+    }, 500);
+    
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  // Context menu actions
+  const handleEditFromMenu = (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      startEditing(message);
+    }
+    closeContextMenu();
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user?.id);
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete message',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Remove from local state
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      
+      toast({
+        title: 'Message deleted',
+        description: 'Message has been permanently deleted'
+      });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+    closeContextMenu();
+  };
+
+  const handleUnsendMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user?.id);
+
+      if (error) {
+        console.error('Error unsending message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to unsend message',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Remove from local state
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      
+      toast({
+        title: 'Message unsent',
+        description: 'Message has been removed for everyone'
+      });
+    } catch (error) {
+      console.error('Error unsending message:', error);
+    }
+    closeContextMenu();
+  };
+
+  // Check if message can be unsent (within 2 minutes)
+  const canUnsend = (messageTime: string) => {
+    const messageDate = new Date(messageTime);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - messageDate.getTime()) / (1000 * 60);
+    return diffMinutes <= 2;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -694,8 +829,15 @@ export default function Messages() {
                           isOwn
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
-                        }`}
+                        } ${isOwn ? 'select-none' : ''}`}
                         onDoubleClick={isOwn ? () => startEditing(message) : undefined}
+                        onTouchStart={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
+                        onTouchEnd={isOwn ? handleLongPressEnd : undefined}
+                        onTouchMove={isOwn ? handleLongPressEnd : undefined}
+                        onMouseDown={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
+                        onMouseUp={isOwn ? handleLongPressEnd : undefined}
+                        onMouseLeave={isOwn ? handleLongPressEnd : undefined}
+                        style={{ userSelect: isOwn ? 'none' : 'auto' }}
                       >
                         {isEditing ? (
                           <div className="space-y-2">
@@ -736,6 +878,64 @@ export default function Messages() {
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
+
+          {/* Context Menu */}
+          {contextMenu && (
+            <>
+              {/* Backdrop to close menu */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={closeContextMenu}
+                onTouchStart={closeContextMenu}
+              />
+              
+              {/* Context menu */}
+              <div
+                className="fixed z-50 bg-background border border-border rounded-lg shadow-lg py-2 min-w-[140px]"
+                style={{
+                  left: Math.min(contextMenu.x, window.innerWidth - 160),
+                  top: Math.max(10, Math.min(contextMenu.y - 50, window.innerHeight - 200))
+                }}
+              >
+                {(() => {
+                  const message = messages.find(m => m.id === contextMenu.messageId);
+                  if (!message) return null;
+                  
+                  const canUnsendMessage = canUnsend(message.created_at);
+                  
+                  return (
+                    <>
+                      <button
+                        onClick={() => handleEditFromMenu(contextMenu.messageId)}
+                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2"
+                      >
+                        <span>✏️</span>
+                        Edit
+                      </button>
+                      
+                      {canUnsendMessage && (
+                        <button
+                          onClick={() => handleUnsendMessage(contextMenu.messageId)}
+                          className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2 text-orange-600"
+                        >
+                          <span>↩️</span>
+                          Unsend
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => handleDeleteMessage(contextMenu.messageId)}
+                        className="w-full px-4 py-2 text-left hover:bg-muted text-sm flex items-center gap-2 text-red-600"
+                      >
+                        <span>🗑️</span>
+                        Delete
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            </>
+          )}
 
           <div className="border-t p-4 flex-shrink-0 bg-background">
             <form
