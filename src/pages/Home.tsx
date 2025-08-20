@@ -708,7 +708,9 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
-      <header className="sticky top-0 z-40 navigation-glass pt-safe">
+      {/* iOS Safe Area Spacer */}
+      <div className="pt-safe" />
+      <header className="sticky safe-top z-40 navigation-glass">
         <div className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

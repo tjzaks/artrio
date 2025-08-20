@@ -9,8 +9,8 @@
 
 /* Global fix: Add safe area padding to the entire app */
 #root {
-  /* Top padding for status bar */
-  padding-top: env(safe-area-inset-top);
+  /* Remove top padding - will be handled by individual components */
+  /* padding-top: env(safe-area-inset-top); */
   /* Bottom padding for home indicator */
   padding-bottom: env(safe-area-inset-bottom);
   /* Side padding for landscape orientation */
