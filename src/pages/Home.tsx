@@ -102,32 +102,21 @@ const Home = () => {
       const cleanupTrio = subscribeToTrioUpdates();
       const cleanupQueue = subscribeToQueueUpdates();
       
-      // Subscribe to real-time updates for notification counts
-      const messagesChannel = supabase
-        .channel('notification-messages')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages'
-          },
-          (payload) => {
-            console.log('=== REAL-TIME MESSAGE EVENT ===');
-            console.log('New message event:', payload);
-            console.log('This is triggering fetchNotificationCounts()');
-            
-            // Check if we're force clearing
-            if (window.localStorage.getItem('force_clear_badge') === 'true') {
-              console.log('Force clear is active - not refreshing counts');
-              return;
-            }
-            
-            // Refresh notification counts when new messages arrive
-            fetchNotificationCounts();
-          }
-        )
-        .subscribe();
+      // DISABLED: Real-time message notifications causing phantom counts
+      // const messagesChannel = supabase
+      //   .channel('notification-messages')
+      //   .on(
+      //     'postgres_changes',
+      //     {
+      //       event: 'INSERT',
+      //       schema: 'public',
+      //       table: 'messages'
+      //     },
+      //     (payload) => {
+      //       // Disabled to prevent phantom notifications
+      //     }
+      //   )
+      //   .subscribe();
       
       const friendshipsChannel = supabase
         .channel('notification-friendships')
@@ -147,7 +136,7 @@ const Home = () => {
         .subscribe();
       
       return () => {
-        messagesChannel.unsubscribe();
+        // messagesChannel.unsubscribe(); // Disabled
         friendshipsChannel.unsubscribe();
         if (cleanupTrio) cleanupTrio();
         if (cleanupQueue) cleanupQueue();
@@ -335,100 +324,32 @@ const Home = () => {
   };
 
   const fetchNotificationCounts = async () => {
+    // SIMPLIFIED: Just always show 0 for messages until we figure out the issue
+    // Keep friend requests working
     if (!user) return;
     
-    console.log('=== fetchNotificationCounts START ===');
-    console.log('User ID:', user.id);
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Current unreadMessages state:', unreadMessages);
+    setUnreadMessages(0); // Always 0 for now
     
     try {
-      // Get unread messages count
-      const { data: conversations, error: convError } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
-      
-      if (convError) {
-        console.error('Error fetching conversations:', convError);
-        console.log('Setting unreadMessages to 0 due to conversation error');
-        setUnreadMessages(0);
-        return;
-      }
-      
-      console.log(`Found ${conversations?.length || 0} conversations`);
-      
-      if (conversations && conversations.length > 0) {
-        const conversationIds = conversations.map(c => c.id);
-        
-        // Debug: Log what we're querying
-        console.log('Conversation IDs:', conversationIds);
-        
-        const { data: unreadMessages, count: unreadCount, error: messageError } = await supabase
-          .from('messages')
-          .select('id, conversation_id, sender_id, is_read', { count: 'exact' })
-          .in('conversation_id', conversationIds)
-          .eq('is_read', false)
-          .neq('sender_id', user.id);
-        
-        if (messageError) {
-          console.error('Error fetching unread messages:', messageError);
-          console.log('Setting unreadMessages to 0 due to message error');
-          setUnreadMessages(0);
-        } else {
-          console.log('=== UNREAD MESSAGES RESULT ===');
-          console.log('Count from database:', unreadCount);
-          console.log('Messages returned:', unreadMessages?.length || 0);
-          console.log('Message details:', unreadMessages);
-          console.log('SETTING unreadMessages state to:', unreadCount ?? 0);
-          setUnreadMessages(unreadCount ?? 0);
-          
-          // Double check what was actually set
-          setTimeout(() => {
-            console.log('After setUnreadMessages, state is now:', unreadMessages);
-          }, 100);
-        }
-      } else {
-        console.log('No conversations found for user');
-        console.log('Setting unreadMessages to 0 - no conversations');
-        setUnreadMessages(0);
-      }
-      
-      // Get pending friend requests count
-      const { data: userProfile, error: profileError } = await supabase
+      // Only check friend requests
+      const { data: userProfile } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
         .single();
       
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        setPendingFriendRequests(0);
-        return;
-      }
-      
       if (userProfile) {
-        const { count: requestCount, error: friendError } = await supabase
+        const { count: requestCount } = await supabase
           .from('friendships')
           .select('*', { count: 'exact', head: true })
           .eq('friend_id', userProfile.id)
           .eq('status', 'pending');
         
-        if (friendError) {
-          console.error('Error fetching friend requests:', friendError);
-          setPendingFriendRequests(0);
-        } else {
-          setPendingFriendRequests(requestCount ?? 0);
-        }
+        setPendingFriendRequests(requestCount ?? 0);
       }
     } catch (error) {
-      logger.error('Error fetching notification counts:', error);
-      // Reset counts on error
-      setUnreadMessages(0);
       setPendingFriendRequests(0);
     }
-    
-    console.log('=== fetchNotificationCounts END ===');
   };
 
   const fetchTrioPosts = async (trioId: string) => {
