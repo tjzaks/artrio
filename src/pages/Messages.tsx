@@ -22,6 +22,7 @@ interface Message {
   created_at: string;
   is_read: boolean;
   edited_at?: string;
+  read_at?: string;
 }
 
 interface Conversation {
@@ -160,10 +161,22 @@ export default function Messages() {
               
               // Mark as read if it's from someone else and conversation is open
               if (updatedMsg.sender_id !== user?.id) {
+                const readTimestamp = new Date().toISOString();
                 supabase
                   .from('messages')
-                  .update({ is_read: true })
-                  .eq('id', updatedMsg.id);
+                  .update({ 
+                    is_read: true,
+                    read_at: readTimestamp 
+                  })
+                  .eq('id', updatedMsg.id)
+                  .then(() => {
+                    // Update local state with read timestamp
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === updatedMsg.id 
+                        ? { ...msg, is_read: true, read_at: readTimestamp }
+                        : msg
+                    ));
+                  });
               }
             } else if (payload.eventType === 'UPDATE') {
               // Handle message edits and read status updates
@@ -316,24 +329,26 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        // Mark all unread messages from the other person as read
-        const unreadMessages = data.filter(m => !m.is_read && m.sender_id !== user?.id);
+        // Batch update all unread messages from the other person
+        const readTimestamp = new Date().toISOString();
         
-        if (unreadMessages.length > 0) {
-          // Mark them as read in the database
-          const { error: readError } = await supabase
-            .from('messages')
-            .update({ is_read: true })
-            .in('id', unreadMessages.map(m => m.id));
-          
-          if (!readError) {
-            // Update local state to show as read
-            setMessages(prev => prev.map(msg => 
-              unreadMessages.some(um => um.id === msg.id) 
-                ? { ...msg, is_read: true }
-                : msg
-            ));
-          }
+        const { data: updatedMessages, error: readError } = await supabase
+          .from('messages')
+          .update({ 
+            is_read: true,
+            read_at: readTimestamp 
+          })
+          .eq('conversation_id', conversationId)
+          .eq('is_read', false)
+          .neq('sender_id', user?.id)
+          .select();
+        
+        if (!readError && updatedMessages) {
+          // Update local state with the read timestamp
+          setMessages(prev => prev.map(msg => {
+            const updated = updatedMessages.find(um => um.id === msg.id);
+            return updated ? { ...msg, is_read: true, read_at: readTimestamp } : msg;
+          }));
         }
         
         // Reset unread count using simple notification system
@@ -848,7 +863,11 @@ export default function Messages() {
                             <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                               isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                             }`}>
-                              {isOwn ? (showReadStatus ? 'Read' : (message.is_read ? '' : 'Delivered')) : format(new Date(message.created_at), 'h:mm a')}
+                              {isOwn ? (
+                                showReadStatus ? 
+                                  (message.read_at ? `Read ${format(new Date(message.read_at), 'h:mm a')}` : 'Read') : 
+                                  (message.is_read ? '' : 'Delivered')
+                              ) : format(new Date(message.created_at), 'h:mm a')}
                               {message.edited_at && <span className="ml-1">(edited)</span>}
                             </p>
                           </>
