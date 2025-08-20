@@ -28,145 +28,114 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white"
         >
-
+          {/* Logo animation - pieces coming together */}
           <motion.div
-            initial={{ scale: 0.3, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            className="relative"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
             transition={{ 
               duration: 0.6,
-              ease: [0.34, 1.56, 0.64, 1]
+              ease: "easeOut"
             }}
-            className="flex flex-col items-center relative z-10"
           >
-            {/* Main Logo Container */}
-            <div className="relative">
-              {/* Dynamic shadow that moves */}
+            {/* The main logo image with build effect */}
+            <motion.img
+              src="/artrio-logo.png"
+              alt=""
+              className="w-56 h-56 object-contain"
+              initial={{ 
+                opacity: 0,
+                scale: 0.3,
+                filter: "blur(20px)"
+              }}
+              animate={{ 
+                opacity: 1,
+                scale: 1,
+                filter: "blur(0px)"
+              }}
+              transition={{
+                duration: 1.2,
+                ease: [0.34, 1.56, 0.64, 1]
+              }}
+              style={{
+                clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)'
+              }}
+            />
+
+            {/* Animated mask effect - logo pieces assembling */}
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 1, delay: 0.8 }}
+            >
+              {/* Left piece sliding in */}
               <motion.div
-                className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-6 bg-black/10 rounded-full blur-xl"
-                animate={{
-                  scaleX: [1, 1.3, 1],
-                  opacity: [0.2, 0.1, 0.2]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
+                className="absolute inset-0 bg-white"
+                initial={{ x: 0 }}
+                animate={{ x: "-100%" }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: 0.1,
                   ease: "easeInOut"
+                }}
+                style={{ 
+                  clipPath: 'polygon(0% 0%, 33% 0%, 33% 100%, 0% 100%)'
                 }}
               />
-
-              {/* New Artrio Logo Image with animations */}
+              
+              {/* Center piece revealing */}
               <motion.div
-                className="relative"
-                initial={{ rotateY: 0 }}
-                animate={{ 
-                  rotateY: [0, 10, -10, 0],
-                  scale: [1, 1.05, 1]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
+                className="absolute inset-0 bg-white"
+                initial={{ scaleY: 1 }}
+                animate={{ scaleY: 0 }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: 0.3,
                   ease: "easeInOut"
                 }}
-              >
-                <motion.img
-                  src="/artrio-logo.png"
-                  alt="Artrio"
-                  className="w-64 h-64 object-contain"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ 
-                    opacity: 1, 
-                    scale: 1
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                />
-                
-                {/* Pulse effect around logo */}
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(215, 57, 53, 0.2) 0%, rgba(123, 177, 70, 0.2) 33%, rgba(27, 160, 204, 0.2) 66%, transparent 100%)'
-                  }}
-                  animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [0.5, 0, 0.5]
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeOut"
-                  }}
-                />
+                style={{ 
+                  clipPath: 'polygon(33% 0%, 66% 0%, 66% 100%, 33% 100%)',
+                  transformOrigin: 'center'
+                }}
+              />
+              
+              {/* Right piece sliding in */}
+              <motion.div
+                className="absolute inset-0 bg-white"
+                initial={{ x: 0 }}
+                animate={{ x: "100%" }}
+                transition={{ 
+                  duration: 0.5,
+                  delay: 0.5,
+                  ease: "easeInOut"
+                }}
+                style={{ 
+                  clipPath: 'polygon(66% 0%, 100% 0%, 100% 100%, 66% 100%)'
+                }}
+              />
+            </motion.div>
 
-                {/* Rotating ring effect */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  <motion.circle
-                    cx="50%"
-                    cy="50%"
-                    r="120"
-                    fill="none"
-                    stroke="url(#gradient)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeDasharray="10 20"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ 
-                      pathLength: 1, 
-                      opacity: [0, 0.3, 0],
-                      rotate: 360
-                    }}
-                    transition={{
-                      pathLength: { duration: 2, delay: 0.8 },
-                      opacity: { duration: 3, repeat: Infinity },
-                      rotate: { duration: 8, repeat: Infinity, ease: "linear" }
-                    }}
-                  />
-                  <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#D73935" />
-                      <stop offset="50%" stopColor="#7BB146" />
-                      <stop offset="100%" stopColor="#1BA0CC" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </motion.div>
-            </div>
-            
-            {/* Tagline */}
-            <motion.p
-              className="text-gray-500 text-lg font-medium mt-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.6 }}
-            >
-              Connect in Trios
-            </motion.p>
-
-            {/* Loading indicator - subtle */}
+            {/* Subtle pulse after assembly */}
             <motion.div
-              className="flex gap-2 mt-8"
+              className="absolute inset-0"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5, duration: 0.4 }}
+              animate={{ 
+                opacity: [0, 0.5, 0],
+                scale: [1, 1.1, 1.2]
+              }}
+              transition={{
+                duration: 0.8,
+                delay: 0.9,
+                ease: "easeOut"
+              }}
             >
-              {[0, 0.15, 0.3].map((delay, i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-2 bg-gray-400 rounded-full"
-                  animate={{ 
-                    y: [0, -8, 0],
-                    opacity: [0.3, 1, 0.3]
-                  }}
-                  transition={{ 
-                    duration: 1,
-                    repeat: Infinity,
-                    delay
-                  }}
-                />
-              ))}
+              <img
+                src="/artrio-logo.png"
+                alt=""
+                className="w-56 h-56 object-contain opacity-30"
+                style={{ filter: 'blur(15px)' }}
+              />
             </motion.div>
           </motion.div>
         </motion.div>
