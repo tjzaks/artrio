@@ -866,6 +866,57 @@ export default function Messages() {
           </div>
           </header>
 
+          {/* Debug Panel - Visual feedback without console */}
+          <div className="bg-muted/50 border-b px-4 py-2 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="text-xs space-y-1 flex-1">
+                {debugEvents.length > 0 ? (
+                  debugEvents.map((event, i) => (
+                    <div key={i} className="font-mono opacity-70">{event}</div>
+                  ))
+                ) : (
+                  <div className="font-mono opacity-50">Waiting for events...</div>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  setDebugEvents(prev => [...prev.slice(-4), '🔄 Manual refresh...']);
+                  // Force check for read receipts
+                  const { data, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('sender_id', user?.id)
+                    .eq('is_read', true)
+                    .not('read_at', 'is', null)
+                    .limit(5);
+                  
+                  if (error) {
+                    setDebugEvents(prev => [...prev.slice(-4), `❌ Query failed: ${error.message}`]);
+                  } else {
+                    setDebugEvents(prev => [...prev.slice(-4), `✅ Found ${data?.length || 0} read messages`]);
+                    // Update receipts
+                    if (data && data.length > 0) {
+                      setReadReceipts(prev => {
+                        const newMap = new Map(prev);
+                        data.forEach(msg => {
+                          newMap.set(msg.id, {
+                            is_read: msg.is_read,
+                            read_at: msg.read_at
+                          });
+                        });
+                        return newMap;
+                      });
+                    }
+                  }
+                }}
+              >
+                Test Read Status
+              </Button>
+            </div>
+          </div>
+
           <ScrollArea className="flex-1 overflow-y-auto p-4">
             <div className="space-y-4">
               {messages.length === 0 ? (
