@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
@@ -76,48 +77,24 @@ const Home = () => {
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
-  // FORCE NOTIFICATIONS TO ALWAYS BE 0
-  const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [pendingFriendRequests, setPendingFriendRequests] = useState<number>(0);
+  
+  // Use the new clean notification hook
+  const { unreadCount: unreadMessages, refreshCount: refreshMessageCount } = useMessageNotifications();
 
   useEffect(() => {
     if (user) {
-      console.log('=== USER EFFECT TRIGGERED ===');
-      console.log('User:', user.id);
-      
-      // Force reset notifications first
-      console.log('Resetting notifications to 0 on mount');
-      setUnreadMessages(0);
-      setPendingFriendRequests(0);
-      
       fetchUserProfile();
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
-      
-      console.log('Calling fetchNotificationCounts on mount');
-      fetchNotificationCounts();
+      fetchFriendRequests();
       
       // Set up subscriptions and store cleanup functions
       const cleanupTrio = subscribeToTrioUpdates();
       const cleanupQueue = subscribeToQueueUpdates();
       
-      // DISABLED: Real-time message notifications causing phantom counts
-      // const messagesChannel = supabase
-      //   .channel('notification-messages')
-      //   .on(
-      //     'postgres_changes',
-      //     {
-      //       event: 'INSERT',
-      //       schema: 'public',
-      //       table: 'messages'
-      //     },
-      //     (payload) => {
-      //       // Disabled to prevent phantom notifications
-      //     }
-      //   )
-      //   .subscribe();
-      
+      // Subscribe to friendship changes
       const friendshipsChannel = supabase
         .channel('notification-friendships')
         .on(
@@ -127,49 +104,23 @@ const Home = () => {
             schema: 'public',
             table: 'friendships'
           },
-          (payload) => {
-            console.log('Friendship event:', payload);
-            // Refresh notification counts when friendship status changes
-            fetchNotificationCounts();
+          () => {
+            fetchFriendRequests();
           }
         )
         .subscribe();
       
       return () => {
-        // messagesChannel.unsubscribe(); // Disabled
         friendshipsChannel.unsubscribe();
         if (cleanupTrio) cleanupTrio();
         if (cleanupQueue) cleanupQueue();
       };
     } else {
       // Clear counts when no user
-      setUnreadMessages(0);
       setPendingFriendRequests(0);
     }
   }, [user]);
 
-  // Refresh notification counts when component regains focus or visibility changes
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        fetchNotificationCounts();
-      }
-    };
-    
-    const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        fetchNotificationCounts();
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user]);
 
   // Add keyboard shortcuts for health check and debug
   useEffect(() => {
@@ -178,30 +129,12 @@ const Home = () => {
         e.preventDefault();
         setShowHealthCheck(!showHealthCheck);
       }
-      // Debug shortcut: Cmd/Ctrl + D
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
-        e.preventDefault();
-        console.log('=== DEBUG NOTIFICATION STATE ===');
-        console.log('unreadMessages:', unreadMessages);
-        console.log('pendingFriendRequests:', pendingFriendRequests);
-        console.log('user:', user);
-        // Force reset
-        console.log('Force resetting notifications to 0...');
-        setUnreadMessages(0);
-        setPendingFriendRequests(0);
-      }
-      
-      // Add Cmd+R or Ctrl+R to force refresh notification counts
+      // Refresh shortcut: Cmd/Ctrl + R
       if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
         e.preventDefault();
-        console.log('=== FORCE REFRESHING NOTIFICATION COUNTS ===');
-        fetchNotificationCounts();
-      }
-      
-      // Add Cmd+Shift+D to open debug panel
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        navigate('/debug-messages');
+        console.log('Refreshing message count...');
+        refreshMessageCount();
+        fetchFriendRequests();
       }
     };
     
@@ -323,15 +256,10 @@ const Home = () => {
     }
   };
 
-  const fetchNotificationCounts = async () => {
-    // SIMPLIFIED: Just always show 0 for messages until we figure out the issue
-    // Keep friend requests working
+  const fetchFriendRequests = async () => {
     if (!user) return;
     
-    setUnreadMessages(0); // Always 0 for now
-    
     try {
-      // Only check friend requests
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('id')
@@ -339,15 +267,16 @@ const Home = () => {
         .single();
       
       if (userProfile) {
-        const { count: requestCount } = await supabase
+        const { count } = await supabase
           .from('friendships')
           .select('*', { count: 'exact', head: true })
           .eq('friend_id', userProfile.id)
           .eq('status', 'pending');
         
-        setPendingFriendRequests(requestCount ?? 0);
+        setPendingFriendRequests(count || 0);
       }
     } catch (error) {
+      console.error('Error fetching friend requests:', error);
       setPendingFriendRequests(0);
     }
   };
@@ -788,27 +717,12 @@ const Home = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => {
-                  // Don't clear unread count here - let it persist until conversations are opened
-                  navigate('/messages');
-                }} 
+                onClick={() => navigate('/messages')} 
                 className="h-8 px-2 relative"
               >
                 <MessageSquare className="h-4 w-4" />
                 {unreadMessages > 0 && (
-                  <div 
-                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('=== FORCE CLEARING BADGE ===');
-                      console.log('Current value:', unreadMessages);
-                      setUnreadMessages(0);
-                      console.log('Set to 0 - should be cleared now');
-                      // Also try to prevent any re-fetching
-                      window.localStorage.setItem('force_clear_badge', 'true');
-                    }}
-                    title="Click to force clear (debug)"
-                  >
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                     {unreadMessages}
                   </div>
                 )}
