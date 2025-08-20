@@ -101,13 +101,13 @@ export function useMessageNotifications() {
     };
   }, [user]);
 
-  // Periodic sync check (every 5 seconds for reliability)
+  // Periodic sync check (every 1 second for near-instant updates)
   useEffect(() => {
     if (!user) return;
     
     const interval = setInterval(() => {
       fetchUnreadCount();
-    }, 5000); // Check every 5 seconds instead of 30
+    }, 1000); // Check every second for near-instant updates
     
     return () => clearInterval(interval);
   }, [user]);
