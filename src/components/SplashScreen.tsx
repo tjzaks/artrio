@@ -28,12 +28,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white"
         >
-          {/* Subtle geometric patterns in background */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-0 left-0 w-64 h-64 border-8 border-gray-900 rounded-full" />
-            <div className="absolute top-1/2 right-0 w-96 h-96 border-8 border-gray-900 rounded-full" />
-            <div className="absolute bottom-0 left-1/3 w-80 h-80 border-8 border-gray-900 rounded-full" />
-          </div>
 
           <motion.div
             initial={{ scale: 0.3, opacity: 0 }}
