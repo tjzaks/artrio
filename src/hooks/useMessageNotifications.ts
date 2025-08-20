@@ -39,7 +39,7 @@ export function useMessageNotifications() {
     }
     fetchTimeoutRef.current = setTimeout(() => {
       fetchUnreadCount();
-    }, 500); // Wait 500ms after last change
+    }, 100); // Reduced to 100ms for faster updates
   };
 
   // Initial fetch
@@ -85,8 +85,8 @@ export function useMessageNotifications() {
               .single();
             
             if (conv && (conv.user1_id === user.id || conv.user2_id === user.id)) {
-              // User is recipient - refresh count immediately
-              debouncedRefresh();
+              // User is recipient - refresh count IMMEDIATELY (no debounce)
+              fetchUnreadCount();
             }
           }
         }
@@ -101,13 +101,13 @@ export function useMessageNotifications() {
     };
   }, [user]);
 
-  // Periodic sync check (every 30 seconds)
+  // Periodic sync check (every 5 seconds for reliability)
   useEffect(() => {
     if (!user) return;
     
     const interval = setInterval(() => {
       fetchUnreadCount();
-    }, 30000);
+    }, 5000); // Check every 5 seconds instead of 30
     
     return () => clearInterval(interval);
   }, [user]);
