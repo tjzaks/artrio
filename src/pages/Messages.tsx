@@ -440,15 +440,22 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        // First, check what unread messages exist
-        const { data: unreadCheck } = await supabase
+        setDebugEvents(prev => [...prev.slice(-4), 
+          `ConvID: ${conversationId.slice(0,8)}... UserID: ${user?.id?.slice(0,8)}...`
+        ]);
+        
+        // First, check ALL messages in this conversation
+        const { data: allMessages } = await supabase
           .from('messages')
-          .select('id, sender_id, is_read, read_at')
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user?.id);
+          .select('id, sender_id, is_read')
+          .eq('conversation_id', conversationId);
+        
+        const myMessages = allMessages?.filter(m => m.sender_id === user?.id) || [];
+        const theirMessages = allMessages?.filter(m => m.sender_id !== user?.id) || [];
+        const theirUnread = theirMessages.filter(m => !m.is_read);
         
         setDebugEvents(prev => [...prev.slice(-4), 
-          `Found ${unreadCheck?.filter(m => !m.is_read).length || 0} unread of ${unreadCheck?.length || 0} total`
+          `Total: ${allMessages?.length}, Mine: ${myMessages.length}, Theirs: ${theirMessages.length} (${theirUnread.length} unread)`
         ]);
         
         // Batch update all unread messages from the other person
