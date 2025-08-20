@@ -110,24 +110,34 @@ export default function Messages() {
           {
             event: 'UPDATE',
             schema: 'public',
-            table: 'messages',
-            filter: `sender_id=eq.${user.id}` // Listen for updates to messages I sent
+            table: 'messages'
+            // Remove filter - listen to ALL updates and filter in code
           },
           (payload) => {
             const updatedMsg = payload.new as Message;
-            
-            // Track read receipts globally
-            setReadReceipts(prev => {
-              const newMap = new Map(prev);
-              newMap.set(updatedMsg.id, {
-                is_read: updatedMsg.is_read,
-                read_at: updatedMsg.read_at
-              });
-              return newMap;
+            console.log('[READ RECEIPTS] UPDATE event received:', {
+              id: updatedMsg.id,
+              sender_id: updatedMsg.sender_id,
+              is_read: updatedMsg.is_read,
+              read_at: updatedMsg.read_at,
+              isMine: updatedMsg.sender_id === user.id
             });
             
+            // Only track read receipts for messages I sent
+            if (updatedMsg.sender_id === user.id) {
+              // Track read receipts globally
+              setReadReceipts(prev => {
+                const newMap = new Map(prev);
+                newMap.set(updatedMsg.id, {
+                  is_read: updatedMsg.is_read,
+                  read_at: updatedMsg.read_at
+                });
+                console.log('[READ RECEIPTS] Updated receipt map for my message, size:', newMap.size);
+                return newMap;
+              });
+            }
             
-            // Also update local messages if we're viewing that conversation
+            // Always update local messages if they're in the current view
             setMessages(prev => prev.map(msg => 
               msg.id === updatedMsg.id 
                 ? { ...msg, is_read: updatedMsg.is_read, read_at: updatedMsg.read_at }
@@ -135,7 +145,9 @@ export default function Messages() {
             ));
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('[SUBSCRIPTION] Global message subscription status:', status);
+        });
       
       return () => {
         channel.unsubscribe();
@@ -208,6 +220,7 @@ export default function Messages() {
               // Mark as read if it's from someone else and conversation is open
               if (updatedMsg.sender_id !== user?.id) {
                 const readTimestamp = new Date().toISOString();
+                console.log('[MARKING READ] Marking message as read:', updatedMsg.id);
                 supabase
                   .from('messages')
                   .update({ 
@@ -215,7 +228,12 @@ export default function Messages() {
                     read_at: readTimestamp 
                   })
                   .eq('id', updatedMsg.id)
-                  .then(() => {
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error('[MARKING READ] Error:', error);
+                    } else {
+                      console.log('[MARKING READ] Success! Message marked as read at:', readTimestamp);
+                    }
                     // Update local state with read timestamp
                     setMessages(prev => prev.map(msg => 
                       msg.id === updatedMsg.id 
@@ -388,6 +406,7 @@ export default function Messages() {
         // Batch update all unread messages from the other person
         const readTimestamp = new Date().toISOString();
         
+        console.log('[BATCH READ] Marking all unread messages in conversation as read');
         const { data: updatedMessages, error: readError } = await supabase
           .from('messages')
           .update({ 
@@ -399,7 +418,10 @@ export default function Messages() {
           .neq('sender_id', user?.id)
           .select();
         
-        if (!readError && updatedMessages) {
+        if (readError) {
+          console.error('[BATCH READ] Error:', readError);
+        } else if (updatedMessages) {
+          console.log('[BATCH READ] Successfully marked', updatedMessages.length, 'messages as read');
           // Update local state with the read timestamp
           setMessages(prev => prev.map(msg => {
             const updated = updatedMessages.find(um => um.id === msg.id);
