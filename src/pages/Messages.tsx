@@ -405,24 +405,40 @@ export default function Messages() {
           const newMsg = payload.new as Message;
           console.log('New message received:', newMsg);
           
-          // Add to messages if it's for the current conversation
-          setMessages(prev => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
+          // Add to messages if it's for the currently selected conversation
+          if (selectedConversation?.id === newMsg.conversation_id) {
+            setMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+          }
+          
+          // Update AND reorder conversation list
+          setConversations(prev => {
+            // Update the conversation with new message
+            const updated = prev.map(conv => {
+              if (conv.id === newMsg.conversation_id) {
+                return {
+                  ...conv,
+                  last_message: newMsg.content,
+                  last_message_at: newMsg.created_at
+                  // Don't manually increment unread_count - let notification_counts handle it
+                };
+              }
+              return conv;
+            });
+            
+            // Reorder by most recent message
+            return updated.sort((a, b) => {
+              if (!a.last_message_at && !b.last_message_at) return 0;
+              if (!a.last_message_at) return 1;
+              if (!b.last_message_at) return -1;
+              return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+            });
           });
           
-          // Update last message in conversation list
-          setConversations(prev => prev.map(conv => {
-            if (conv.id === newMsg.conversation_id) {
-              return {
-                ...conv,
-                last_message: newMsg.content,
-                last_message_at: newMsg.created_at
-                // Don't manually increment unread_count - let notification_counts handle it
-              };
-            }
-            return conv;
-          }));
+          // Refresh message count for navigation badge
+          refreshMessageCount();
         }
       )
       .on(
