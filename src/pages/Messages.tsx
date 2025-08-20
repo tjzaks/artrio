@@ -325,6 +325,16 @@ export default function Messages() {
       }
       
       console.log(`[MESSAGES] Loaded ${data?.length || 0} messages`);
+      // Check if read_at is coming through
+      if (data && data.length > 0) {
+        const firstReadMessage = data.find(m => m.is_read);
+        if (firstReadMessage) {
+          console.log('[MESSAGES] Sample read message:', { 
+            is_read: firstReadMessage.is_read, 
+            read_at: firstReadMessage.read_at 
+          });
+        }
+      }
       setMessages(data || []);
       
       // Mark ALL messages in this conversation as read for the current user
