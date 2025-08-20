@@ -260,34 +260,36 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>User Profile Details</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-full sm:max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden p-0">
+        <div className="flex flex-col h-full">
+          <DialogHeader className="px-4 py-3 border-b">
+            <DialogTitle className="text-base sm:text-lg">User Profile Details</DialogTitle>
+          </DialogHeader>
 
-        {loading ? (
-          <div className="p-8 text-center">Loading user data...</div>
-        ) : profile ? (
-          <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="account">Account Info</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-            </TabsList>
+          {loading ? (
+            <div className="p-8 text-center">Loading user data...</div>
+          ) : profile ? (
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <Tabs defaultValue="profile" className="flex flex-col flex-1">
+                <TabsList className="grid w-full grid-cols-3 mx-4 mt-2" style={{ width: 'calc(100% - 2rem)' }}>
+                  <TabsTrigger value="profile">Profile</TabsTrigger>
+                  <TabsTrigger value="account">Account Info</TabsTrigger>
+                  <TabsTrigger value="activity">Activity</TabsTrigger>
+                </TabsList>
 
-            <ScrollArea className="h-[500px] mt-4">
-              <TabsContent value="profile" className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className="text-2xl">
-                      {profile.username.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-2xl font-bold">@{profile.username}</h3>
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                  <TabsContent value="profile" className="space-y-4 mt-4">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                      <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                        <AvatarImage src={profile.avatar_url || undefined} />
+                        <AvatarFallback className="text-xl sm:text-2xl">
+                          {profile.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1 w-full space-y-2">
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <h3 className="text-xl sm:text-2xl font-bold">@{profile.username}</h3>
                       {profile.is_admin && (
                         <Badge variant="default" className="bg-purple-600">
                           <Shield className="h-3 w-3 mr-1" />
@@ -306,7 +308,7 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                       <p className="text-muted-foreground">{profile.bio}</p>
                     )}
                     
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                       <Button
                         variant={profile.is_banned ? "outline" : "destructive"}
                         size="sm"
@@ -333,68 +335,68 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                   </div>
                 </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Profile Information</CardTitle>
+                <Card className="mt-4">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Profile Information</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">User ID: {profile.user_id}</span>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-all">User ID: {profile.user_id}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Joined: {format(new Date(profile.created_at), 'PPP')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Last Updated: {format(new Date(profile.updated_at), 'PPP')}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Username Changes: {profile.username_change_count || 0}
                       </span>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+                  </TabsContent>
 
-              <TabsContent value="account" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Account Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Email: {accountInfo?.email || 'Loading...'}</span>
+                  <TabsContent value="account" className="space-y-4 mt-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium">Account Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-all">Email: {accountInfo?.email || 'Loading...'}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Phone: {formatPhoneNumber(profile.phone_number)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Birthday: {accountInfo?.birthday ? format(new Date(accountInfo.birthday), 'PPP') : 'Not provided'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Age: {accountInfo?.age ? `${accountInfo.age} years old` : 'Unknown'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Last Sign In: {accountInfo?.last_sign_in ? format(new Date(accountInfo.last_sign_in), 'PPP') : 'Never'}
                       </span>
                     </div>
@@ -403,27 +405,27 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
 
                 {profile.is_banned && (
                   <Card className="border-red-500">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-red-600">Ban Information</CardTitle>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-red-600">Ban Information</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Ban className="h-4 w-4 text-red-600" />
-                        <span className="text-sm">Reason: {profile.ban_reason || 'No reason provided'}</span>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <Ban className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm break-words">Reason: {profile.ban_reason || 'No reason provided'}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-red-600" />
-                        <span className="text-sm">
+                      <div className="flex items-start gap-2">
+                        <Calendar className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm break-words">
                           Banned At: {profile.banned_at ? format(new Date(profile.banned_at), 'PPP') : 'Unknown'}
                         </span>
                       </div>
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
+                  </TabsContent>
 
-              <TabsContent value="activity" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                  <TabsContent value="activity" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-3">
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">Posts</CardTitle>
@@ -462,24 +464,26 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                 </div>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Recent Activity</CardTitle>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
                         Last Active: {activity?.lastActive ? format(new Date(activity.lastActive), 'PPP') : 'Unknown'}
                       </span>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </ScrollArea>
-          </Tabs>
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">User not found</div>
-        )}
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">User not found</div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

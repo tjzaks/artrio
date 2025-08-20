@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Media } from '@capacitor-community/media';
 import { 
   X, ChevronDown, Camera as CameraIcon, Grid3x3, Image
 } from 'lucide-react';
@@ -12,20 +13,32 @@ interface IOSPhotoGalleryProps {
 
 export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGalleryProps) {
   const [recentPhotos, setRecentPhotos] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
     loadRecentPhotos();
   }, []);
 
-  const loadRecentPhotos = () => {
+  const loadRecentPhotos = async () => {
     try {
+      setLoading(true);
+      
+      // For iOS, we can't directly access the photo library
+      // We need to use the Camera plugin with Photos source
+      // This is a limitation of iOS privacy
+      
+      // Load any previously selected photos from storage
       const stored = localStorage.getItem('recentStoryPhotos');
       if (stored) {
         const photos = JSON.parse(stored);
-        setRecentPhotos(photos.slice(0, 50)); // Load more photos
+        setRecentPhotos(photos.slice(0, 50));
+        setHasPermission(true);
       }
     } catch (error) {
-      console.error('Error loading recent photos:', error);
+      console.error('Error loading photos:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,22 +103,8 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
           <X className="h-6 w-6" />
         </Button>
         
-        <h2 className="text-white font-semibold">Add to story</h2>
-        
         <div className="w-10" />
-      </div>
-
-      {/* Add yours button */}
-      <div className="px-4 mb-4">
-        <button 
-          onClick={handleCameraCapture}
-          className="w-full bg-gray-800 rounded-xl p-4 flex items-center gap-3 hover:bg-gray-700 transition"
-        >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 flex items-center justify-center">
-            <span className="text-white text-xl">+</span>
-          </div>
-          <span className="text-white font-medium">Add yours</span>
-        </button>
+        <div className="w-10" />
       </div>
 
       {/* Recents Header */}
@@ -121,21 +120,36 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
 
       {/* Photo Grid */}
       <div className="flex-1 overflow-y-auto">
-        {recentPhotos.length === 0 ? (
+        {loading ? (
+          // Loading state
+          <div className="grid grid-cols-3 gap-0.5">
+            {[...Array(30)].map((_, i) => (
+              <div 
+                key={i} 
+                className="aspect-square bg-gray-900 animate-pulse" 
+              />
+            ))}
+          </div>
+        ) : recentPhotos.length === 0 ? (
           // No photos yet - show instruction
           <div className="px-4 py-8">
             <div className="bg-gray-900 rounded-lg p-6 text-center">
               <div className="text-4xl mb-3">📸</div>
-              <h3 className="text-white font-medium mb-2">No Photos Yet</h3>
+              <h3 className="text-white font-medium mb-2">Grant Photo Access</h3>
               <p className="text-gray-400 text-sm mb-4">
-                iOS privacy prevents apps from showing your photos directly. 
-                Tap below to select photos from your library.
+                Allow Artrio to access your photos to create stories. 
+                Your photos stay private and are never uploaded without your permission.
               </p>
               <Button 
-                onClick={handlePhotoSelect}
+                onClick={async () => {
+                  await loadRecentPhotos();
+                  if (recentPhotos.length === 0) {
+                    handlePhotoSelect();
+                  }
+                }}
                 className="bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600"
               >
-                Select Photos from Library
+                Allow Photo Access
               </Button>
             </div>
             
