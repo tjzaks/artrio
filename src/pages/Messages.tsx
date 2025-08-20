@@ -88,7 +88,7 @@ export default function Messages() {
           return newMap;
         });
       }
-    }, 2000); // Poll every 2 seconds
+    }, 500); // Poll every 500ms for near-instant updates
     
     return () => clearInterval(pollInterval);
   }, [user, selectedConversation]);
