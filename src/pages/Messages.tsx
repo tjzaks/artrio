@@ -276,11 +276,13 @@ export default function Messages() {
         let result, updateError;
         
         try {
+          console.log('[MESSAGES] Calling function with conversationId:', conversationId);
           const response = await supabase.rpc('mark_conversation_read', { p_conversation_id: conversationId });
+          console.log('[MESSAGES] Function response:', response);
           result = response.data;
           updateError = response.error;
         } catch (err) {
-          console.log('[MESSAGES] Function not found, using direct update');
+          console.log('[MESSAGES] Function failed, using direct update. Error:', err);
           // Fallback to direct update
           const response = await supabase
             .from('messages')
@@ -289,6 +291,7 @@ export default function Messages() {
             .eq('is_read', false)
             .neq('sender_id', user?.id);
           
+          console.log('[MESSAGES] Direct update response:', response);
           updateError = response.error;
           result = { updated_count: response.count };
         }
