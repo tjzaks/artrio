@@ -82,7 +82,11 @@ const Home = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('=== USER EFFECT TRIGGERED ===');
+      console.log('User:', user.id);
+      
       // Force reset notifications first
+      console.log('Resetting notifications to 0 on mount');
       setUnreadMessages(0);
       setPendingFriendRequests(0);
       
@@ -90,6 +94,8 @@ const Home = () => {
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
+      
+      console.log('Calling fetchNotificationCounts on mount');
       fetchNotificationCounts();
       
       // Set up subscriptions and store cleanup functions
@@ -107,7 +113,16 @@ const Home = () => {
             table: 'messages'
           },
           (payload) => {
+            console.log('=== REAL-TIME MESSAGE EVENT ===');
             console.log('New message event:', payload);
+            console.log('This is triggering fetchNotificationCounts()');
+            
+            // Check if we're force clearing
+            if (window.localStorage.getItem('force_clear_badge') === 'true') {
+              console.log('Force clear is active - not refreshing counts');
+              return;
+            }
+            
             // Refresh notification counts when new messages arrive
             fetchNotificationCounts();
           }
@@ -325,6 +340,7 @@ const Home = () => {
     console.log('=== fetchNotificationCounts START ===');
     console.log('User ID:', user.id);
     console.log('Timestamp:', new Date().toISOString());
+    console.log('Current unreadMessages state:', unreadMessages);
     
     try {
       // Get unread messages count
@@ -335,15 +351,18 @@ const Home = () => {
       
       if (convError) {
         console.error('Error fetching conversations:', convError);
+        console.log('Setting unreadMessages to 0 due to conversation error');
         setUnreadMessages(0);
         return;
       }
+      
+      console.log(`Found ${conversations?.length || 0} conversations`);
       
       if (conversations && conversations.length > 0) {
         const conversationIds = conversations.map(c => c.id);
         
         // Debug: Log what we're querying
-        console.log('Checking unread messages for conversations:', conversationIds);
+        console.log('Conversation IDs:', conversationIds);
         
         const { data: unreadMessages, count: unreadCount, error: messageError } = await supabase
           .from('messages')
@@ -354,16 +373,24 @@ const Home = () => {
         
         if (messageError) {
           console.error('Error fetching unread messages:', messageError);
+          console.log('Setting unreadMessages to 0 due to message error');
           setUnreadMessages(0);
         } else {
-          console.log('Unread messages found:', unreadMessages);
-          console.log('Unread count:', unreadCount);
-          // Set the actual count
+          console.log('=== UNREAD MESSAGES RESULT ===');
+          console.log('Count from database:', unreadCount);
+          console.log('Messages returned:', unreadMessages?.length || 0);
+          console.log('Message details:', unreadMessages);
+          console.log('SETTING unreadMessages state to:', unreadCount ?? 0);
           setUnreadMessages(unreadCount ?? 0);
+          
+          // Double check what was actually set
+          setTimeout(() => {
+            console.log('After setUnreadMessages, state is now:', unreadMessages);
+          }, 100);
         }
       } else {
         console.log('No conversations found for user');
-        // Explicitly set to 0 when no conversations
+        console.log('Setting unreadMessages to 0 - no conversations');
         setUnreadMessages(0);
       }
       
@@ -848,7 +875,19 @@ const Home = () => {
               >
                 <MessageSquare className="h-4 w-4" />
                 {unreadMessages > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  <div 
+                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('=== FORCE CLEARING BADGE ===');
+                      console.log('Current value:', unreadMessages);
+                      setUnreadMessages(0);
+                      console.log('Set to 0 - should be cleared now');
+                      // Also try to prevent any re-fetching
+                      window.localStorage.setItem('force_clear_badge', 'true');
+                    }}
+                    title="Click to force clear (debug)"
+                  >
                     {unreadMessages}
                   </div>
                 )}
