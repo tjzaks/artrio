@@ -75,13 +75,11 @@ export default function Messages() {
           },
           (payload) => {
             const newMsg = payload.new as Message;
-            console.log('📨 UNIFIED: New message received:', newMsg);
             
             // Always update conversations list
             setConversations(prev => {
               const updated = prev.map(conv => {
                 if (conv.id === newMsg.conversation_id) {
-                  console.log('📨 UNIFIED: Updating conversation:', conv.other_user?.username);
                   return {
                     ...conv,
                     last_message: newMsg.content,
@@ -100,41 +98,13 @@ export default function Messages() {
               });
             });
             
-            // Also refresh the notification count for all pages
+            // Refresh the notification count for all pages
             refreshMessageCount();
-            
-            // Force trigger a notification_counts table update to notify other pages
-            supabase
-              .from('notification_counts')
-              .select('*')
-              .eq('user_id', user?.id)
-              .eq('conversation_id', newMsg.conversation_id)
-              .single()
-              .then(({ data, error }) => {
-                if (data) {
-                  // Update existing record to trigger real-time subscription
-                  return supabase
-                    .from('notification_counts')
-                    .update({ updated_at: new Date().toISOString() })
-                    .eq('id', data.id);
-                } else {
-                  console.log('📨 UNIFIED: No notification count record found');
-                }
-              })
-              .then(() => {
-                console.log('📨 UNIFIED: Triggered notification count real-time update');
-              })
-              .catch((error) => {
-                console.log('📨 UNIFIED: Notification count trigger failed:', error);
-              });
           }
         )
-        .subscribe((status) => {
-          console.log('📨 UNIFIED SUBSCRIPTION STATUS:', status);
-        });
+        .subscribe();
       
       return () => {
-        console.log('📨 UNIFIED: Unsubscribing');
         channel.unsubscribe();
       };
     }
@@ -178,17 +148,13 @@ export default function Messages() {
           },
           (payload) => {
             const updatedMsg = payload.new as Message;
-            console.log('🎯 CONVERSATION: Message event:', payload.eventType, updatedMsg);
             
             if (payload.eventType === 'INSERT') {
               // Add ANY new message to the current conversation view
-              console.log('🎯 CONVERSATION: Adding message to current view');
               setMessages(prev => {
                 if (prev.some(m => m.id === updatedMsg.id)) {
-                  console.log('🎯 CONVERSATION: Message already exists, skipping');
                   return prev;
                 }
-                console.log('🎯 CONVERSATION: Adding new message to state');
                 return [...prev, updatedMsg];
               });
               
@@ -197,29 +163,19 @@ export default function Messages() {
                 supabase
                   .from('messages')
                   .update({ is_read: true })
-                  .eq('id', updatedMsg.id)
-                  .then(() => console.log('🎯 CONVERSATION: Marked new message as read'));
+                  .eq('id', updatedMsg.id);
               }
             } else if (payload.eventType === 'UPDATE') {
               // Handle message edits
-              console.log('🎯 CONVERSATION: Message edited, updating state');
               setMessages(prev => prev.map(msg => 
                 msg.id === updatedMsg.id ? updatedMsg : msg
               ));
             }
           }
         )
-        .subscribe((status) => {
-          console.log('🎯 CONVERSATION SUBSCRIPTION STATUS:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('🎯 CONVERSATION: Successfully subscribed to conversation messages');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('🎯 CONVERSATION: Subscription failed');
-          }
-        });
+        .subscribe();
       
       return () => {
-        console.log('🎯 CONVERSATION: Unsubscribing from conversation messages');
         channel.unsubscribe();
       };
     }
