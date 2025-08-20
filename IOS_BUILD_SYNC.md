@@ -43,6 +43,7 @@ npx cap open ios
 ## Recent Changes That Need iOS Sync:
 - ✅ Admin Dashboard User Profile Modal fixes (e7be135)
 - ✅ Read receipt debugging removed (87ef653)
+- ✅ Photo Gallery fixed - Camera/Library buttons for iOS (90cf3a1)
 
 ## Communication Points:
 - Always pull before building
