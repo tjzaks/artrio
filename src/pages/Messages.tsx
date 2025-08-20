@@ -183,15 +183,16 @@ export default function Messages() {
             .limit(1)
             .single();
 
-          // Get unread message count for this conversation
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
+          // Get unread count from notification_counts table (much simpler!)
+          const { data: unreadData } = await supabase
+            .from('notification_counts')
+            .select('unread_count')
+            .eq('user_id', user?.id)
             .eq('conversation_id', conv.id)
-            .eq('is_read', false)
-            .neq('sender_id', user?.id); // Don't count messages the user sent
+            .single();
           
-          console.log(`Conversation ${conv.id} has ${unreadCount || 0} unread messages`);
+          const unreadCount = unreadData?.unread_count || 0;
+          console.log(`Conversation ${conv.id} has ${unreadCount} unread messages (from notification_counts)`);
 
           return {
             ...conv,
@@ -267,40 +268,20 @@ export default function Messages() {
           is_read: m.is_read
         })));
         
-        // DON'T clear visuals immediately - wait for database confirmation
+        // Reset unread count using simple notification system
+        console.log(`[MESSAGES] Resetting unread count for conversation ${conversationId}...`);
         
-        // Always try to mark messages as read when opening a conversation
-        console.log(`[MESSAGES] Attempting to mark all unread messages as read for conversation ${conversationId}...`);
-        
-        // Try the function first, fallback to direct update
-        let result, updateError;
-        
-        try {
-          console.log('[MESSAGES] Calling function with conversationId:', conversationId);
-          const response = await supabase.rpc('mark_conversation_read', { p_conversation_id: conversationId });
-          console.log('[MESSAGES] Function response:', response);
-          result = response.data;
-          updateError = response.error;
-        } catch (err) {
-          console.log('[MESSAGES] Function failed, using direct update. Error:', err);
-          // Fallback to direct update
-          const response = await supabase
-            .from('messages')
-            .update({ is_read: true })
-            .eq('conversation_id', conversationId)
-            .eq('is_read', false)
-            .neq('sender_id', user?.id);
-          
-          console.log('[MESSAGES] Direct update response:', response);
-          updateError = response.error;
-          result = { updated_count: response.count };
-        }
+        const { data: result, error: updateError } = await supabase
+          .rpc('reset_unread_count', { 
+            p_user_id: user?.id, 
+            p_conversation_id: conversationId 
+          });
         
         if (updateError) {
-          console.error('[MESSAGES] ERROR - keeping visual indicators:', updateError);
+          console.error('[MESSAGES] ERROR resetting unread count:', updateError);
         } else {
-          console.log(`[MESSAGES] SUCCESS - marked ${result?.updated_count || 0} messages as read`);
-          // Clear visuals ONLY after database update succeeds
+          console.log('[MESSAGES] SUCCESS - reset unread count:', result);
+          // Clear visuals immediately since notification system handles it
           setConversations(prev => prev.map(c => 
             c.id === conversationId ? { ...c, unread_count: 0 } : c
           ));
@@ -412,7 +393,7 @@ export default function Messages() {
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel('realtime-messages')
+      .channel('realtime-messages-and-counts')
       .on(
         'postgres_changes',
         {
@@ -426,39 +407,59 @@ export default function Messages() {
           
           // Add to messages if it's for the current conversation
           setMessages(prev => {
-            // Check if message already exists
             if (prev.some(m => m.id === newMsg.id)) return prev;
-            // Add message to the list
             return [...prev, newMsg];
           });
           
-          // Update conversation list with new message info
+          // Update last message in conversation list
           setConversations(prev => prev.map(conv => {
             if (conv.id === newMsg.conversation_id) {
-              // If this isn't the selected conversation and message is from another user, increment unread
-              const shouldIncrementUnread = 
-                selectedConversation?.id !== conv.id && 
-                newMsg.sender_id !== user?.id;
-              
               return {
                 ...conv,
                 last_message: newMsg.content,
-                last_message_at: newMsg.created_at,
-                unread_count: shouldIncrementUnread 
-                  ? (conv.unread_count || 0) + 1 
-                  : conv.unread_count || 0
+                last_message_at: newMsg.created_at
+                // Don't manually increment unread_count - let notification_counts handle it
               };
             }
             return conv;
           }));
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for all changes (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'notification_counts',
+          filter: `user_id=eq.${user?.id}` // Only listen for current user's counts
+        },
+        (payload) => {
+          console.log('Notification count changed:', payload);
+          
+          // Update conversation unread count from notification_counts table
+          const notificationData = payload.new as any;
+          if (notificationData) {
+            setConversations(prev => prev.map(conv => {
+              if (conv.id === notificationData.conversation_id) {
+                return {
+                  ...conv,
+                  unread_count: notificationData.unread_count
+                };
+              }
+              return conv;
+            }));
+            
+            // Refresh message count for navigation
+            refreshMessageCount();
+          }
+        }
+      )
       .subscribe();
 
-    console.log('Subscribed to messages channel');
+    console.log('Subscribed to messages and notification counts');
 
     return () => {
-      console.log('Unsubscribing from messages channel');
+      console.log('Unsubscribing from messages and notification counts');
       channel.unsubscribe();
     };
   };
