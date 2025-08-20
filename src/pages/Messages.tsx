@@ -108,18 +108,22 @@ export default function Messages() {
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*', // Listen to ALL events to debug
             schema: 'public',
-            table: 'messages',
-            filter: `sender_id=eq.${user.id}` // Listen for updates to messages I sent
+            table: 'messages'
           },
           (payload) => {
-            const updatedMsg = payload.new as Message;
-            console.log('[READ RECEIPT] Message read update received:', {
-              id: updatedMsg.id,
-              is_read: updatedMsg.is_read,
-              read_at: updatedMsg.read_at
-            });
+            console.log('[DEBUG] Message event:', payload.eventType, 'sender:', payload.new?.sender_id, 'my id:', user.id);
+            
+            // Only process updates for messages I sent
+            if (payload.eventType === 'UPDATE' && payload.new?.sender_id === user.id) {
+              const updatedMsg = payload.new as Message;
+              console.log('[READ RECEIPT] My message was updated:', {
+                id: updatedMsg.id,
+                is_read: updatedMsg.is_read,
+                read_at: updatedMsg.read_at,
+                full_payload: updatedMsg
+              });
             
             // Track read receipts globally
             setReadReceipts(prev => {
@@ -131,12 +135,13 @@ export default function Messages() {
               return newMap;
             });
             
-            // Also update local messages if we're viewing that conversation
-            setMessages(prev => prev.map(msg => 
-              msg.id === updatedMsg.id 
-                ? { ...msg, is_read: updatedMsg.is_read, read_at: updatedMsg.read_at }
-                : msg
-            ));
+              // Also update local messages if we're viewing that conversation
+              setMessages(prev => prev.map(msg => 
+                msg.id === updatedMsg.id 
+                  ? { ...msg, is_read: updatedMsg.is_read, read_at: updatedMsg.read_at }
+                  : msg
+              ));
+            }
           }
         )
         .subscribe();
