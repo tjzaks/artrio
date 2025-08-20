@@ -27,14 +27,23 @@ export function useMessageNotifications() {
 
       // Step 2: Count unread messages in those conversations
       const conversationIds = conversations.map(c => c.id);
-      const { count } = await supabase
+      
+      // Get the actual messages to debug
+      const { data: unreadMessages, count } = await supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'exact' })
         .in('conversation_id', conversationIds)
         .eq('is_read', false)
         .neq('sender_id', user.id);
       
-      console.log(`[Notifications] Found ${count || 0} unread messages`);
+      console.log('[Notifications] Debug:', {
+        userId: user.id,
+        conversationCount: conversations.length,
+        conversationIds,
+        unreadCount: count || 0,
+        unreadMessages: unreadMessages || []
+      });
+      
       setUnreadCount(count || 0);
       
     } catch (error) {
