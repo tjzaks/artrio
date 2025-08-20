@@ -97,93 +97,27 @@ const Admin = () => {
     if (!confirmed) return;
     
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Just call our working randomize_trios function!
+      const { error } = await supabase.rpc('randomize_trios');
       
-      // Delete today's trios
-      await supabase
-        .from('trios')
-        .delete()
-        .eq('date', today);
-      
-      // Get all users - we need profile IDs not user IDs
-      const { data: users } = await supabase
-        .from('profiles')
-        .select('id, user_id, username');
-      
-      if (!users || users.length < 3) {
+      if (error) {
+        logger.error('Error randomizing trios:', error);
         toast({
-          title: 'Not enough users',
-          description: 'Need at least 3 users to create trios',
+          title: 'Error',
+          description: error.message || 'Failed to randomize trios',
           variant: 'destructive'
         });
         return;
       }
       
-      // Shuffle users
-      const shuffled = [...users].sort(() => Math.random() - 0.5);
+      toast({
+        title: 'Trios randomized',
+        description: 'Successfully created new trios for today',
+      });
       
-      // Create trios (groups of 5 - matching the schema)
-      // NOTE: The trios table uses auth.users IDs, not profile IDs
-      const trios = [];
-      for (let i = 0; i < shuffled.length; i += 5) {
-        if (i + 2 < shuffled.length) {
-          // At minimum we need 3 users for a trio
-          const trio: any = {
-            user1_id: shuffled[i].user_id,  // Using user_id (auth.users ID)
-            user2_id: shuffled[i + 1].user_id,
-            user3_id: shuffled[i + 2].user_id,
-            user4_id: shuffled[i + 3]?.user_id || null,
-            user5_id: shuffled[i + 4]?.user_id || null,
-            date: today
-          };
-          trios.push(trio);
-        }
-      }
+      // Refresh stats to show new trio count
+      await fetchAdminStats();
       
-      // Insert new trios using admin function to bypass RLS
-      if (trios.length > 0) {
-        logger.log('Attempting to create trios:', trios);
-        
-        // Use RPC function that bypasses RLS for admin operations
-        const { error: insertError, data } = await supabase
-          .rpc('create_admin_trios', { trio_data: trios });
-        
-        if (insertError) {
-          logger.error('Error inserting trios:', insertError);
-          logger.error('Trio data that failed:', trios);
-          toast({
-            title: 'Error',
-            description: insertError.message || 'Failed to create trios',
-            variant: 'destructive'
-          });
-          return;
-        }
-        
-        if (data && !data.success) {
-          toast({
-            title: 'Error',
-            description: data.error || 'Failed to create trios',
-            variant: 'destructive'
-          });
-          return;
-        }
-        
-        logger.log('Successfully created trios:', data);
-        
-        toast({
-          title: 'Trios randomized',
-          description: `Created ${trios.length} new trio${trios.length > 1 ? 's' : ''} for today`,
-        });
-        
-        // Refresh stats to show new trio count
-        await fetchAdminStats();
-      } else {
-        toast({
-          title: 'No trios created',
-          description: 'Not enough users to form complete trios',
-          variant: 'destructive'
-        });
-      }
     } catch (error) {
       logger.error('Error randomizing trios:', error);
       toast({
@@ -212,14 +146,22 @@ const Admin = () => {
     if (!doubleConfirmed) return;
     
     try {
-      await supabase
-        .from('trios')
-        .delete()
-        .gte('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      // Use our delete_todays_trios function
+      const { error } = await supabase.rpc('delete_todays_trios');
+      
+      if (error) {
+        logger.error('Error deleting trios:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to delete trios',
+          variant: 'destructive'
+        });
+        return;
+      }
       
       toast({
-        title: 'All trios deleted',
-        description: 'All trio data has been permanently removed',
+        title: 'Trios deleted',
+        description: 'Today\'s trios have been deleted',
       });
       
       await fetchAdminStats();
