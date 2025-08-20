@@ -521,16 +521,20 @@ export default function Messages() {
       }
       
       setContextMenu({ messageId, x, y });
+      // Clear the timer since menu is now open
+      setLongPressTimer(null);
     }, 500);
     
     setLongPressTimer(timer);
   };
 
   const handleLongPressEnd = () => {
+    // Only clear timer if menu hasn't opened yet
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
+    // Don't close the menu here - let user tap to select
   };
 
   const closeContextMenu = () => {
@@ -786,7 +790,6 @@ export default function Messages() {
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         } ${isOwn ? 'select-none' : ''}`}
-                        onDoubleClick={isOwn ? () => startEditing(message) : undefined}
                         onTouchStart={isOwn ? (e) => handleLongPressStart(e, message.id) : undefined}
                         onTouchEnd={isOwn ? handleLongPressEnd : undefined}
                         onTouchMove={isOwn ? handleLongPressEnd : undefined}
@@ -800,19 +803,22 @@ export default function Messages() {
                             <Input
                               value={editContent}
                               onChange={(e) => setEditContent(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  saveEdit();
-                                } else if (e.key === 'Escape') {
-                                  cancelEditing();
-                                }
-                              }}
                               className="text-sm bg-background/10 border-none focus:ring-1 focus:ring-white/50"
                               autoFocus
                             />
-                            <div className="flex gap-1 text-[9px]">
-                              <span className="text-white/60">Enter to save • Esc to cancel</span>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={saveEdit}
+                                className="flex-1 px-2 py-1 text-xs bg-white/20 rounded-md text-white font-medium"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="flex-1 px-2 py-1 text-xs bg-white/10 rounded-md text-white/70"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           </div>
                         ) : (
