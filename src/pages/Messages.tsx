@@ -63,6 +63,36 @@ export default function Messages() {
   // Debug state
   const [debugEvents, setDebugEvents] = useState<string[]>([]);
 
+  // Poll for read receipt updates every 2 seconds
+  useEffect(() => {
+    if (!user || !selectedConversation) return;
+    
+    const pollInterval = setInterval(async () => {
+      // Check for read receipts on messages I sent in this conversation
+      const { data } = await supabase
+        .from('messages')
+        .select('id, is_read, read_at')
+        .eq('conversation_id', selectedConversation.id)
+        .eq('sender_id', user.id)
+        .eq('is_read', true);
+      
+      if (data && data.length > 0) {
+        setReadReceipts(prev => {
+          const newMap = new Map(prev);
+          data.forEach(msg => {
+            newMap.set(msg.id, {
+              is_read: msg.is_read,
+              read_at: msg.read_at
+            });
+          });
+          return newMap;
+        });
+      }
+    }, 2000); // Poll every 2 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [user, selectedConversation]);
+  
   // Load conversations and handle URL params
   useEffect(() => {
     if (user) {
