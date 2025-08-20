@@ -244,13 +244,13 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       {trioUserStories.map(userStory => (
         <div
           key={userStory.user_id}
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => viewStory(userStory.stories[0])}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             <Avatar className={cn(
-              "h-16 w-16 ring-2 ring-offset-2",
-              userStory.has_unviewed ? "ring-primary" : "ring-muted"
+              "h-16 w-16 ring-2 ring-offset-4 transition-all",
+              userStory.has_unviewed ? "ring-primary group-hover:ring-4" : "ring-muted group-hover:ring-2 group-hover:ring-primary/50"
             )}>
               <AvatarImage src={userStory.avatar_url} />
               <AvatarFallback>
@@ -273,13 +273,13 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       {friendUserStories.map(userStory => (
         <div
           key={userStory.user_id}
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => viewStory(userStory.stories[0])}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             <Avatar className={cn(
-              "h-16 w-16 ring-2 ring-offset-2",
-              userStory.has_unviewed ? "ring-blue-500" : "ring-muted"
+              "h-16 w-16 ring-2 ring-offset-4 transition-all",
+              userStory.has_unviewed ? "ring-blue-500 group-hover:ring-4" : "ring-muted group-hover:ring-2 group-hover:ring-blue-500/50"
             )}>
               <AvatarImage src={userStory.avatar_url} />
               <AvatarFallback>
