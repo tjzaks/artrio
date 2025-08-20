@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, Mail, Phone, Calendar, MapPin, Shield, Ban, AlertTriangle, MessageSquare, Users, Clock, Key } from 'lucide-react';
+import { User, Mail, Phone, Calendar, MapPin, Shield, Ban, AlertTriangle, MessageSquare, Users, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -51,12 +50,10 @@ interface UserActivity {
 }
 
 export default function UserProfileModal({ userId, isOpen, onClose }: UserProfileModalProps) {
-  const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [accountInfo, setAccountInfo] = useState<UserAccountInfo | null>(null);
   const [activity, setActivity] = useState<UserActivity | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
     if (userId && isOpen) {
@@ -214,51 +211,6 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
     }
   };
 
-  const handleSendPasswordReset = async () => {
-    if (!profile || !accountInfo?.email) {
-      toast({
-        title: 'Error',
-        description: 'Unable to send password reset - email not found',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setSendingReset(true);
-    
-    try {
-      // Use Supabase Auth Admin API to send password reset
-      const { error } = await supabase.auth.resetPasswordForEmail(accountInfo.email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-      
-      if (error) {
-        logger.error('Error sending password reset:', error);
-        toast({
-          title: 'Error',
-          description: `Failed to send password reset: ${error.message}`,
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      toast({
-        title: 'Password Reset Sent',
-        description: `Password reset email sent to ${accountInfo.email}`,
-      });
-      
-    } catch (error) {
-      logger.error('Error sending password reset:', error);
-      toast({
-        title: 'Error',
-        description: 'An error occurred while sending the password reset',
-        variant: 'destructive'
-      });
-    } finally {
-      setSendingReset(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     if (!profile) return;
     
@@ -354,7 +306,7 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                       <p className="text-muted-foreground">{profile.bio}</p>
                     )}
                     
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-2">
                       <Button
                         variant={profile.is_banned ? "outline" : "destructive"}
                         size="sm"
@@ -368,15 +320,6 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                         onClick={handleToggleAdmin}
                       >
                         {profile.is_admin ? 'Remove Admin' : 'Make Admin'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSendPasswordReset}
-                        disabled={sendingReset || !accountInfo?.email}
-                      >
-                        <Key className="h-3 w-3 mr-1" />
-                        {sendingReset ? 'Sending...' : 'Send Password Reset'}
                       </Button>
                       <Button
                         variant="destructive"
