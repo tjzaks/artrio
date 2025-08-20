@@ -13,6 +13,12 @@ if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.e
   logger.warn('⚠️ Using default Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env file.');
 }
 
+// Debug for iOS Simulator issues
+if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
+  console.log('🔧 iOS App detected - Supabase URL:', SUPABASE_URL);
+  console.log('🔧 User Agent:', window.navigator.userAgent);
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 

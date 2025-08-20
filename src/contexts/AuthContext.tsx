@@ -238,11 +238,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    try {
+      // Debug for iOS Simulator
+      if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
+        console.log('🔐 Attempting sign in for:', email);
+        console.log('🔐 Supabase client available:', !!supabase);
+      }
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('🔐 Sign in error:', error);
+      }
+      
+      return { error };
+    } catch (err) {
+      console.error('🔐 Unexpected sign in error:', err);
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
