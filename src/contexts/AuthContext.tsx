@@ -258,7 +258,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     
     // Force a hard reload to the auth page
-    window.location.replace('/auth');
+    if (typeof window !== 'undefined') {
+      window.location.replace('/auth');
+    }
   };
 
   const refreshSession = async (): Promise<Session | null> => {
