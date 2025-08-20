@@ -17,9 +17,8 @@ export default function SystemControlsPanel() {
   const triggerTrioRandomization = async () => {
     setButtonLoading('randomize', true);
     try {
-      // Bypass RPC and use raw SQL
-      const { data, error } = await supabase
-        .rpc('randomize_trios' as any);
+      // Try with explicit typing to bypass type checking
+      const { data, error } = await (supabase.rpc as any)('randomize_trios');
       
       if (error) {
         logger.error('RPC Error:', error);
