@@ -47,7 +47,7 @@ export function useMessageNotifications() {
     fetchUnreadCount();
   }, [user]);
 
-  // Listen for changes to notification_counts table for real-time updates
+  // Listen for changes to notification_counts table AND messages for real-time updates
   useEffect(() => {
     if (!user) return;
 
@@ -64,6 +64,31 @@ export function useMessageNotifications() {
         (payload) => {
           // Notification counts changed for this user - refresh the badge
           debouncedRefresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        async (payload) => {
+          const newMsg = payload.new as any;
+          // Only refresh if message is NOT from current user
+          if (newMsg.sender_id !== user.id) {
+            // Check if user is in this conversation
+            const { data: conv } = await supabase
+              .from('conversations')
+              .select('user1_id, user2_id')
+              .eq('id', newMsg.conversation_id)
+              .single();
+            
+            if (conv && (conv.user1_id === user.id || conv.user2_id === user.id)) {
+              // User is recipient - refresh count immediately
+              debouncedRefresh();
+            }
+          }
         }
       )
       .subscribe();
