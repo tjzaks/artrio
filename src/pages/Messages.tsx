@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { usePresence } from '@/hooks/usePresence';
+import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,6 +42,7 @@ export default function Messages() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { isUserOnline } = usePresence();
+  const { refreshCount: refreshMessageCount } = useMessageNotifications();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -213,6 +215,7 @@ export default function Messages() {
   };
 
   const loadMessages = async (conversationId: string) => {
+    console.log(`[MESSAGES] Loading messages for conversation: ${conversationId}`);
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -230,16 +233,24 @@ export default function Messages() {
         return;
       }
       
+      console.log(`[MESSAGES] Loaded ${data?.length || 0} messages`);
       setMessages(data || []);
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
         // First, let's see what messages need to be marked as read
         const unreadMessages = data.filter(m => !m.is_read && m.sender_id !== user?.id);
-        console.log(`Found ${unreadMessages.length} unread messages to mark as read in conversation ${conversationId}`);
+        console.log(`[MESSAGES] Found ${unreadMessages.length} unread messages from other users`);
+        console.log('[MESSAGES] Unread messages:', unreadMessages.map(m => ({
+          id: m.id,
+          content: m.content.substring(0, 20),
+          sender_id: m.sender_id,
+          is_read: m.is_read
+        })));
         
         if (unreadMessages.length > 0) {
-          const { error: updateError, count } = await supabase
+          console.log(`[MESSAGES] Attempting to mark ${unreadMessages.length} messages as read...`);
+          const { data: updatedData, error: updateError, count } = await supabase
             .from('messages')
             .update({ is_read: true })
             .eq('conversation_id', conversationId)
@@ -248,11 +259,24 @@ export default function Messages() {
             .select();
           
           if (updateError) {
-            console.error('Error marking messages as read:', updateError);
+            console.error('[MESSAGES] ERROR marking messages as read:', updateError);
+            toast({
+              title: 'Warning',
+              description: 'Could not mark messages as read',
+              variant: 'destructive'
+            });
           } else {
-            console.log(`Successfully marked ${count} messages as read in conversation:`, conversationId);
+            console.log(`[MESSAGES] SUCCESS: Marked ${count} messages as read`);
+            console.log('[MESSAGES] Updated messages:', updatedData);
+            
+            // Force refresh the notification count
+            refreshMessageCount();
           }
+        } else {
+          console.log('[MESSAGES] No unread messages to mark');
         }
+      } else {
+        console.log('[MESSAGES] No messages in conversation');
       }
         
     } catch (error: any) {
@@ -489,16 +513,17 @@ export default function Messages() {
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           <header className="bg-background p-4 border-b flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden"
-                onClick={() => setSelectedConversation(null)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="relative">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden"
+                  onClick={() => setSelectedConversation(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="relative">
                 {selectedConversation.other_user ? (
                   <ClickableAvatar
                     userId={selectedConversation.other_user.id}
@@ -527,6 +552,30 @@ export default function Messages() {
                 </p>
               </div>
             </div>
+            {/* Force mark as read button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                console.log('[MESSAGES] Force marking all messages as read');
+                const { error } = await supabase
+                  .from('messages')
+                  .update({ is_read: true })
+                  .eq('conversation_id', selectedConversation.id)
+                  .neq('sender_id', user?.id);
+                
+                if (error) {
+                  console.error('[MESSAGES] Force mark failed:', error);
+                } else {
+                  console.log('[MESSAGES] Force mark succeeded');
+                  refreshMessageCount();
+                }
+              }}
+              className="text-xs"
+            >
+              Mark Read
+            </Button>
+          </div>
           </header>
 
           <ScrollArea className="flex-1 overflow-y-auto p-4">
