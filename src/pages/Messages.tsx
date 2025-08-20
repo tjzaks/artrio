@@ -58,6 +58,8 @@ export default function Messages() {
   const [editContent, setEditContent] = useState('');
   const [contextMenu, setContextMenu] = useState<{messageId: string, x: number, y: number} | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  // Track read receipts globally for messages I sent
+  const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
 
   // Load conversations and handle URL params
   useEffect(() => {
@@ -113,15 +115,28 @@ export default function Messages() {
           },
           (payload) => {
             const updatedMsg = payload.new as Message;
+            console.log('[READ RECEIPT] Message read update received:', {
+              id: updatedMsg.id,
+              is_read: updatedMsg.is_read,
+              read_at: updatedMsg.read_at
+            });
             
-            // Update the message in our local state if it's been read
-            if (updatedMsg.is_read) {
-              setMessages(prev => prev.map(msg => 
-                msg.id === updatedMsg.id 
-                  ? { ...msg, is_read: true, read_at: updatedMsg.read_at }
-                  : msg
-              ));
-            }
+            // Track read receipts globally
+            setReadReceipts(prev => {
+              const newMap = new Map(prev);
+              newMap.set(updatedMsg.id, {
+                is_read: updatedMsg.is_read,
+                read_at: updatedMsg.read_at
+              });
+              return newMap;
+            });
+            
+            // Also update local messages if we're viewing that conversation
+            setMessages(prev => prev.map(msg => 
+              msg.id === updatedMsg.id 
+                ? { ...msg, is_read: updatedMsg.is_read, read_at: updatedMsg.read_at }
+                : msg
+            ));
           }
         )
         .subscribe();
@@ -151,6 +166,20 @@ export default function Messages() {
       }
     }
   }, [searchParams, conversations, loading]);
+
+  // Re-load messages when read receipts update
+  useEffect(() => {
+    if (selectedConversation && messages.length > 0) {
+      // Update existing messages with new read receipts
+      setMessages(prev => prev.map(msg => {
+        const receipt = readReceipts.get(msg.id);
+        if (receipt && msg.sender_id === user?.id) {
+          return { ...msg, is_read: receipt.is_read, read_at: receipt.read_at };
+        }
+        return msg;
+      }));
+    }
+  }, [readReceipts, selectedConversation, user]);
 
   // Load messages and subscribe to real-time updates when conversation is selected
   useEffect(() => {
@@ -346,7 +375,17 @@ export default function Messages() {
       }
       
       console.log(`[MESSAGES] Loaded ${data?.length || 0} messages`);
-      setMessages(data || []);
+      
+      // Merge with global read receipts
+      const messagesWithReceipts = (data || []).map(msg => {
+        const receipt = readReceipts.get(msg.id);
+        if (receipt && msg.sender_id === user?.id) {
+          return { ...msg, is_read: receipt.is_read, read_at: receipt.read_at };
+        }
+        return msg;
+      });
+      
+      setMessages(messagesWithReceipts);
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
