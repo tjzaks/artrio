@@ -166,7 +166,7 @@ export default function Messages() {
                   .eq('id', updatedMsg.id);
               }
             } else if (payload.eventType === 'UPDATE') {
-              // Handle message edits
+              // Handle message edits and read status updates
               setMessages(prev => prev.map(msg => 
                 msg.id === updatedMsg.id ? updatedMsg : msg
               ));
@@ -316,18 +316,18 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
-        // First, let's see what messages need to be marked as read
+        // Mark all unread messages from the other person as read
         const unreadMessages = data.filter(m => !m.is_read && m.sender_id !== user?.id);
-        console.log(`[MESSAGES] Found ${unreadMessages.length} unread messages from other users`);
-        console.log('[MESSAGES] Unread messages:', unreadMessages.map(m => ({
-          id: m.id,
-          content: m.content.substring(0, 20),
-          sender_id: m.sender_id,
-          is_read: m.is_read
-        })));
+        
+        if (unreadMessages.length > 0) {
+          // Mark them as read in the database
+          await supabase
+            .from('messages')
+            .update({ is_read: true })
+            .in('id', unreadMessages.map(m => m.id));
+        }
         
         // Reset unread count using simple notification system
-        console.log(`[MESSAGES] Resetting unread count for conversation ${conversationId}...`);
         
         const { data: result, error: updateError } = await supabase
           .rpc('reset_unread_count', { 
@@ -827,7 +827,7 @@ export default function Messages() {
                             <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                               isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                             }`}>
-                              {isOwn ? 'Delivered' : format(new Date(message.created_at), 'h:mm a')}
+                              {isOwn ? (message.is_read ? 'Read' : 'Delivered') : format(new Date(message.created_at), 'h:mm a')}
                               {message.edited_at && <span className="ml-1">(edited)</span>}
                             </p>
                           </>
