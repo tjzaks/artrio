@@ -60,13 +60,55 @@ export default function Messages() {
   useEffect(() => {
     if (user) {
       loadConversations();
-      const unsubscribe = subscribeToMessages();
       
-      // Don't clear notifications here - only when a specific conversation is opened
-      // clearAllNotifications();
+      // Set up a single global subscription for ALL messages
+      const channel = supabase
+        .channel('all-messages-unified')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+          },
+          (payload) => {
+            const newMsg = payload.new as Message;
+            console.log('📨 UNIFIED: New message received:', newMsg);
+            
+            // Always update conversations list
+            setConversations(prev => {
+              const updated = prev.map(conv => {
+                if (conv.id === newMsg.conversation_id) {
+                  console.log('📨 UNIFIED: Updating conversation:', conv.other_user?.username);
+                  return {
+                    ...conv,
+                    last_message: newMsg.content,
+                    last_message_at: newMsg.created_at
+                  };
+                }
+                return conv;
+              });
+              
+              // Reorder by most recent
+              return updated.sort((a, b) => {
+                if (!a.last_message_at && !b.last_message_at) return 0;
+                if (!a.last_message_at) return 1;
+                if (!b.last_message_at) return -1;
+                return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+              });
+            });
+            
+            // Also refresh the notification count
+            refreshMessageCount();
+          }
+        )
+        .subscribe((status) => {
+          console.log('📨 UNIFIED SUBSCRIPTION STATUS:', status);
+        });
       
       return () => {
-        unsubscribe();
+        console.log('📨 UNIFIED: Unsubscribing');
+        channel.unsubscribe();
       };
     }
   }, [user]);
@@ -112,27 +154,24 @@ export default function Messages() {
             console.log('🎯 CONVERSATION: Message event:', payload.eventType, updatedMsg);
             
             if (payload.eventType === 'INSERT') {
-              // Add message to the list if it's not from the current user
-              // (messages from current user are already added when sending)
+              // Add ANY new message to the current conversation view
+              console.log('🎯 CONVERSATION: Adding message to current view');
+              setMessages(prev => {
+                if (prev.some(m => m.id === updatedMsg.id)) {
+                  console.log('🎯 CONVERSATION: Message already exists, skipping');
+                  return prev;
+                }
+                console.log('🎯 CONVERSATION: Adding new message to state');
+                return [...prev, updatedMsg];
+              });
+              
+              // Mark as read if it's from someone else and conversation is open
               if (updatedMsg.sender_id !== user?.id) {
-                console.log('🎯 CONVERSATION: Adding message from other user');
-                setMessages(prev => {
-                  if (prev.some(m => m.id === updatedMsg.id)) {
-                    console.log('🎯 CONVERSATION: Message already exists, skipping');
-                    return prev;
-                  }
-                  console.log('🎯 CONVERSATION: Adding new message to state');
-                  return [...prev, updatedMsg];
-                });
-                
-                // Mark as read since the conversation is open
                 supabase
                   .from('messages')
                   .update({ is_read: true })
                   .eq('id', updatedMsg.id)
                   .then(() => console.log('🎯 CONVERSATION: Marked new message as read'));
-              } else {
-                console.log('🎯 CONVERSATION: Message from current user, skipping');
               }
             } else if (payload.eventType === 'UPDATE') {
               // Handle message edits
@@ -417,105 +456,6 @@ export default function Messages() {
     }
   };
 
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel('realtime-messages-and-counts')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          console.log('🔥 GLOBAL: New message received:', newMsg);
-          console.log('🔥 GLOBAL: Current conversation ID:', selectedConversation?.id);
-          console.log('🔥 GLOBAL: Message conversation ID:', newMsg.conversation_id);
-          
-          // The global subscription should NOT add messages to the current view
-          // That's handled by the conversation-specific subscription
-          // This subscription is ONLY for updating the conversations list
-          console.log('🔥 GLOBAL: Updating conversations list only (not adding to current view)');
-          
-          // Update AND reorder conversation list
-          setConversations(prev => {
-            console.log('🔥 GLOBAL: Current conversations count:', prev.length);
-            // Update the conversation with new message
-            const updated = prev.map(conv => {
-              if (conv.id === newMsg.conversation_id) {
-                console.log('🔥 GLOBAL: Found conversation to update:', conv.other_user?.username);
-                return {
-                  ...conv,
-                  last_message: newMsg.content,
-                  last_message_at: newMsg.created_at
-                  // Don't manually increment unread_count - let notification_counts handle it
-                };
-              }
-              return conv;
-            });
-            
-            // Reorder by most recent message
-            const reordered = updated.sort((a, b) => {
-              if (!a.last_message_at && !b.last_message_at) return 0;
-              if (!a.last_message_at) return 1;
-              if (!b.last_message_at) return -1;
-              return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-            });
-            
-            console.log('🔥 GLOBAL: Conversations list updated and reordered');
-            return reordered;
-          });
-          
-          // Refresh message count for navigation badge
-          refreshMessageCount();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen for all changes (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'notification_counts',
-          filter: `user_id=eq.${user?.id}` // Only listen for current user's counts
-        },
-        (payload) => {
-          console.log('Notification count changed:', payload);
-          
-          // Update conversation unread count from notification_counts table
-          const notificationData = payload.new as any;
-          if (notificationData) {
-            setConversations(prev => prev.map(conv => {
-              if (conv.id === notificationData.conversation_id) {
-                return {
-                  ...conv,
-                  unread_count: notificationData.unread_count
-                };
-              }
-              return conv;
-            }));
-            
-            // Refresh message count for navigation
-            refreshMessageCount();
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('🔥 GLOBAL SUBSCRIPTION STATUS:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('🔥 GLOBAL: Successfully subscribed to all messages');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('🔥 GLOBAL: Subscription failed');
-        }
-      });
-
-    console.log('🔥 GLOBAL: Setting up subscription to messages and notification counts');
-
-    return () => {
-      console.log('🔥 GLOBAL: Unsubscribing from messages and notification counts');
-      channel.unsubscribe();
-    };
-  };
 
   const startEditing = (message: Message) => {
     setEditingMessage(message.id);
