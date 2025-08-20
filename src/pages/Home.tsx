@@ -193,6 +193,12 @@ const Home = () => {
         console.log('=== FORCE REFRESHING NOTIFICATION COUNTS ===');
         fetchNotificationCounts();
       }
+      
+      // Add Cmd+Shift+D to open debug panel
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        navigate('/debug-messages');
+      }
     };
     
     window.addEventListener('keydown', handleKeydown);

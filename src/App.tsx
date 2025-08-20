@@ -19,6 +19,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import Health from "./pages/Health";
 import Debug from "./pages/Debug";
+import DebugMessages from "./pages/DebugMessages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,7 @@ const App = () => {
               <Route path="/health" element={<Health />} />
               <Route path="/api/health" element={<Health />} />
               <Route path="/debug" element={<Debug />} />
+              <Route path="/debug-messages" element={<DebugMessages />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile />
