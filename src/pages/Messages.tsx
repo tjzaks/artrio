@@ -190,7 +190,15 @@ export default function Messages() {
         })
       );
 
-      setConversations(conversationsWithProfiles);
+      // Sort conversations by last message timestamp (most recent first)
+      const sortedConversations = conversationsWithProfiles.sort((a, b) => {
+        if (!a.last_message_at && !b.last_message_at) return 0;
+        if (!a.last_message_at) return 1;
+        if (!b.last_message_at) return -1;
+        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+      });
+      
+      setConversations(sortedConversations);
     } catch (error: any) {
       console.error('Error loading conversations:', error);
       // Only show toast for actual errors, not empty results
