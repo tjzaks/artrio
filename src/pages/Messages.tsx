@@ -440,10 +440,20 @@ export default function Messages() {
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
+        // First, check what unread messages exist
+        const { data: unreadCheck } = await supabase
+          .from('messages')
+          .select('id, sender_id, is_read, read_at')
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user?.id);
+        
+        setDebugEvents(prev => [...prev.slice(-4), 
+          `Found ${unreadCheck?.filter(m => !m.is_read).length || 0} unread of ${unreadCheck?.length || 0} total`
+        ]);
+        
         // Batch update all unread messages from the other person
         const readTimestamp = new Date().toISOString();
         
-        setDebugEvents(prev => [...prev.slice(-4), `Batch marking unread in convo...`]);
         const { data: updatedMessages, error: readError } = await supabase
           .from('messages')
           .update({ 
@@ -918,26 +928,44 @@ export default function Messages() {
                   <div className="font-mono opacity-50">Waiting for events...</div>
                 )}
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  setDebugEvents(prev => [...prev.slice(-4), '🔄 Manual refresh...']);
-                  // Force check for read receipts
-                  const { data, error } = await supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('sender_id', user?.id)
-                    .eq('is_read', true)
-                    .not('read_at', 'is', null)
-                    .limit(5);
-                  
-                  if (error) {
-                    setDebugEvents(prev => [...prev.slice(-4), `❌ Query failed: ${error.message}`]);
-                  } else {
-                    setDebugEvents(prev => [...prev.slice(-4), `✅ Found ${data?.length || 0} read messages`]);
-                    // Update receipts
-                    if (data && data.length > 0) {
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    // Check MY messages in this conversation
+                    const { data } = await supabase
+                      .from('messages')
+                      .select('id, is_read, read_at, content')
+                      .eq('conversation_id', selectedConversation?.id)
+                      .eq('sender_id', user?.id)
+                      .order('created_at', { ascending: false })
+                      .limit(3);
+                    
+                    if (data) {
+                      data.forEach(msg => {
+                        const preview = msg.content.slice(0, 20);
+                        setDebugEvents(prev => [...prev.slice(-4), 
+                          `"${preview}..." -> ${msg.is_read ? `✓ Read` : '✗ Unread'}`
+                        ]);
+                      });
+                    }
+                  }}
+                >
+                  Check My Msgs
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    // Force refresh read receipts
+                    const { data } = await supabase
+                      .from('messages')
+                      .select('*')
+                      .eq('conversation_id', selectedConversation?.id)
+                      .eq('sender_id', user?.id);
+                    
+                    if (data) {
                       setReadReceipts(prev => {
                         const newMap = new Map(prev);
                         data.forEach(msg => {
@@ -948,12 +976,13 @@ export default function Messages() {
                         });
                         return newMap;
                       });
+                      setDebugEvents(prev => [...prev.slice(-4), `✅ Refreshed ${data.length} receipts`]);
                     }
-                  }
-                }}
-              >
-                Test Read Status
-              </Button>
+                  }}
+                >
+                  Force Refresh
+                </Button>
+              </div>
             </div>
           </div>
 
