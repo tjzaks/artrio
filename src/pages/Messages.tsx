@@ -190,6 +190,8 @@ export default function Messages() {
             .eq('conversation_id', conv.id)
             .eq('is_read', false)
             .neq('sender_id', user?.id); // Don't count messages the user sent
+          
+          console.log(`Conversation ${conv.id} has ${unreadCount || 0} unread messages`);
 
           return {
             ...conv,
@@ -270,32 +272,24 @@ export default function Messages() {
           c.id === conversationId ? { ...c, unread_count: 0 } : c
         ));
         
-        if (unreadMessages.length > 0) {
-          console.log(`[MESSAGES] Attempting to mark ${unreadMessages.length} messages as read...`);
-          const { data: updatedData, error: updateError, count } = await supabase
-            .from('messages')
-            .update({ is_read: true })
-            .eq('conversation_id', conversationId)
-            .eq('is_read', false)
-            .neq('sender_id', user?.id) // Only mark messages from other users as read
-            .select();
-          
-          if (updateError) {
-            console.error('[MESSAGES] ERROR marking messages as read:', updateError);
-            toast({
-              title: 'Warning',
-              description: 'Could not mark messages as read',
-              variant: 'destructive'
-            });
-          } else {
-            console.log(`[MESSAGES] SUCCESS: Marked ${count} messages as read`);
-            console.log('[MESSAGES] Updated messages:', updatedData);
-            
-            // Force refresh the notification count
-            refreshMessageCount();
-          }
+        // Always try to mark messages as read when opening a conversation
+        console.log(`[MESSAGES] Attempting to mark all unread messages as read for conversation ${conversationId}...`);
+        const { data: updatedData, error: updateError, count } = await supabase
+          .from('messages')
+          .update({ is_read: true })
+          .eq('conversation_id', conversationId)
+          .eq('is_read', false)
+          .neq('sender_id', user?.id) // Only mark messages from other users as read
+          .select();
+        
+        if (updateError) {
+          console.error('[MESSAGES] ERROR marking messages as read:', updateError);
         } else {
-          console.log('[MESSAGES] No unread messages to mark');
+          console.log(`[MESSAGES] SUCCESS: Marked ${count || 0} messages as read`);
+          console.log('[MESSAGES] Updated messages:', updatedData);
+          
+          // Force refresh the notification count
+          refreshMessageCount();
         }
       } else {
         console.log('[MESSAGES] No messages in conversation');
@@ -507,7 +501,13 @@ export default function Messages() {
             conversations.map((conv) => (
               <div
                 key={conv.id}
-                onClick={() => setSelectedConversation(conv)}
+                onClick={() => {
+                  setSelectedConversation(conv);
+                  // Immediately mark this conversation as having no unread messages
+                  setConversations(prev => prev.map(c => 
+                    c.id === conv.id ? { ...c, unread_count: 0 } : c
+                  ));
+                }}
                 className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
                   selectedConversation?.id === conv.id ? 'bg-muted/50' : ''
                 }`}
@@ -532,16 +532,16 @@ export default function Messages() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className={`font-medium ${conv.unread_count && conv.unread_count > 0 ? 'text-primary' : ''}`}>
+                      <p className={`font-medium ${conv.unread_count > 0 ? 'text-primary' : ''}`}>
                         @{conv.other_user?.username || 'Unknown'}
                       </p>
-                      {conv.unread_count && conv.unread_count > 0 && (
+                      {conv.unread_count > 0 && (
                         <div className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                           {conv.unread_count}
                         </div>
                       )}
                     </div>
-                    <p className={`text-sm truncate ${conv.unread_count && conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                    <p className={`text-sm truncate ${conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                       {conv.last_message || 'Start a conversation'}
                     </p>
                   </div>
@@ -551,7 +551,7 @@ export default function Messages() {
                         {format(new Date(conv.last_message_at), 'MMM d')}
                       </span>
                     )}
-                    {conv.unread_count && conv.unread_count > 0 && (
+                    {conv.unread_count > 0 && (
                       <div className="h-2 w-2 bg-primary rounded-full" />
                     )}
                   </div>
