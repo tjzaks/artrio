@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatLastSeen, isCurrentlyActive } from '@/utils/timeUtils';
 
 interface PresenceState {
   [userId: string]: {
@@ -61,11 +62,13 @@ export function usePresence() {
         }));
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        setPresenceState((prev) => {
-          const newState = { ...prev };
-          delete newState[key];
-          return newState;
-        });
+        setPresenceState((prev) => ({
+          ...prev,
+          [key]: {
+            isOnline: false,
+            lastSeen: new Date().toISOString(), // Store when they went offline
+          },
+        }));
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -121,8 +124,29 @@ export function usePresence() {
     return presenceState[userId]?.isOnline || false;
   };
 
+  const getUserPresenceText = (userId: string): string => {
+    const presence = presenceState[userId];
+    if (!presence) return "Unknown status";
+    
+    if (presence.isOnline) {
+      return "Active now";
+    } else {
+      return formatLastSeen(presence.lastSeen);
+    }
+  };
+
+  const isUserCurrentlyActive = (userId: string): boolean => {
+    const presence = presenceState[userId];
+    if (!presence) return false;
+    
+    if (presence.isOnline) return true;
+    return isCurrentlyActive(presence.lastSeen);
+  };
+
   return {
     presenceState,
     isUserOnline,
+    getUserPresenceText,
+    isUserCurrentlyActive,
   };
 }

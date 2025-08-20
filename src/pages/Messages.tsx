@@ -10,8 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Send, MessageSquare, Users, Wifi, WifiOff } from 'lucide-react';
-import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
+import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
 
@@ -43,9 +42,8 @@ export default function Messages() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { isUserOnline } = usePresence();
+  const { isUserOnline, getUserPresenceText, isUserCurrentlyActive } = usePresence();
   const { refreshCount: refreshMessageCount } = useMessageNotifications();
-  const { isConnected, isConnecting } = useRealtimeConnection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -501,28 +499,9 @@ export default function Messages() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <h1 className="text-lg font-bold">Messages</h1>
-              {/* Connection status indicator */}
-              <div className="flex items-center gap-1">
-                {isConnecting ? (
-                  <Wifi className="h-3 w-3 text-yellow-500 animate-pulse" />
-                ) : isConnected ? (
-                  <Wifi className="h-3 w-3 text-green-500" />
-                ) : (
-                  <WifiOff className="h-3 w-3 text-red-500" />
-                )}
-              </div>
             </div>
             <div className="flex items-center gap-2">
               <MessageUserSearch />
-              {/* Debug button - temporary for fixing unread messages issue */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllUnreadMessages}
-                title="Clear all unread messages (Debug)"
-              >
-                Clear Unread
-              </Button>
             </div>
           </div>
         </header>
@@ -567,7 +546,7 @@ export default function Messages() {
                         <AvatarFallback>??</AvatarFallback>
                       </Avatar>
                     )}
-                    {conv.other_user?.id && isUserOnline(conv.other_user.id) && (
+                    {conv.other_user?.id && isUserCurrentlyActive(conv.other_user.id) && (
                       <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                     )}
                   </div>
@@ -630,7 +609,7 @@ export default function Messages() {
                     <AvatarFallback>??</AvatarFallback>
                   </Avatar>
                 )}
-                {selectedConversation.other_user?.id && isUserOnline(selectedConversation.other_user.id) && (
+                {selectedConversation.other_user?.id && isUserCurrentlyActive(selectedConversation.other_user.id) && (
                   <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                 )}
               </div>
@@ -640,35 +619,12 @@ export default function Messages() {
               >
                 <p className="font-medium">@{selectedConversation.other_user?.username || 'Unknown'}</p>
                 <p className="text-xs text-muted-foreground">
-                  {selectedConversation.other_user?.id && isUserOnline(selectedConversation.other_user.id) 
-                    ? 'Active now' 
-                    : 'Offline'}
+                  {selectedConversation.other_user?.id 
+                    ? getUserPresenceText(selectedConversation.other_user.id)
+                    : 'Unknown status'}
                 </p>
               </div>
             </div>
-            {/* Force mark as read button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                console.log('[MESSAGES] Force marking all messages as read');
-                const { error } = await supabase
-                  .from('messages')
-                  .update({ is_read: true })
-                  .eq('conversation_id', selectedConversation.id)
-                  .neq('sender_id', user?.id);
-                
-                if (error) {
-                  console.error('[MESSAGES] Force mark failed:', error);
-                } else {
-                  console.log('[MESSAGES] Force mark succeeded');
-                  refreshMessageCount();
-                }
-              }}
-              className="text-xs"
-            >
-              Mark Read
-            </Button>
           </div>
           </header>
 

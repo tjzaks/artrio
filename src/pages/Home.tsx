@@ -61,7 +61,7 @@ const Home = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isSubscribed } = useRealtimeNotifications();
-  const { isUserOnline } = usePresence();
+  const { isUserOnline, getUserPresenceText, isUserCurrentlyActive } = usePresence();
   const [currentTrio, setCurrentTrio] = useState<Trio | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -821,7 +821,7 @@ const Home = () => {
                           <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1">
                             <PartyPopper className="h-3 w-3 text-white" />
                           </div>
-                        ) : isUserOnline(profile.user_id) ? (
+                        ) : isUserCurrentlyActive(profile.user_id) ? (
                           <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                         ) : null}
                       </div>
