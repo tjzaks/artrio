@@ -21,6 +21,7 @@ interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
+  edited_at?: string;
 }
 
 interface Conversation {
@@ -52,6 +53,8 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   // Load conversations and handle URL params
   useEffect(() => {
@@ -99,38 +102,44 @@ export default function Messages() {
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*', // Listen to INSERT and UPDATE
             schema: 'public',
             table: 'messages',
             filter: `conversation_id=eq.${selectedConversation.id}`
           },
           (payload) => {
-            const newMsg = payload.new as Message;
-            console.log('🎯 CONVERSATION: New message in conversation:', newMsg);
-            console.log('🎯 CONVERSATION: Message sender:', newMsg.sender_id);
-            console.log('🎯 CONVERSATION: Current user:', user?.id);
+            const updatedMsg = payload.new as Message;
+            console.log('🎯 CONVERSATION: Message event:', payload.eventType, updatedMsg);
             
-            // Add message to the list if it's not from the current user
-            // (messages from current user are already added when sending)
-            if (newMsg.sender_id !== user?.id) {
-              console.log('🎯 CONVERSATION: Adding message from other user');
-              setMessages(prev => {
-                if (prev.some(m => m.id === newMsg.id)) {
-                  console.log('🎯 CONVERSATION: Message already exists, skipping');
-                  return prev;
-                }
-                console.log('🎯 CONVERSATION: Adding new message to state');
-                return [...prev, newMsg];
-              });
-              
-              // Mark as read since the conversation is open
-              supabase
-                .from('messages')
-                .update({ is_read: true })
-                .eq('id', newMsg.id)
-                .then(() => console.log('🎯 CONVERSATION: Marked new message as read'));
-            } else {
-              console.log('🎯 CONVERSATION: Message from current user, skipping');
+            if (payload.eventType === 'INSERT') {
+              // Add message to the list if it's not from the current user
+              // (messages from current user are already added when sending)
+              if (updatedMsg.sender_id !== user?.id) {
+                console.log('🎯 CONVERSATION: Adding message from other user');
+                setMessages(prev => {
+                  if (prev.some(m => m.id === updatedMsg.id)) {
+                    console.log('🎯 CONVERSATION: Message already exists, skipping');
+                    return prev;
+                  }
+                  console.log('🎯 CONVERSATION: Adding new message to state');
+                  return [...prev, updatedMsg];
+                });
+                
+                // Mark as read since the conversation is open
+                supabase
+                  .from('messages')
+                  .update({ is_read: true })
+                  .eq('id', updatedMsg.id)
+                  .then(() => console.log('🎯 CONVERSATION: Marked new message as read'));
+              } else {
+                console.log('🎯 CONVERSATION: Message from current user, skipping');
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              // Handle message edits
+              console.log('🎯 CONVERSATION: Message edited, updating state');
+              setMessages(prev => prev.map(msg => 
+                msg.id === updatedMsg.id ? updatedMsg : msg
+              ));
             }
           }
         )
@@ -508,6 +517,49 @@ export default function Messages() {
     };
   };
 
+  const startEditing = (message: Message) => {
+    setEditingMessage(message.id);
+    setEditContent(message.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingMessage(null);
+    setEditContent('');
+  };
+
+  const saveEdit = async () => {
+    if (!editingMessage || !editContent.trim()) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('edit_message', {
+        p_message_id: editingMessage,
+        p_user_id: user?.id,
+        p_new_content: editContent.trim()
+      });
+      
+      if (error) {
+        console.error('Error editing message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to edit message',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Update local state
+      setMessages(prev => prev.map(msg => 
+        msg.id === editingMessage 
+          ? { ...msg, content: editContent.trim(), edited_at: new Date().toISOString() }
+          : msg
+      ));
+      
+      cancelEditing();
+    } catch (error) {
+      console.error('Error editing message:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -665,6 +717,8 @@ export default function Messages() {
               ) : (
                 messages.map((message) => {
                   const isOwn = message.sender_id === user?.id;
+                  const isEditing = editingMessage === message.id;
+                  
                   return (
                     <div
                       key={message.id}
@@ -676,13 +730,39 @@ export default function Messages() {
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}
+                        onDoubleClick={isOwn ? () => startEditing(message) : undefined}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
-                          isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
-                        }`}>
-                          {isOwn ? 'Delivered' : format(new Date(message.created_at), 'h:mm a')}
-                        </p>
+                        {isEditing ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEdit();
+                                } else if (e.key === 'Escape') {
+                                  cancelEditing();
+                                }
+                              }}
+                              className="text-sm bg-background/10 border-none focus:ring-1 focus:ring-white/50"
+                              autoFocus
+                            />
+                            <div className="flex gap-1 text-[9px]">
+                              <span className="text-white/60">Enter to save • Esc to cancel</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm">{message.content}</p>
+                            <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
+                              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
+                            }`}>
+                              {isOwn ? 'Delivered' : format(new Date(message.created_at), 'h:mm a')}
+                              {message.edited_at && <span className="ml-1">(edited)</span>}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
