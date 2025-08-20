@@ -650,7 +650,7 @@ export default function Messages() {
                         }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-[9px] mt-1 text-right ${
+                        <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                           isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                         }`}>
                           {format(new Date(message.created_at), 'h:mm a')}
