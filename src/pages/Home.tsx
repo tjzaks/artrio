@@ -382,7 +382,8 @@ const Home = () => {
     if ((!newPost.trim() && !mediaUrl) || !currentTrio || !canPost) return;
 
     try {
-      const { error } = await supabase
+      // First try with full schema including media_type
+      let { error } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,
@@ -391,6 +392,19 @@ const Home = () => {
           media_url: mediaUrl || null,
           media_type: mediaType || null
         });
+
+      // If media_type column error, try fallback without media fields
+      if (error && error.message.includes('media_type')) {
+        console.log('Media columns not available, trying fallback insert...');
+        const fallbackResult = await supabase
+          .from('posts')
+          .insert({
+            user_id: user?.id,
+            trio_id: currentTrio.id,
+            content: newPost.trim() || 'Shared media content'
+          });
+        error = fallbackResult.error;
+      }
 
       if (error) {
         toast({
