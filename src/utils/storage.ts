@@ -3,30 +3,25 @@
 
 const storage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (typeof window !== 'undefined' && (window as any).Capacitor) {
-      const { Preferences } = await import('@capacitor/preferences');
-      const result = await Preferences.get({ key });
-      return result.value || null;
+    // For now, just use localStorage - we'll handle Capacitor later if needed
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      return localStorage.getItem(key);
     }
-    return localStorage.getItem(key);
+    return null;
   },
   
   setItem: async (key: string, value: string): Promise<void> => {
-    if (typeof window !== 'undefined' && (window as any).Capacitor) {
-      const { Preferences } = await import('@capacitor/preferences');
-      await Preferences.set({ key, value });
-      return;
+    // For now, just use localStorage - we'll handle Capacitor later if needed
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, value);
     }
-    localStorage.setItem(key, value);
   },
   
   removeItem: async (key: string): Promise<void> => {
-    if (typeof window !== 'undefined' && (window as any).Capacitor) {
-      const { Preferences } = await import('@capacitor/preferences');
-      await Preferences.remove({ key });
-      return;
+    // For now, just use localStorage - we'll handle Capacitor later if needed
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem(key);
     }
-    localStorage.removeItem(key);
   }
 };
 
