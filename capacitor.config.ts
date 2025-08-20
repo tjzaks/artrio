@@ -8,7 +8,10 @@ const config: CapacitorConfig = {
     iosScheme: 'capacitor',  // Capacitor scheme for iOS
     androidScheme: 'https',
     // Allow connections to Supabase from iOS Simulator
-    allowNavigation: ['*']  // Allow all for debugging
+    allowNavigation: ['*'],  // Allow all for debugging
+    // For simulator debugging - comment this out for production builds
+    // url: 'http://localhost:8100',
+    // cleartext: true
   },
   ios: {
     preferredContentMode: 'mobile',

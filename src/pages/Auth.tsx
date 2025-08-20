@@ -14,6 +14,7 @@ import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import { cn } from '@/lib/utils';
 import { WelcomeModal } from '@/components/WelcomeModal';
+import { IOSConnectionTest } from '@/components/IOSConnectionTest';
 
 const PERSONALITY_TYPES = [
   { value: 'creative', label: 'Creative soul', icon: Palette, color: 'from-purple-500 to-pink-500' },
@@ -50,49 +51,7 @@ const CARD_COLORS = [
 ];
 
 const Auth = () => {
-  console.log('🔐 SIMULATOR DEBUG: Auth component started');
-  
-  // MINIMAL TEST: Check if simple React rendering works
-  if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
-    console.log('🔐 SIMULATOR DEBUG: iOS App detected, returning minimal test');
-    return (
-      <div style={{ 
-        height: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        flexDirection: 'column',
-        backgroundColor: '#f0f0f0',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <h1 style={{ color: '#333', marginBottom: '20px' }}>🎉 Hello iOS Simulator!</h1>
-        <p style={{ color: '#666', textAlign: 'center', maxWidth: '300px' }}>
-          React is working! This means the issue is NOT with basic app loading.
-        </p>
-        <button 
-          onClick={() => {
-            console.log('🔐 Test button clicked');
-            alert('Button works too!');
-          }}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#007AFF',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px'
-          }}
-        >
-          Test Button
-        </button>
-        <div style={{ marginTop: '20px', fontSize: '12px', color: '#999' }}>
-          Platform: {window.navigator.platform}<br/>
-          User Agent: {window.navigator.userAgent?.slice(0, 50)}...
-        </div>
-      </div>
-    );
-  }
+  console.log('🔐 Auth component started');
   
   const { user, signUp, signIn, loading } = useAuth();
   const { toast } = useToast();
@@ -456,18 +415,58 @@ const Auth = () => {
       const { error } = await signIn(emailToUse, password);
       
       if (error) {
+        // Enhanced error logging for iOS Simulator
+        const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+        
+        if (isIOSApp) {
+          console.error('📱 iOS Sign In Failed');
+          console.error('📱 Error:', error);
+          console.error('📱 Error Type:', typeof error);
+          console.error('📱 Error Message:', error?.message || error);
+          
+          // Show more detailed error in iOS
+          const errorMsg = error?.message || cleanErrorMessage(error);
+          
+          // Special handling for common iOS issues
+          if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
+            toast({
+              title: 'Connection Error',
+              description: 'Cannot connect to server. Check Xcode console for details.',
+              variant: 'destructive'
+            });
+          } else {
+            toast({
+              title: 'Sign In Error',
+              description: errorMsg,
+              variant: 'destructive'
+            });
+          }
+        } else {
+          toast({
+            title: 'Sign In Error',
+            description: cleanErrorMessage(error),
+            variant: 'destructive'
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('📱 Unexpected error in handleSignIn:', error);
+      
+      const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+      
+      if (isIOSApp && error?.message === 'Load failed') {
         toast({
-          title: 'Sign In Error',
-          description: cleanErrorMessage(error),
+          title: 'Network Error',
+          description: 'Failed to connect to Artrio servers. This is a known iOS Simulator issue. Check Xcode console.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error?.message || 'An unexpected error occurred',
           variant: 'destructive'
         });
       }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive'
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -545,7 +544,8 @@ const Auth = () => {
   if (!isSignUp) {
     // Regular login form
     return (
-      <div className="h-[100dvh] flex items-center justify-center bg-background p-4 overflow-hidden">
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-background p-4 overflow-hidden">
+        <IOSConnectionTest />
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex justify-center mb-4">

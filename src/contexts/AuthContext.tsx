@@ -269,24 +269,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Debug for iOS Simulator
-      if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
-        console.log('🔐 Attempting sign in for:', email);
-        console.log('🔐 Supabase client available:', !!supabase);
+      // Enhanced debug for iOS Simulator
+      const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+      
+      if (isIOSApp) {
+        console.log('📱 iOS SIMULATOR DEBUG - Sign In Attempt');
+        console.log('📱 Email:', email);
+        console.log('📱 Supabase client exists:', !!supabase);
+        console.log('📱 Supabase auth exists:', !!supabase?.auth);
+        console.log('📱 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('📱 User Agent:', window.navigator.userAgent);
+        console.log('📱 Current URL:', window.location.href);
+        console.log('📱 localStorage available:', !!window.localStorage);
+        
+        // Test Supabase connection
+        try {
+          console.log('📱 Testing Supabase connection...');
+          const testResult = await supabase.from('profiles').select('count').limit(1);
+          console.log('📱 Supabase connection test:', testResult.error ? 'FAILED' : 'SUCCESS');
+          if (testResult.error) {
+            console.error('📱 Connection test error:', testResult.error);
+          }
+        } catch (testErr) {
+          console.error('📱 Connection test exception:', testErr);
+        }
       }
       
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('📱 Calling signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+      
+      if (isIOSApp) {
+        console.log('📱 Sign in response - data:', !!data);
+        console.log('📱 Sign in response - error:', error);
+        if (error) {
+          console.error('📱 Full error object:', JSON.stringify(error, null, 2));
+          console.error('📱 Error message:', error.message);
+          console.error('📱 Error status:', error.status);
+          console.error('📱 Error name:', error.name);
+        }
+      }
       
       if (error) {
         console.error('🔐 Sign in error:', error);
       }
       
       return { error };
-    } catch (err) {
-      console.error('🔐 Unexpected sign in error:', err);
+    } catch (err: any) {
+      console.error('📱 CRITICAL: Unexpected sign in exception:', err);
+      console.error('📱 Error type:', typeof err);
+      console.error('📱 Error message:', err?.message);
+      console.error('📱 Error stack:', err?.stack);
       return { error: err };
     }
   };
