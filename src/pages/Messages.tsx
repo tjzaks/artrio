@@ -957,10 +957,19 @@ export default function Messages() {
                 messages.map((message, index) => {
                   const isOwn = message.sender_id === user?.id;
                   const isEditing = editingMessage === message.id;
+                  
+                  // Check BOTH the message state AND the readReceipts Map
+                  const receipt = readReceipts.get(message.id);
+                  const isRead = receipt?.is_read || message.is_read;
+                  const readAt = receipt?.read_at || message.read_at;
+                  
                   // Only show "Read" on the last read message from this sender
                   const nextMessage = messages[index + 1];
-                  const showReadStatus = isOwn && message.is_read && 
-                    (!nextMessage || nextMessage.sender_id !== user?.id || !nextMessage.is_read);
+                  const nextReceipt = nextMessage ? readReceipts.get(nextMessage.id) : null;
+                  const nextIsRead = nextMessage ? (nextReceipt?.is_read || nextMessage.is_read) : false;
+                  
+                  const showReadStatus = isOwn && isRead && 
+                    (!nextMessage || nextMessage.sender_id !== user?.id || !nextIsRead);
                   
                   return (
                     <div
@@ -1014,8 +1023,8 @@ export default function Messages() {
                             }`}>
                               {isOwn ? (
                                 showReadStatus ? 
-                                  (message.read_at ? `Read ${format(new Date(message.read_at), 'h:mm a')}` : 'Read') : 
-                                  (message.is_read ? '' : 'Delivered')
+                                  (readAt ? `Read ${format(new Date(readAt), 'h:mm a')}` : 'Read') : 
+                                  (isRead ? '' : 'Delivered')
                               ) : format(new Date(message.created_at), 'h:mm a')}
                               {message.edited_at && <span className="ml-1">(edited)</span>}
                             </p>
