@@ -49,5 +49,7 @@
 	<string>Artrio needs permission to save photos to your library</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Artrio needs camera access to capture photos for stories</string>
+	<key>PHPhotoLibraryPreventAutomaticLimitedAccessAlert</key>
+	<true/>
 </dict>
 </plist>

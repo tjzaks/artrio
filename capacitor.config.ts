@@ -37,6 +37,13 @@ const config: CapacitorConfig = {
     },
     Camera: {
       permissions: ['camera', 'photos']
+    },
+    Media: {
+      // Instagram-style photo access configuration
+      presentLimitedLibraryPicker: false,
+      sortByCreationDate: true,
+      // Don't show the annoying limited access alert
+      preventAutomaticLimitedAccessAlert: true
     }
   },
 };

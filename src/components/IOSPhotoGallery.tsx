@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Media } from '@capacitor-community/media';
+import { Media, MediaAsset } from '@capacitor-community/media';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { 
   X, ChevronDown, Camera as CameraIcon, Grid3x3, Image
 } from 'lucide-react';
@@ -11,6 +13,54 @@ interface IOSPhotoGalleryProps {
   onClose: () => void;
 }
 
+// Lazy-loading thumbnail component for performance
+const PhotoThumbnail = ({ photo, onClick }: { photo: string; onClick: () => void }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.01, rootMargin: '50px' }
+    );
+    
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+  
+  return (
+    <button
+      ref={ref}
+      onClick={onClick}
+      className="aspect-square bg-gray-900 overflow-hidden hover:opacity-80 transition"
+    >
+      {isVisible && !hasError && (
+        <img 
+          src={photo} 
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setHasError(true)}
+        />
+      )}
+      {hasError && (
+        <div className="w-full h-full flex items-center justify-center">
+          <Image className="h-8 w-8 text-gray-600" />
+        </div>
+      )}
+    </button>
+  );
+};
+
 export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGalleryProps) {
   const [recentPhotos, setRecentPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,58 +68,105 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
 
   useEffect(() => {
     loadRecentPhotos();
+    
+    // Refresh photos when app becomes active (like Instagram)
+    const appStateListener = App.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        loadRecentPhotos();
+      }
+    });
+    
+    return () => {
+      appStateListener.remove();
+    };
   }, []);
 
   const loadRecentPhotos = async () => {
     try {
       setLoading(true);
       
-      // Try to load photos from the Media plugin
+      // Try to load photos from the Media plugin with proper settings
       try {
         const result = await Media.getMedias({
-          quantity: 30,
+          quantity: 50, // Get more photos for better selection
           types: 'photos',
           thumbnailWidth: 400,
           thumbnailHeight: 400,
-          thumbnailQuality: 80
+          thumbnailQuality: 80,
+          sort: [
+            {
+              key: 'creationDate',
+              ascending: false // Most recent first, like Instagram
+            }
+          ]
         });
         
-        console.log('Media result:', result);
+        console.log('Media plugin result:', result);
         
         if (result && result.medias && result.medias.length > 0) {
-          // Extract photo URLs - try different possible properties
-          const photoUrls = result.medias.map((media: any) => {
-            // Check all possible properties where the image might be
-            if (media.thumbnailDataUrl) return media.thumbnailDataUrl;
-            if (media.dataUrl) return media.dataUrl;
-            if (media.path) return media.path;
-            if (media.webPath) return media.webPath;
-            if (media.uri) return media.uri;
-            if (media.identifier) {
-              // On iOS, we might need to construct a URL from the identifier
-              return `capacitor://localhost/_capacitor_file_${media.identifier}`;
-            }
-            return '';
-          }).filter((url: string) => url !== '');
+          // Process MediaAssets correctly based on platform
+          const photoData = await Promise.all(
+            result.medias.slice(0, 30).map(async (media: MediaAsset) => {
+              // For iOS, get the actual path from identifier
+              if (Capacitor.getPlatform() === 'ios' && media.identifier) {
+                try {
+                  const { path } = await Media.getMediaByIdentifier({
+                    identifier: media.identifier
+                  });
+                  // Convert to web-viewable URL
+                  return Capacitor.convertFileSrc(path);
+                } catch (e) {
+                  console.log('Failed to get path for identifier:', media.identifier);
+                  // Try constructing URL from identifier as fallback
+                  return `capacitor://localhost/_capacitor_file_${media.identifier}`;
+                }
+              }
+              
+              // For Android or if path exists directly
+              if (media.path) {
+                return Capacitor.convertFileSrc(media.path);
+              }
+              
+              // If we have a thumbnail data URL (base64)
+              if ((media as any).thumbnailDataUrl) {
+                return (media as any).thumbnailDataUrl;
+              }
+              
+              // Last resort - try identifier
+              if (media.identifier) {
+                return `capacitor://localhost/_capacitor_file_${media.identifier}`;
+              }
+              
+              return null;
+            })
+          );
           
-          if (photoUrls.length > 0) {
-            setRecentPhotos(photoUrls);
+          // Filter out nulls and set photos
+          const validPhotos = photoData.filter(p => p !== null) as string[];
+          
+          if (validPhotos.length > 0) {
+            setRecentPhotos(validPhotos);
             setHasPermission(true);
-            // Save to storage for future use
-            localStorage.setItem('recentStoryPhotos', JSON.stringify(photoUrls));
+            // Cache for offline use
+            localStorage.setItem('recentStoryPhotos', JSON.stringify(validPhotos.slice(0, 20)));
             return; // Success!
           }
         }
       } catch (mediaError) {
         console.error('Media plugin error:', mediaError);
+        // Continue to fallback
       }
       
-      // Fall back to loading from storage
+      // Fallback: Load from cache if media plugin fails
       const stored = localStorage.getItem('recentStoryPhotos');
       if (stored) {
-        const photos = JSON.parse(stored);
-        setRecentPhotos(photos.slice(0, 50));
-        setHasPermission(true);
+        try {
+          const photos = JSON.parse(stored);
+          setRecentPhotos(photos.slice(0, 30));
+          setHasPermission(true);
+        } catch (e) {
+          console.error('Failed to parse stored photos');
+        }
       }
     } catch (error) {
       console.error('Error loading photos:', error);
@@ -187,19 +284,13 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
               <span className="text-gray-400 text-xs">Library</span>
             </button>
             
-            {/* Recent photos if any */}
+            {/* Recent photos using lazy-loading component */}
             {recentPhotos.map((photo, index) => (
-              <button
-                key={index}
+              <PhotoThumbnail
+                key={`photo-${index}`}
+                photo={photo}
                 onClick={() => onPhotoSelect(photo)}
-                className="aspect-square bg-gray-900 overflow-hidden hover:opacity-80 transition"
-              >
-                <img 
-                  src={photo} 
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              </button>
+              />
             ))}
             
             {/* Fill remaining cells with empty squares */}
