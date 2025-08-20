@@ -106,13 +106,20 @@ export default function Messages() {
           },
           (payload) => {
             const newMsg = payload.new as Message;
-            console.log('New message in conversation:', newMsg);
+            console.log('🎯 CONVERSATION: New message in conversation:', newMsg);
+            console.log('🎯 CONVERSATION: Message sender:', newMsg.sender_id);
+            console.log('🎯 CONVERSATION: Current user:', user?.id);
             
             // Add message to the list if it's not from the current user
             // (messages from current user are already added when sending)
             if (newMsg.sender_id !== user?.id) {
+              console.log('🎯 CONVERSATION: Adding message from other user');
               setMessages(prev => {
-                if (prev.some(m => m.id === newMsg.id)) return prev;
+                if (prev.some(m => m.id === newMsg.id)) {
+                  console.log('🎯 CONVERSATION: Message already exists, skipping');
+                  return prev;
+                }
+                console.log('🎯 CONVERSATION: Adding new message to state');
                 return [...prev, newMsg];
               });
               
@@ -121,13 +128,23 @@ export default function Messages() {
                 .from('messages')
                 .update({ is_read: true })
                 .eq('id', newMsg.id)
-                .then(() => console.log('Marked new message as read'));
+                .then(() => console.log('🎯 CONVERSATION: Marked new message as read'));
+            } else {
+              console.log('🎯 CONVERSATION: Message from current user, skipping');
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('🎯 CONVERSATION SUBSCRIPTION STATUS:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('🎯 CONVERSATION: Successfully subscribed to conversation messages');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('🎯 CONVERSATION: Subscription failed');
+          }
+        });
       
       return () => {
+        console.log('🎯 CONVERSATION: Unsubscribing from conversation messages');
         channel.unsubscribe();
       };
     }
@@ -403,21 +420,22 @@ export default function Messages() {
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          console.log('New message received:', newMsg);
+          console.log('🔥 GLOBAL: New message received:', newMsg);
+          console.log('🔥 GLOBAL: Current conversation ID:', selectedConversation?.id);
+          console.log('🔥 GLOBAL: Message conversation ID:', newMsg.conversation_id);
           
-          // Add to messages if it's for the currently selected conversation
-          if (selectedConversation?.id === newMsg.conversation_id) {
-            setMessages(prev => {
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
-          }
+          // The global subscription should NOT add messages to the current view
+          // That's handled by the conversation-specific subscription
+          // This subscription is ONLY for updating the conversations list
+          console.log('🔥 GLOBAL: Updating conversations list only (not adding to current view)');
           
           // Update AND reorder conversation list
           setConversations(prev => {
+            console.log('🔥 GLOBAL: Current conversations count:', prev.length);
             // Update the conversation with new message
             const updated = prev.map(conv => {
               if (conv.id === newMsg.conversation_id) {
+                console.log('🔥 GLOBAL: Found conversation to update:', conv.other_user?.username);
                 return {
                   ...conv,
                   last_message: newMsg.content,
@@ -429,12 +447,15 @@ export default function Messages() {
             });
             
             // Reorder by most recent message
-            return updated.sort((a, b) => {
+            const reordered = updated.sort((a, b) => {
               if (!a.last_message_at && !b.last_message_at) return 0;
               if (!a.last_message_at) return 1;
               if (!b.last_message_at) return -1;
               return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
             });
+            
+            console.log('🔥 GLOBAL: Conversations list updated and reordered');
+            return reordered;
           });
           
           // Refresh message count for navigation badge
@@ -470,12 +491,19 @@ export default function Messages() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔥 GLOBAL SUBSCRIPTION STATUS:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('🔥 GLOBAL: Successfully subscribed to all messages');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('🔥 GLOBAL: Subscription failed');
+        }
+      });
 
-    console.log('Subscribed to messages and notification counts');
+    console.log('🔥 GLOBAL: Setting up subscription to messages and notification counts');
 
     return () => {
-      console.log('Unsubscribing from messages and notification counts');
+      console.log('🔥 GLOBAL: Unsubscribing from messages and notification counts');
       channel.unsubscribe();
     };
   };
