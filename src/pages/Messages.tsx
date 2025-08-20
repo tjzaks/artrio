@@ -827,7 +827,7 @@ export default function Messages() {
                             <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                               isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                             }`}>
-                              {isOwn ? (message.is_read ? 'Read' : 'Delivered') : format(new Date(message.created_at), 'h:mm a')}
+                              {isOwn ? (message.is_read ? `Read ${format(new Date(message.created_at), 'h:mm a')}` : 'Delivered') : format(new Date(message.created_at), 'h:mm a')}
                               {message.edited_at && <span className="ml-1">(edited)</span>}
                             </p>
                           </>
