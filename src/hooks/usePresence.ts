@@ -126,7 +126,7 @@ export function usePresence() {
 
   const getUserPresenceText = (userId: string): string => {
     const presence = presenceState[userId];
-    if (!presence) return "Unknown status";
+    if (!presence) return "";
     
     if (presence.isOnline) {
       return "Active now";
