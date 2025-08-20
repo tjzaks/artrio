@@ -9,9 +9,9 @@ export const initializeApp = async () => {
   }
 
   try {
-    // Hide splash screen immediately since we have our own
-    await SplashScreen.hide();
-
+    // DON'T hide splash screen here - let the React app control it
+    // The native splash will stay visible until React is ready
+    
     if (Capacitor.getPlatform() === 'ios') {
       // Configure status bar for iOS
       await StatusBar.setStyle({ style: 'dark' });
@@ -23,6 +23,17 @@ export const initializeApp = async () => {
     }
   } catch (error) {
     console.error('Error initializing native app:', error);
+  }
+};
+
+// Separate function to hide splash when app is ready
+export const hideSplashScreen = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await SplashScreen.hide();
+    } catch (error) {
+      console.error('Error hiding splash screen:', error);
+    }
   }
 };
 

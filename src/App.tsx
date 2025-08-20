@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SplashScreen from "@/components/SplashScreen";
+import { hideSplashScreen } from "@/utils/capacitor";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -42,8 +43,10 @@ const App = () => {
       setShowSplash(false);
     }
     
-    // Mark app as ready immediately
+    // Mark app as ready and hide native splash
     setAppReady(true);
+    // Hide the native splash screen once React app is ready
+    hideSplashScreen();
   }, []);
 
   const handleSplashComplete = () => {
