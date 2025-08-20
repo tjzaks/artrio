@@ -276,7 +276,7 @@ export default function Messages() {
         let result, updateError;
         
         try {
-          const response = await supabase.rpc('mark_conversation_read', { conv_id: conversationId });
+          const response = await supabase.rpc('mark_conversation_read', { p_conversation_id: conversationId });
           result = response.data;
           updateError = response.error;
         } catch (err) {
