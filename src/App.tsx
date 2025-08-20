@@ -32,35 +32,57 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  console.log('🚀 SIMULATOR DEBUG: App component initializing...');
+  
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
 
   // Only show splash on initial app load
   useEffect(() => {
-    // Check if we've already shown splash this session
-    const hasShownSplash = sessionStorage.getItem('hasShownSplash');
-    if (hasShownSplash) {
-      setShowSplash(false);
-    }
+    console.log('🚀 SIMULATOR DEBUG: App useEffect starting...');
     
-    // Mark app as ready and hide native splash
-    setAppReady(true);
-    // Hide the native splash screen once React app is ready
-    hideSplashScreen();
+    try {
+      // Check if we've already shown splash this session
+      const hasShownSplash = sessionStorage.getItem('hasShownSplash');
+      console.log('🚀 SIMULATOR DEBUG: hasShownSplash:', hasShownSplash);
+      
+      if (hasShownSplash) {
+        console.log('🚀 SIMULATOR DEBUG: Skipping splash screen');
+        setShowSplash(false);
+      }
+      
+      // Mark app as ready and hide native splash
+      console.log('🚀 SIMULATOR DEBUG: Setting app ready to true');
+      setAppReady(true);
+      
+      // Hide the native splash screen once React app is ready
+      console.log('🚀 SIMULATOR DEBUG: About to hide splash screen...');
+      hideSplashScreen();
+      console.log('🚀 SIMULATOR DEBUG: hideSplashScreen called successfully');
+    } catch (error) {
+      console.error('🚀 SIMULATOR DEBUG: Error in App useEffect:', error);
+    }
   }, []);
 
   const handleSplashComplete = () => {
+    console.log('🚀 SIMULATOR DEBUG: Splash completed');
     sessionStorage.setItem('hasShownSplash', 'true');
     setShowSplash(false);
   };
 
+  console.log('🚀 SIMULATOR DEBUG: App render - appReady:', appReady, 'showSplash:', showSplash);
+
   if (!appReady) {
+    console.log('🚀 SIMULATOR DEBUG: App not ready yet, returning null');
     return null; // Prevent flash of content
   }
 
   if (showSplash) {
+    console.log('🚀 SIMULATOR DEBUG: Showing splash screen');
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
+
+  console.log('🚀 SIMULATOR DEBUG: About to render main app content...');
 
   return (
     <GlobalErrorBoundary>

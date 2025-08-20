@@ -45,7 +45,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
       'ResizeObserver loop limit exceeded',
       'ResizeObserver loop completed', 
       'Non-Error promise rejection captured',
-      'Load failed',
+      // 'Load failed', // TEMPORARILY REMOVED FOR SIMULATOR DEBUGGING
       'Failed to fetch',
       'Network request failed',
       'ChunkLoadError',

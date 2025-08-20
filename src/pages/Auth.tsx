@@ -50,6 +50,50 @@ const CARD_COLORS = [
 ];
 
 const Auth = () => {
+  console.log('🔐 SIMULATOR DEBUG: Auth component started');
+  
+  // MINIMAL TEST: Check if simple React rendering works
+  if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
+    console.log('🔐 SIMULATOR DEBUG: iOS App detected, returning minimal test');
+    return (
+      <div style={{ 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        flexDirection: 'column',
+        backgroundColor: '#f0f0f0',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <h1 style={{ color: '#333', marginBottom: '20px' }}>🎉 Hello iOS Simulator!</h1>
+        <p style={{ color: '#666', textAlign: 'center', maxWidth: '300px' }}>
+          React is working! This means the issue is NOT with basic app loading.
+        </p>
+        <button 
+          onClick={() => {
+            console.log('🔐 Test button clicked');
+            alert('Button works too!');
+          }}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            backgroundColor: '#007AFF',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px'
+          }}
+        >
+          Test Button
+        </button>
+        <div style={{ marginTop: '20px', fontSize: '12px', color: '#999' }}>
+          Platform: {window.navigator.platform}<br/>
+          User Agent: {window.navigator.userAgent?.slice(0, 50)}...
+        </div>
+      </div>
+    );
+  }
+  
   const { user, signUp, signIn, loading } = useAuth();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(true);
