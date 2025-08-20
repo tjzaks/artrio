@@ -24,11 +24,47 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
     try {
       setLoading(true);
       
-      // For iOS, we can't directly access the photo library
-      // We need to use the Camera plugin with Photos source
-      // This is a limitation of iOS privacy
+      // Try to load photos from the Media plugin
+      try {
+        const result = await Media.getMedias({
+          quantity: 30,
+          types: 'photos',
+          thumbnailWidth: 400,
+          thumbnailHeight: 400,
+          thumbnailQuality: 80
+        });
+        
+        console.log('Media result:', result);
+        
+        if (result && result.medias && result.medias.length > 0) {
+          // Extract photo URLs - try different possible properties
+          const photoUrls = result.medias.map((media: any) => {
+            // Check all possible properties where the image might be
+            if (media.thumbnailDataUrl) return media.thumbnailDataUrl;
+            if (media.dataUrl) return media.dataUrl;
+            if (media.path) return media.path;
+            if (media.webPath) return media.webPath;
+            if (media.uri) return media.uri;
+            if (media.identifier) {
+              // On iOS, we might need to construct a URL from the identifier
+              return `capacitor://localhost/_capacitor_file_${media.identifier}`;
+            }
+            return '';
+          }).filter((url: string) => url !== '');
+          
+          if (photoUrls.length > 0) {
+            setRecentPhotos(photoUrls);
+            setHasPermission(true);
+            // Save to storage for future use
+            localStorage.setItem('recentStoryPhotos', JSON.stringify(photoUrls));
+            return; // Success!
+          }
+        }
+      } catch (mediaError) {
+        console.error('Media plugin error:', mediaError);
+      }
       
-      // Load any previously selected photos from storage
+      // Fall back to loading from storage
       const stored = localStorage.getItem('recentStoryPhotos');
       if (stored) {
         const photos = JSON.parse(stored);
@@ -130,59 +166,28 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
               />
             ))}
           </div>
-        ) : recentPhotos.length === 0 ? (
-          // No photos yet - show instruction
-          <div className="px-4 py-8">
-            <div className="bg-gray-900 rounded-lg p-6 text-center">
-              <div className="text-4xl mb-3">📸</div>
-              <h3 className="text-white font-medium mb-2">Grant Photo Access</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Allow Artrio to access your photos to create stories. 
-                Your photos stay private and are never uploaded without your permission.
-              </p>
-              <Button 
-                onClick={async () => {
-                  await loadRecentPhotos();
-                  if (recentPhotos.length === 0) {
-                    handlePhotoSelect();
-                  }
-                }}
-                className="bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600"
-              >
-                Allow Photo Access
-              </Button>
-            </div>
-            
-            <div className="mt-6 grid grid-cols-3 gap-0.5">
-              {/* Camera Button */}
-              <button
-                onClick={handleCameraCapture}
-                className="aspect-square bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition rounded-tl-lg"
-              >
-                <CameraIcon className="h-8 w-8 text-gray-400" />
-              </button>
-              
-              {/* Empty cells */}
-              {[...Array(29)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`aspect-square bg-gray-900 ${i === 28 ? 'rounded-br-lg' : ''}`} 
-                />
-              ))}
-            </div>
-          </div>
         ) : (
-          // We have photos - show them Instagram style
+          // Show camera and library buttons with any photos
           <div className="grid grid-cols-3 gap-0.5">
-            {/* Camera Button - Top left only */}
+            {/* Camera Button - Always first */}
             <button
               onClick={handleCameraCapture}
-              className="aspect-square bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition"
+              className="aspect-square bg-gray-900 flex flex-col items-center justify-center hover:bg-gray-800 transition"
             >
-              <CameraIcon className="h-8 w-8 text-gray-400" />
+              <CameraIcon className="h-8 w-8 text-gray-400 mb-1" />
+              <span className="text-gray-400 text-xs">Camera</span>
             </button>
             
-            {/* Recent photos starting from cell 2 */}
+            {/* Photo Library Button - Always second */}
+            <button
+              onClick={handlePhotoSelect}
+              className="aspect-square bg-gray-900 flex flex-col items-center justify-center hover:bg-gray-800 transition"
+            >
+              <Image className="h-8 w-8 text-gray-400 mb-1" />
+              <span className="text-gray-400 text-xs">Library</span>
+            </button>
+            
+            {/* Recent photos if any */}
             {recentPhotos.map((photo, index) => (
               <button
                 key={index}
@@ -197,20 +202,7 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
               </button>
             ))}
             
-            {/* Add more photos button if we have less than a full grid */}
-            {recentPhotos.length < 29 && (
-              <button
-                onClick={handlePhotoSelect}
-                className="aspect-square bg-gray-800 hover:bg-gray-700 transition flex items-center justify-center"
-              >
-                <div className="text-center">
-                  <div className="text-2xl mb-1">+</div>
-                  <p className="text-gray-400 text-xs">Add More</p>
-                </div>
-              </button>
-            )}
-            
-            {/* Fill remaining cells */}
+            {/* Fill remaining cells with empty squares */}
             {recentPhotos.length < 28 && (
               [...Array(28 - recentPhotos.length)].map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square bg-gray-900" />
