@@ -68,13 +68,12 @@ export default function Messages() {
     if (!user || !selectedConversation) return;
     
     const pollInterval = setInterval(async () => {
-      // Check for read receipts on messages I sent in this conversation
+      // Get ALL messages I sent in this conversation, not just read ones
       const { data } = await supabase
         .from('messages')
         .select('id, is_read, read_at')
         .eq('conversation_id', selectedConversation.id)
-        .eq('sender_id', user.id)
-        .eq('is_read', true);
+        .eq('sender_id', user.id);
       
       if (data && data.length > 0) {
         setReadReceipts(prev => {
@@ -87,6 +86,17 @@ export default function Messages() {
           });
           return newMap;
         });
+        
+        // Update local messages too
+        setMessages(prev => prev.map(msg => {
+          if (msg.sender_id === user.id) {
+            const updated = data.find(d => d.id === msg.id);
+            if (updated) {
+              return { ...msg, is_read: updated.is_read, read_at: updated.read_at };
+            }
+          }
+          return msg;
+        }));
       }
     }, 500); // Poll every 500ms for near-instant updates
     
