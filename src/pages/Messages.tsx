@@ -271,8 +271,27 @@ export default function Messages() {
         
         // Always try to mark messages as read when opening a conversation
         console.log(`[MESSAGES] Attempting to mark all unread messages as read for conversation ${conversationId}...`);
-        const { data: result, error: updateError } = await supabase
-          .rpc('mark_conversation_read', { p_conversation_id: conversationId });
+        
+        // Try the function first, fallback to direct update
+        let result, updateError;
+        
+        try {
+          const response = await supabase.rpc('mark_conversation_read', { conv_id: conversationId });
+          result = response.data;
+          updateError = response.error;
+        } catch (err) {
+          console.log('[MESSAGES] Function not found, using direct update');
+          // Fallback to direct update
+          const response = await supabase
+            .from('messages')
+            .update({ is_read: true })
+            .eq('conversation_id', conversationId)
+            .eq('is_read', false)
+            .neq('sender_id', user?.id);
+          
+          updateError = response.error;
+          result = { updated_count: response.count };
+        }
         
         if (updateError) {
           console.error('[MESSAGES] ERROR - keeping visual indicators:', updateError);
