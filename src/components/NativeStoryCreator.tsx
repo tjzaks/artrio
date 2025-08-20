@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import NativeGallery from './NativeGallery';
+import { checkStoriesbucket, testUpload } from '@/utils/supabaseStorageCheck';
 
 interface StoryCreatorProps {
   open: boolean;
@@ -266,6 +267,13 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
     
     setUploading(true);
     try {
+      console.log('📤 Step 0: Checking Supabase storage setup...');
+      const bucketExists = await checkStoriesbucket();
+      
+      if (!bucketExists) {
+        throw new Error('Stories bucket could not be created or accessed');
+      }
+      
       console.log('📤 Step 1: Rendering image to canvas...');
       const imageBlob = await renderImageToCanvas();
       

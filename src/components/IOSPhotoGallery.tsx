@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Media, MediaAsset } from '@capacitor-community/media';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+
+// Declare custom PhotoGalleryPlugin interface
+declare module '@capacitor/core' {
+  interface PluginRegistry {
+    PhotoGalleryPlugin: {
+      getRecentPhotos(options: { limit: number; thumbnailSize: number }): Promise<{ photos: any[]; count: number }>;
+      requestPermissions(): Promise<{ status: string }>;
+    };
+  }
+}
 import { 
   X, ChevronDown, Camera as CameraIcon, Grid3x3, Image
 } from 'lucide-react';
@@ -86,96 +95,16 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
       setLoading(true);
       console.log('🔥 STARTING PHOTO LOAD - Platform:', Capacitor.getPlatform());
       
-      // AGGRESSIVE DEBUGGING: Try every possible Media plugin approach
-      try {
-        console.log('🔥 Step 1: Testing Media plugin availability');
-        
-        // Test 1: Simple call
-        console.log('🔥 Step 2: Calling Media.getMedias...');
-        const result = await Media.getMedias({
-          quantity: 20,
-          types: 'photos'
-        });
-        
-        console.log('🔥 Step 3: Media result:', JSON.stringify(result, null, 2));
-        
-        if (result && result.medias) {
-          console.log('🔥 Step 4: Found', result.medias.length, 'media items');
-          
-          if (result.medias.length > 0) {
-            console.log('🔥 Step 5: First media item:', JSON.stringify(result.medias[0], null, 2));
-            
-            // Try different approaches for each media item
-            const photoPromises = result.medias.slice(0, 10).map(async (media: MediaAsset, index: number) => {
-              console.log(`🔥 Processing media ${index}:`, JSON.stringify(media, null, 2));
-              
-              // Approach 1: Direct path
-              if (media.path) {
-                console.log(`🔥 Media ${index} has direct path:`, media.path);
-                const converted = Capacitor.convertFileSrc(media.path);
-                console.log(`🔥 Media ${index} converted path:`, converted);
-                return converted;
-              }
-              
-              // Approach 2: Get by identifier
-              if (media.identifier) {
-                try {
-                  console.log(`🔥 Media ${index} trying getMediaByIdentifier:`, media.identifier);
-                  const mediaData = await Media.getMediaByIdentifier({
-                    identifier: media.identifier
-                  });
-                  console.log(`🔥 Media ${index} getMediaByIdentifier result:`, JSON.stringify(mediaData, null, 2));
-                  
-                  if (mediaData.path) {
-                    const converted = Capacitor.convertFileSrc(mediaData.path);
-                    console.log(`🔥 Media ${index} final converted:`, converted);
-                    return converted;
-                  }
-                } catch (e) {
-                  console.error(`🔥 Media ${index} getMediaByIdentifier failed:`, e);
-                }
-              }
-              
-              // Approach 3: Check for data URL
-              if ((media as any).dataUrl) {
-                console.log(`🔥 Media ${index} has dataUrl`);
-                return (media as any).dataUrl;
-              }
-              
-              console.log(`🔥 Media ${index} - no valid path found`);
-              return null;
-            });
-            
-            const photoResults = await Promise.all(photoPromises);
-            console.log('🔥 Step 6: Photo results:', photoResults);
-            
-            const validPhotos = photoResults.filter(p => p !== null) as string[];
-            console.log('🔥 Step 7: Valid photos count:', validPhotos.length);
-            
-            if (validPhotos.length > 0) {
-              console.log('🔥 SUCCESS: Setting photos!', validPhotos);
-              setRecentPhotos(validPhotos);
-              setHasPermission(true);
-              localStorage.setItem('recentStoryPhotos', JSON.stringify(validPhotos));
-              return;
-            }
-          }
-        } else {
-          console.log('🔥 No result or no medias property');
-        }
-      } catch (mediaError) {
-        console.error('🔥 MEDIA PLUGIN ERROR:', mediaError);
-      }
+      // For now, just show camera and library buttons since Media plugin isn't working
+      console.log('🔥 Setting up basic camera/library access');
       
-      // Fallback to cache
-      console.log('🔥 Step 8: Falling back to cache');
+      // Load any cached photos
       const stored = localStorage.getItem('recentStoryPhotos');
       if (stored) {
         try {
           const photos = JSON.parse(stored);
           console.log('🔥 Loaded from cache:', photos.length, 'photos');
           setRecentPhotos(photos.slice(0, 30));
-          setHasPermission(true);
         } catch (e) {
           console.error('🔥 Failed to parse stored photos');
         }
@@ -184,6 +113,7 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
       setHasPermission(true);
     } catch (error) {
       console.error('🔥 TOTAL ERROR:', error);
+      setHasPermission(true); // Still allow camera/library access
     } finally {
       setLoading(false);
     }
