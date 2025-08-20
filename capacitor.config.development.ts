@@ -5,10 +5,10 @@ const config: CapacitorConfig = {
   appName: 'Artrio',
   webDir: 'dist',
   server: {
-    iosScheme: 'https',  // Changed from 'capacitor' to 'https' for better compatibility
-    androidScheme: 'https',
-    // Allow connections to Supabase from iOS Simulator
-    allowNavigation: ['https://siqmwgeriobtlnkxfeas.supabase.co', 'https://*.supabase.co']
+    // Use local server for development/simulator
+    url: 'http://localhost:5173',
+    cleartext: true,
+    allowNavigation: ['*']
   },
   ios: {
     preferredContentMode: 'mobile',
@@ -21,8 +21,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 0, // Don't auto-hide, let the app control it
-      launchAutoHide: false, // Manually hide when React is ready
+      launchShowDuration: 0,
+      launchAutoHide: false,
       backgroundColor: "#ffffff",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
@@ -41,10 +41,8 @@ const config: CapacitorConfig = {
       permissions: ['camera', 'photos']
     },
     Media: {
-      // Instagram-style photo access configuration
       presentLimitedLibraryPicker: false,
       sortByCreationDate: true,
-      // Don't show the annoying limited access alert
       preventAutomaticLimitedAccessAlert: true
     }
   },
