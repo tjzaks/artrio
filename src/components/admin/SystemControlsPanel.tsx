@@ -17,8 +17,8 @@ export default function SystemControlsPanel() {
   const triggerTrioRandomization = async () => {
     setButtonLoading('randomize', true);
     try {
-      // Super simple - function returns void, no response to parse
-      const { error } = await supabase.rpc('randomize_trios');
+      // Call with dummy parameter to use new function signature
+      const { error } = await supabase.rpc('randomize_trios', { dummy: true });
       
       if (error) throw error;
 
