@@ -52,12 +52,12 @@ export function useMessageNotifications() {
     fetchUnreadCount();
   }, [user]);
 
-  // Listen for changes to notification_counts table for this user
+  // Listen for changes to notification_counts table AND new messages for this user
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel('notification-sync')
+      .channel('notification-sync-global')
       .on(
         'postgres_changes',
         {
@@ -70,6 +70,31 @@ export function useMessageNotifications() {
           console.log('[Notifications] Notification counts changed:', payload.eventType);
           // Don't try to be smart - just refresh from DB
           debouncedRefresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          console.log('[Notifications] New message detected globally:', newMsg);
+          
+          // Check if this message affects this user (they're in the conversation)
+          supabase
+            .from('conversations')
+            .select('user1_id, user2_id')
+            .eq('id', newMsg.conversation_id)
+            .single()
+            .then(({ data: conv }) => {
+              if (conv && (conv.user1_id === user.id || conv.user2_id === user.id) && newMsg.sender_id !== user.id) {
+                console.log('[Notifications] Message affects this user, refreshing count');
+                debouncedRefresh();
+              }
+            });
         }
       )
       .subscribe();

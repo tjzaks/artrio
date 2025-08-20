@@ -98,8 +98,33 @@ export default function Messages() {
               });
             });
             
-            // Also refresh the notification count
+            // Also refresh the notification count for all pages
             refreshMessageCount();
+            
+            // Force trigger a notification_counts table update to notify other pages
+            supabase
+              .from('notification_counts')
+              .select('*')
+              .eq('user_id', user?.id)
+              .eq('conversation_id', newMsg.conversation_id)
+              .single()
+              .then(({ data, error }) => {
+                if (data) {
+                  // Update existing record to trigger real-time subscription
+                  return supabase
+                    .from('notification_counts')
+                    .update({ updated_at: new Date().toISOString() })
+                    .eq('id', data.id);
+                } else {
+                  console.log('📨 UNIFIED: No notification count record found');
+                }
+              })
+              .then(() => {
+                console.log('📨 UNIFIED: Triggered notification count real-time update');
+              })
+              .catch((error) => {
+                console.log('📨 UNIFIED: Notification count trigger failed:', error);
+              });
           }
         )
         .subscribe((status) => {
