@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Users, Wifi, WifiOff } from 'lucide-react';
+import { useRealtimeConnection } from '@/hooks/useRealtimeConnection';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
 
@@ -44,6 +45,7 @@ export default function Messages() {
   const { toast } = useToast();
   const { isUserOnline } = usePresence();
   const { refreshCount: refreshMessageCount } = useMessageNotifications();
+  const { isConnected, isConnecting } = useRealtimeConnection();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -499,6 +501,16 @@ export default function Messages() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <h1 className="text-lg font-bold">Messages</h1>
+              {/* Connection status indicator */}
+              <div className="flex items-center gap-1">
+                {isConnecting ? (
+                  <Wifi className="h-3 w-3 text-yellow-500 animate-pulse" />
+                ) : isConnected ? (
+                  <Wifi className="h-3 w-3 text-green-500" />
+                ) : (
+                  <WifiOff className="h-3 w-3 text-red-500" />
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <MessageUserSearch />
