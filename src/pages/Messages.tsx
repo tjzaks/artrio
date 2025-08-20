@@ -321,10 +321,19 @@ export default function Messages() {
         
         if (unreadMessages.length > 0) {
           // Mark them as read in the database
-          await supabase
+          const { error: readError } = await supabase
             .from('messages')
             .update({ is_read: true })
             .in('id', unreadMessages.map(m => m.id));
+          
+          if (!readError) {
+            // Update local state to show as read
+            setMessages(prev => prev.map(msg => 
+              unreadMessages.some(um => um.id === msg.id) 
+                ? { ...msg, is_read: true }
+                : msg
+            ));
+          }
         }
         
         // Reset unread count using simple notification system
@@ -775,9 +784,13 @@ export default function Messages() {
                   No messages yet. Start the conversation!
                 </div>
               ) : (
-                messages.map((message) => {
+                messages.map((message, index) => {
                   const isOwn = message.sender_id === user?.id;
                   const isEditing = editingMessage === message.id;
+                  // Only show "Read" on the last read message from this sender
+                  const nextMessage = messages[index + 1];
+                  const showReadStatus = isOwn && message.is_read && 
+                    (!nextMessage || nextMessage.sender_id !== user?.id || !nextMessage.is_read);
                   
                   return (
                     <div
@@ -827,7 +840,7 @@ export default function Messages() {
                             <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                               isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                             }`}>
-                              {isOwn ? (message.is_read ? `Read ${format(new Date(message.created_at), 'h:mm a')}` : 'Delivered') : format(new Date(message.created_at), 'h:mm a')}
+                              {isOwn ? (showReadStatus ? 'Read' : (message.is_read ? '' : 'Delivered')) : format(new Date(message.created_at), 'h:mm a')}
                               {message.edited_at && <span className="ml-1">(edited)</span>}
                             </p>
                           </>
