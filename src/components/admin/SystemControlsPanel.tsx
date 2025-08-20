@@ -17,44 +17,18 @@ export default function SystemControlsPanel() {
   const triggerTrioRandomization = async () => {
     setButtonLoading('randomize', true);
     try {
-      // Try with explicit typing to bypass type checking
-      const { data, error } = await (supabase.rpc as any)('randomize_trios');
+      // Super simple - function returns void, no response to parse
+      const { error } = await supabase.rpc('randomize_trios');
       
-      if (error) {
-        logger.error('RPC Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Check if the function returned success: false
-      if (data && data.success === false) {
-        throw new Error(data.error || 'Randomization failed');
-      }
-
-      // Skip logging for now if it doesn't exist
-      try {
-        const currentUser = await supabase.auth.getUser();
-        await supabase.rpc('log_admin_action', {
-          p_admin_id: currentUser.data.user?.id,
-          p_action_type: 'system_control',
-          p_description: 'Manually triggered trio randomization'
-        });
-      } catch (logError) {
-        logger.log('Logging skipped:', logError);
-      }
-
-      // Check the response from the RPC function
-      if (data?.success) {
-        toast({
-          title: "Success",
-          description: data.message || `Created ${data.created} trios!`
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "No Trios Created",
-          description: data?.message || "Failed to create trios"
-        });
-      }
+      // It worked - refresh the stats
+      window.location.reload();
+      
+      toast({
+        title: "Success",
+        description: "Trios randomized successfully!"
+      });
     } catch (error) {
       logger.error('Error triggering randomization:', error);
       // Log more details for debugging
