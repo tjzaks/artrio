@@ -95,8 +95,47 @@ export default function IOSPhotoGallery({ onPhotoSelect, onClose }: IOSPhotoGall
       setLoading(true);
       console.log('🔥 STARTING PHOTO LOAD - Platform:', Capacitor.getPlatform());
       
-      // For now, just show camera and library buttons since Media plugin isn't working
-      console.log('🔥 Setting up basic camera/library access');
+      if (Capacitor.getPlatform() === 'ios') {
+        console.log('🔥 iOS detected - trying custom PhotoGalleryPlugin for Instagram-style auto-populate');
+        
+        try {
+          // First request permissions
+          console.log('🔥 Requesting photo permissions...');
+          const permissionResult = await Capacitor.Plugins.PhotoGalleryPlugin.requestPermissions();
+          console.log('🔥 Permission result:', permissionResult);
+          
+          if (permissionResult.status === 'granted' || permissionResult.status === 'limited') {
+            console.log('🔥 Permission granted, loading photos...');
+            
+            // Get recent photos using our custom plugin
+            const result = await Capacitor.Plugins.PhotoGalleryPlugin.getRecentPhotos({
+              limit: 30,
+              thumbnailSize: 300
+            });
+            
+            console.log('🔥 Custom plugin result:', result);
+            
+            if (result && result.photos && result.photos.length > 0) {
+              console.log('🔥 SUCCESS! Found', result.photos.length, 'photos');
+              
+              // Extract data URLs from our custom plugin
+              const photoUrls = result.photos.map((photo: any) => photo.dataURL);
+              
+              setRecentPhotos(photoUrls);
+              setHasPermission(true);
+              localStorage.setItem('recentStoryPhotos', JSON.stringify(photoUrls.slice(0, 20)));
+              console.log('🔥 INSTAGRAM-STYLE AUTO-POPULATE WORKING!!! 🎉');
+              return;
+            }
+          }
+        } catch (customError) {
+          console.error('🔥 Custom plugin error:', customError);
+          console.log('🔥 Falling back to other Claude\'s approach...');
+        }
+      }
+      
+      // Fallback approach (other Claude's work) - reliable Camera/Library buttons
+      console.log('🔥 Using fallback: camera/library access with cached photos');
       
       // Load any cached photos
       const stored = localStorage.getItem('recentStoryPhotos');
