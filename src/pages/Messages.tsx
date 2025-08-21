@@ -1013,7 +1013,7 @@ export default function Messages() {
             style={{ 
               WebkitOverflowScrolling: 'touch',
               paddingTop: '108px', // Height of header with Dynamic Island
-              paddingBottom: '76px' // Height of input area
+              paddingBottom: '120px' // Height of input area + safe area
             }}
           >
             <div className="space-y-4 px-4">

@@ -347,7 +347,7 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 bg-background/95 backdrop-blur-sm border-border">
+            <DropdownMenuContent align="start" side="bottom" className="w-40 bg-background/95 backdrop-blur-sm border-border">
               {post.user_id === currentUserId && (
                 <>
                   <DropdownMenuItem onClick={handleEdit}>
@@ -363,9 +363,9 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuItem onClick={handleToggleReply} disabled={userHasReplied}>
+              <DropdownMenuItem onClick={handleToggleReply}>
                 <MessageSquare className="h-4 w-4 mr-2" />
-                {userHasReplied ? 'Commented' : 'Comment'}
+                Comment
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -391,7 +391,7 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
         )}
 
         {/* Reply input field */}
-        {showReplyField && !userHasReplied && (
+        {showReplyField && (
           <div className="ml-11 space-y-2">
             <Textarea
               placeholder="Add a comment..."
@@ -423,12 +423,6 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
               </Button>
             </div>
           </div>
-        )}
-
-        {userHasReplied && (
-          <p className="ml-11 text-xs text-muted-foreground">
-            ✓ Commented
-          </p>
         )}
       </CardContent>
     </Card>
