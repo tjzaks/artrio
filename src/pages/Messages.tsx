@@ -86,7 +86,24 @@ export default function Messages() {
     if (!Capacitor.isNativePlatform()) return;
 
     const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
-      setKeyboardHeight(info.keyboardHeight);
+      // Check if we're at or near the bottom before keyboard shows
+      if (scrollAreaRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        
+        setKeyboardHeight(info.keyboardHeight);
+        
+        // If we were near bottom, adjust scroll to keep messages visible
+        if (isNearBottom) {
+          setTimeout(() => {
+            if (scrollAreaRef.current) {
+              scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+            }
+          }, 50);
+        }
+      } else {
+        setKeyboardHeight(info.keyboardHeight);
+      }
     });
 
     const hideListener = Keyboard.addListener('keyboardWillHide', () => {
@@ -623,6 +640,13 @@ export default function Messages() {
       });
       
       setMessages(messagesWithReceipts);
+      
+      // Scroll to bottom after loading messages
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 100);
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
