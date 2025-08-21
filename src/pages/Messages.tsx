@@ -912,8 +912,8 @@ export default function Messages() {
     <div className="h-[100dvh] bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
-        <header className="bg-background p-4 pt-safe border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
+        <header className="bg-background border-b flex-shrink-0">
+          <div className="px-4 pb-4 pt-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
