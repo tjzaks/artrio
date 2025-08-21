@@ -110,22 +110,20 @@ const PostCard = memo(function PostCard({
           </div>
           
           {/* Comments button - right side, middle aligned */}
-          {post.user_id !== currentUserId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleReply}
-              className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              title={`${replies.length} comment${replies.length !== 1 ? 's' : ''}`}
-            >
-              <MessageCircle className="h-4 w-4" />
-              {replies.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
-                  {replies.length}
-                </span>
-              )}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleReply}
+            className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            title={`${replies.length} comment${replies.length !== 1 ? 's' : ''}`}
+          >
+            <MessageCircle className="h-4 w-4" />
+            {replies.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                {replies.length}
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Replies */}
@@ -159,7 +157,7 @@ const PostCard = memo(function PostCard({
         )}
 
         {/* Reply input field */}
-        {showReplyField && post.user_id !== currentUserId && !userHasReplied && (
+        {showReplyField && !userHasReplied && (
           <div className="ml-11 space-y-2 animate-in slide-in-from-top-2">
             <Textarea
               placeholder="Add a comment..."
