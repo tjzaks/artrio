@@ -11,7 +11,7 @@ const SplashScreen = ({ onComplete, isLoading = false }: SplashScreenProps) => {
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // Wait for BOTH animation complete AND loading done
+    // Wait for animation complete and loading done, but add a max timeout
     if (animationComplete && !isLoading) {
       const timer = setTimeout(() => {
         setIsVisible(false);
@@ -21,6 +21,17 @@ const SplashScreen = ({ onComplete, isLoading = false }: SplashScreenProps) => {
       return () => clearTimeout(timer);
     }
   }, [animationComplete, isLoading, onComplete]);
+
+  // Add a safety timeout to prevent infinite loading
+  useEffect(() => {
+    const maxTimeout = setTimeout(() => {
+      console.log('Splash screen max timeout reached, forcing completion');
+      setIsVisible(false);
+      setTimeout(onComplete, 200);
+    }, 5000); // Max 5 seconds
+
+    return () => clearTimeout(maxTimeout);
+  }, [onComplete]);
 
   return (
     <AnimatePresence>

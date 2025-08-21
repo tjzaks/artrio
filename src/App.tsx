@@ -80,6 +80,8 @@ const App = () => {
     console.log('🚀 SIMULATOR DEBUG: Splash completed');
     sessionStorage.setItem('hasShownSplash', 'true');
     setShowSplash(false);
+    // Ensure data loading state is reset
+    setIsLoadingData(false);
   };
 
   console.log('🚀 SIMULATOR DEBUG: App render - appReady:', appReady, 'showSplash:', showSplash);
@@ -105,7 +107,7 @@ const App = () => {
   return (
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <AuthProvider onLoadingChange={setIsLoadingData}>
           <SwipeBackProvider>
             <TooltipProvider>
               <Toaster />
