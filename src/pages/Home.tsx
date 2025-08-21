@@ -708,13 +708,11 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
-      {/* iOS Safe Area Spacer */}
-      <div className="pt-safe" />
-      <header className="sticky safe-top z-40 navigation-glass">
-        <div className="p-3">
+      <header className="sticky top-0 z-40 navigation-glass">
+        <div className="p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
+              <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-8 w-auto" />
               {isSubscribed && (
                 <Badge className="badge-green text-xs px-2 py-0 pulse">
                   Live

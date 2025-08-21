@@ -1,16 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { 
-  X, Type, Send
+  X, Camera as CameraIcon, Image as ImageIcon, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Capacitor } from '@capacitor/core';
-import CameraRollGallery from './CameraRollGallery';
 
 interface StoryCreatorProps {
   open: boolean;
@@ -18,87 +16,24 @@ interface StoryCreatorProps {
   onSuccess?: () => void;
 }
 
-interface TextOverlay {
-  id: string;
-  text: string;
-  style: 'normal' | 'bold' | 'outline';
-  position: { x: number; y: number };
-  color: string;
-  fontSize: 'small' | 'medium' | 'large';
-}
-
-const TEXT_STYLES = {
-  normal: '',
-  bold: 'font-bold',
-  outline: 'font-bold text-stroke'
-};
-
-const FONT_SIZES = {
-  small: 'text-2xl',
-  medium: 'text-4xl', 
-  large: 'text-6xl'
-};
-
-const COLORS = ['#FFFFFF', '#000000', '#FF0000', '#FFFF00', '#00FF00', '#00FFFF', '#FF00FF'];
-
 export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCreatorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [textOverlay, setTextOverlay] = useState<TextOverlay | null>(null);
-  const [isEditingText, setIsEditingText] = useState(false);
+  const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showTextTools, setShowTextTools] = useState(false);
-  const [recentPhotos, setRecentPhotos] = useState<string[]>([]);
 
-  // Request photo permissions and load recent photos on mount
-  useEffect(() => {
-    if (open) {
-      requestPhotoPermissions();
-      loadRecentPhotos();
-    }
-  }, [open]);
-
-  const loadRecentPhotos = () => {
-    try {
-      const stored = localStorage.getItem('recentStoryPhotos');
-      if (stored) {
-        const photos = JSON.parse(stored);
-        setRecentPhotos(photos.slice(0, 9)); // Keep only last 9 photos
-      }
-    } catch (error) {
-      console.error('Error loading recent photos:', error);
-    }
+  const handleReset = () => {
+    setSelectedImage(null);
+    setCaption('');
   };
 
-  const saveToRecentPhotos = (imageUrl: string) => {
-    try {
-      const stored = localStorage.getItem('recentStoryPhotos');
-      const existing = stored ? JSON.parse(stored) : [];
-      const updated = [imageUrl, ...existing.filter((p: string) => p !== imageUrl)].slice(0, 9);
-      localStorage.setItem('recentStoryPhotos', JSON.stringify(updated));
-      setRecentPhotos(updated);
-    } catch (error) {
-      console.error('Error saving recent photo:', error);
-    }
+  const handleClose = () => {
+    handleReset();
+    onClose();
   };
 
-  const requestPhotoPermissions = async () => {
-    try {
-      const permissions = await Camera.requestPermissions();
-      if (permissions.photos === 'granted') {
-        // Permissions granted - we can't auto-load photos due to browser/iOS limitations
-        // But the user can now select photos
-      }
-    } catch (error) {
-      console.log('Photo permissions not available in browser:', error);
-    }
-  };
-
-  const handleCameraCapture = async () => {
+  const takePhoto = async () => {
     try {
       const image = await Camera.getPhoto({
         quality: 90,
@@ -109,16 +44,14 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       
       if (image.dataUrl) {
         setSelectedImage(image.dataUrl);
-        saveToRecentPhotos(image.dataUrl);
       }
     } catch (error) {
       console.error('Camera error:', error);
-      // Fallback to file input for web
-      fileInputRef.current?.click();
+      // User cancelled or error - just ignore
     }
   };
 
-  const handlePhotoSelect = async () => {
+  const choosePhoto = async () => {
     try {
       const image = await Camera.getPhoto({
         quality: 90,
@@ -129,216 +62,63 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       
       if (image.dataUrl) {
         setSelectedImage(image.dataUrl);
-        saveToRecentPhotos(image.dataUrl);
       }
     } catch (error) {
-      console.error('Photo selection error:', error);
-      // Fallback to file input for web
-      fileInputRef.current?.click();
+      console.error('Photo picker error:', error);
+      // User cancelled or error - just ignore
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Please select an image',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelectedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddText = () => {
-    setTextOverlay({
-      id: Date.now().toString(),
-      text: 'Add text',
-      style: 'normal',
-      position: { x: 50, y: 50 },
-      color: '#FFFFFF',
-      fontSize: 'medium'
-    });
-    setIsEditingText(true);
-    setShowTextTools(true);
-  };
-
-  const handleTextDrag = (e: React.TouchEvent | React.MouseEvent) => {
-    if (!isDragging || !textOverlay) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = 'touches' in e 
-      ? ((e.touches[0].clientX - rect.left) / rect.width) * 100
-      : ((e.nativeEvent.clientX - rect.left) / rect.width) * 100;
-    const y = 'touches' in e
-      ? ((e.touches[0].clientY - rect.top) / rect.height) * 100
-      : ((e.nativeEvent.clientY - rect.top) / rect.height) * 100;
-    
-    setTextOverlay({
-      ...textOverlay,
-      position: { 
-        x: Math.max(10, Math.min(90, x)), 
-        y: Math.max(10, Math.min(90, y)) 
-      }
-    });
-  };
-
-  const renderImageToCanvas = async (): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      console.log('🎨 Starting canvas render with image:', selectedImage);
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx || !selectedImage) {
-        console.error('🎨 No context or selected image');
-        resolve(null);
-        return;
-      }
-
-      const img = new Image();
-      
-      img.onload = () => {
-        console.log('🎨 Image loaded successfully, dimensions:', img.width, 'x', img.height);
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        if (textOverlay) {
-          console.log('🎨 Adding text overlay:', textOverlay.text);
-          const x = (textOverlay.position.x / 100) * canvas.width;
-          const y = (textOverlay.position.y / 100) * canvas.height;
-          
-          let fontSize = 48;
-          if (textOverlay.fontSize === 'small') fontSize = 32;
-          if (textOverlay.fontSize === 'large') fontSize = 64;
-          
-          ctx.font = `${textOverlay.style === 'bold' ? 'bold ' : ''}${fontSize}px sans-serif`;
-          ctx.fillStyle = textOverlay.color;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          
-          if (textOverlay.style === 'outline') {
-            ctx.strokeStyle = textOverlay.color === '#FFFFFF' ? '#000000' : '#FFFFFF';
-            ctx.lineWidth = 3;
-            ctx.strokeText(textOverlay.text, x, y);
-          }
-          
-          ctx.fillText(textOverlay.text, x, y);
-        }
-
-        canvas.toBlob((blob) => {
-          console.log('🎨 Canvas converted to blob:', blob?.size, 'bytes');
-          resolve(blob);
-        }, 'image/jpeg', 0.9);
-      };
-
-      img.onerror = (error) => {
-        console.error('🎨 Image failed to load:', selectedImage, error);
-        console.error('🎨 This usually means CORS issues or invalid file path');
-        resolve(null);
-      };
-
-      // Handle CORS issues and different image sources
-      if (selectedImage.startsWith('data:') || selectedImage.startsWith('blob:')) {
-        console.log('🎨 Loading data/blob URL directly');
-        img.src = selectedImage;
-      } else {
-        console.log('🎨 Loading external URL with CORS handling');
-        img.crossOrigin = 'anonymous';
-        img.src = selectedImage;
-      }
-    });
-  };
-
-  const handleShare = async () => {
-    if (!selectedImage || !user) return;
-    
-    console.log('📤 Starting story share process');
-    console.log('📤 Selected image:', selectedImage);
-    console.log('📤 User ID:', user.id);
+  const handlePost = async () => {
+    if (!selectedImage || uploading) return;
     
     setUploading(true);
+    
     try {
-      console.log('📤 Step 1: Rendering image to canvas...');
-      const imageBlob = await renderImageToCanvas();
+      // Convert data URL to blob
+      const response = await fetch(selectedImage);
+      const blob = await response.blob();
       
-      if (!imageBlob) {
-        throw new Error('Failed to process image - canvas rendering returned null');
-      }
-      
-      console.log('📤 Step 2: Image blob created successfully, size:', imageBlob.size, 'bytes');
-
-      const fileName = `${user.id}-${Date.now()}.jpg`;
-      console.log('📤 Step 3: Uploading to Supabase storage as:', fileName);
-      
+      // Upload to Supabase storage
+      const fileName = `${user?.id}/${Date.now()}.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
-        .upload(fileName, imageBlob);
-
-      if (uploadError) {
-        console.error('📤 Upload error:', uploadError);
-        throw uploadError;
-      }
-      
-      console.log('📤 Step 4: Upload successful, data:', uploadData);
-
-      const { data: urlData } = supabase.storage
-        .from('stories')
-        .getPublicUrl(fileName);
-        
-      console.log('📤 Step 5: Public URL generated:', urlData.publicUrl);
-
-      const { error: dbError } = await supabase
-        .from('stories')
-        .insert({
-          user_id: user.id,
-          media_url: urlData.publicUrl,
-          media_type: 'image',
-          caption: textOverlay?.text || null
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
         });
 
-      if (dbError) {
-        console.error('📤 Database error:', dbError);
-        throw dbError;
-      }
-      
-      console.log('📤 Step 6: Story saved to database successfully!');
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('stories')
+        .getPublicUrl(fileName);
+
+      // Create story post in database
+      const { error: postError } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user?.id,
+          content: caption || '📸',
+          image_url: publicUrl,
+          post_type: 'story'
+        });
+
+      if (postError) throw postError;
 
       toast({
-        title: 'Story shared!',
-        description: 'Your story is now live'
+        title: 'Story posted!',
+        description: 'Your story has been shared'
       });
-      
-      onSuccess?.();
-      onClose();
-      setSelectedImage(null);
-      setTextOverlay(null);
-      
+
+      handleClose();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error('📤 SHARE ERROR:', error);
-      
-      // More specific error messages
-      let errorMessage = 'Failed to share';
-      if (error instanceof Error) {
-        if (error.message.includes('canvas')) {
-          errorMessage = 'Failed to process image';
-        } else if (error.message.includes('upload')) {
-          errorMessage = 'Failed to upload image';
-        } else if (error.message.includes('database')) {
-          errorMessage = 'Failed to save story';
-        }
-      }
-      
+      console.error('Error posting story:', error);
       toast({
-        title: errorMessage,
-        description: error instanceof Error ? error.message : 'Please try again',
+        title: 'Error',
+        description: 'Failed to post story',
         variant: 'destructive'
       });
     } finally {
@@ -347,158 +127,107 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
   };
 
   return (
-    <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
-      
-      <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent side="bottom" className="h-screen p-0 bg-black" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          {!selectedImage ? (
-            // Use camera roll gallery for all platforms
-            <CameraRollGallery
-              onPhotoSelect={(photo) => {
-                setSelectedImage(photo);
-                saveToRecentPhotos(photo);
-              }}
-              onClose={onClose}
-            />
-          ) : (
-            // Edit View
-            <div className="h-full flex flex-col">
-              {/* Header */}
-              <div className="absolute left-0 right-0 z-40 flex items-center justify-between p-4" style={{ top: 'env(safe-area-inset-top)' }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedImage(null)}
-                  className="text-white bg-black/30"
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-              </div>
-
-              {/* Image with text overlay */}
-              <div 
-                className="flex-1 relative flex items-center justify-center"
-                onMouseMove={handleTextDrag}
-                onMouseUp={() => setIsDragging(false)}
-                onTouchMove={handleTextDrag}
-                onTouchEnd={() => setIsDragging(false)}
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent side="bottom" className="h-[90vh] p-0">
+        <div className="h-full flex flex-col bg-background">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            
+            <h2 className="font-semibold">Create Story</h2>
+            
+            {selectedImage ? (
+              <Button
+                size="sm"
+                onClick={handlePost}
+                disabled={uploading}
               >
-                <img 
-                  src={selectedImage} 
-                  alt="Story"
-                  className="max-w-full max-h-full object-contain"
-                />
+                {uploading ? 'Posting...' : 'Post'}
+                {!uploading && <Send className="h-4 w-4 ml-2" />}
+              </Button>
+            ) : (
+              <div className="w-10" />
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {!selectedImage ? (
+              // Photo selection screen
+              <div className="h-full flex flex-col items-center justify-center p-8 space-y-4">
+                <div className="text-6xl mb-4">📸</div>
+                <h3 className="text-lg font-medium">Add to your story</h3>
+                <p className="text-muted-foreground text-center mb-6">
+                  Share a moment with your trios
+                </p>
                 
-                {textOverlay && (
-                  <div
-                    className={cn(
-                      "absolute cursor-move select-none transition-all",
-                      TEXT_STYLES[textOverlay.style],
-                      FONT_SIZES[textOverlay.fontSize]
-                    )}
-                    style={{
-                      left: `${textOverlay.position.x}%`,
-                      top: `${textOverlay.position.y}%`,
-                      color: textOverlay.color,
-                      transform: 'translate(-50%, -50%)',
-                      textShadow: textOverlay.style === 'outline' 
-                        ? `0 0 10px ${textOverlay.color === '#FFFFFF' ? '#000000' : '#FFFFFF'}` 
-                        : undefined
-                    }}
-                    onMouseDown={() => setIsDragging(true)}
-                    onTouchStart={() => setIsDragging(true)}
-                    onClick={() => setIsEditingText(true)}
-                  >
-                    {isEditingText ? (
-                      <input
-                        type="text"
-                        value={textOverlay.text}
-                        onChange={(e) => setTextOverlay({ ...textOverlay, text: e.target.value })}
-                        onBlur={() => setIsEditingText(false)}
-                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingText(false)}
-                        className="bg-transparent border-none outline-none text-center min-w-[100px]"
-                        style={{ color: textOverlay.color }}
-                        autoFocus
-                      />
-                    ) : (
-                      textOverlay.text
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom Controls */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 space-y-3">
-                {/* Text Tools */}
-                {showTextTools && textOverlay && (
-                  <div className="bg-black/50 rounded-lg p-3 space-y-2">
-                    {/* Style buttons */}
-                    <div className="flex gap-2">
-                      {(['normal', 'bold', 'outline'] as const).map(style => (
-                        <button
-                          key={style}
-                          onClick={() => setTextOverlay({ ...textOverlay, style })}
-                          className={cn(
-                            "px-3 py-1 rounded text-sm",
-                            textOverlay.style === style 
-                              ? "bg-white text-black" 
-                              : "bg-gray-700 text-white"
-                          )}
-                        >
-                          {style === 'normal' ? 'Regular' : style.charAt(0).toUpperCase() + style.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {/* Color picker */}
-                    <div className="flex gap-2">
-                      {COLORS.map(color => (
-                        <button
-                          key={color}
-                          onClick={() => setTextOverlay({ ...textOverlay, color })}
-                          className="w-8 h-8 rounded-full border-2"
-                          style={{ 
-                            backgroundColor: color,
-                            borderColor: textOverlay.color === color ? '#fff' : 'transparent'
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div className="flex gap-2">
+                <div className="w-full max-w-xs space-y-3">
                   <Button
-                    onClick={handleAddText}
-                    variant="secondary"
-                    className="flex-1"
+                    onClick={takePhoto}
+                    className="w-full"
+                    size="lg"
                   >
-                    <Type className="h-4 w-4 mr-2" />
-                    Add Text
+                    <CameraIcon className="h-5 w-5 mr-2" />
+                    Take Photo
                   </Button>
                   
                   <Button
-                    onClick={handleShare}
-                    disabled={uploading}
-                    className="flex-1"
+                    onClick={choosePhoto}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    {uploading ? 'Sharing...' : 'Share'}
+                    <ImageIcon className="h-5 w-5 mr-2" />
+                    Choose from Library
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-    </>
+            ) : (
+              // Preview and caption screen
+              <div className="h-full flex flex-col">
+                <div className="relative flex-1 bg-black">
+                  <img 
+                    src={selectedImage}
+                    alt="Story preview"
+                    className="w-full h-full object-contain"
+                  />
+                  
+                  {/* Remove photo button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                {/* Caption input */}
+                <div className="p-4 border-t">
+                  <Textarea
+                    placeholder="Add a caption... (optional)"
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    className="resize-none"
+                    rows={3}
+                    maxLength={280}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {caption.length}/280
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

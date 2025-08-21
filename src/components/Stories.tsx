@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import NativeStoryCreator from './NativeStoryCreator';
+import SnapchatStoryCreator from './SnapchatStoryCreator';
 
 interface Story {
   id: string;
