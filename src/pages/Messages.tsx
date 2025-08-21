@@ -1467,23 +1467,40 @@ export default function Messages() {
                   className="pr-12 rounded-full bg-muted/50"
                 />
                 <button 
-                  type="submit" 
+                  type="button" 
                   disabled={sending || !newMessage.trim()}
-                  onClick={(e) => {
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onTouchEnd={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!sending && newMessage.trim()) {
                       sendMessage();
                     }
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity z-10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Desktop fallback
+                    if (!('ontouchstart' in window) && !sending && newMessage.trim()) {
+                      sendMessage();
+                    }
+                  }}
+                  className="absolute h-8 w-8 rounded-full flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed z-10"
                   style={{ 
-                    touchAction: 'manipulation',
+                    right: '4px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    touchAction: 'none',
                     WebkitTapHighlightColor: 'transparent',
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none',
                     pointerEvents: 'auto'
                   }}
                 >
-                  <ArrowUp className="h-5 w-5" />
+                  <ArrowUp className="h-5 w-5 pointer-events-none" />
                 </button>
               </form>
             </div>
