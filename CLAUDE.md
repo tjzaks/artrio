@@ -16,6 +16,7 @@ Each platform has completely different debugging approaches, error patterns, and
 1. **ALWAYS commit and push to main branch immediately**
 2. **Railway automatically rebuilds and deploys from main**
 3. **Changes go live within 2-3 minutes**
+4. **When in Xcode mode, automatically rebuild and reinstall on Tyler's iPhone**
 
 ```bash
 # Standard workflow for Artrio changes:
@@ -23,7 +24,27 @@ git add -A
 git commit -m "Clear description of changes"
 git push origin main
 # Railway auto-deploys within 2-3 minutes
+
+# If Tyler is in Xcode mode, ALSO run this automatically:
+cd /Users/tyler/Library/CloudStorage/Dropbox/artrio
+npm run build && npx cap sync ios
+cd ios/App
+rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+  -destination 'id=00008140-001A39900162801C' \
+  -allowProvisioningUpdates build 2>&1 | tail -5
+xcrun devicectl device install app --device 00008140-001A39900162801C \
+  ~/Library/Developer/Xcode/DerivedData/App-*/Build/Products/Debug-iphoneos/App.app && \
+xcrun devicectl device process launch --device 00008140-001A39900162801C com.artrio.artrio
 ```
+
+### AUTO-REBUILD TRIGGER PHRASES:
+- "while we're in xcode mode"
+- "xcode mode"
+- "testing on my phone"
+- "rebuild and reinstall"
+
+**When Tyler mentions any of these, AUTOMATICALLY rebuild and reinstall the app after making changes!**
 
 ## Xcode Build & Installation Troubleshooting Protocol
 
