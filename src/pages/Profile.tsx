@@ -434,13 +434,13 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky safe-top z-40 border-b bg-card p-4">
+      <header className="sticky top-0 z-40 border-b bg-card p-4 pt-safe">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
+            Back
           </Button>
-          <h1 className="text-2xl font-bold">Profile Settings</h1>
+          <h1 className="text-xl font-semibold">Profile Settings</h1>
         </div>
       </header>
 
@@ -449,7 +449,7 @@ const Profile = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Profile Settings
+              Your Profile
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">

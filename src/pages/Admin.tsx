@@ -299,11 +299,12 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky safe-top z-50 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto p-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b p-4 pt-safe">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Button>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
