@@ -154,7 +154,7 @@ export default function Messages() {
           return msg;
         }));
       }
-    }, 500); // Poll every 500ms for near-instant updates
+    }, 5000); // Poll every 5 seconds instead of 500ms to reduce load
     
     return () => clearInterval(pollInterval);
   }, [user, selectedConversation]);
