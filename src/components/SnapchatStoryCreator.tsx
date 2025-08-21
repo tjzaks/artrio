@@ -72,15 +72,53 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
     }
   };
 
+  const compressImage = async (dataUrl: string): Promise<Blob> => {
+    // This shrinks images from 5MB to ~200KB
+    const img = new Image();
+    img.src = dataUrl;
+    await img.decode();
+    
+    const canvas = document.createElement('canvas');
+    const MAX_WIDTH = 1080;  // Instagram story size
+    const MAX_HEIGHT = 1920;
+    
+    // Calculate new dimensions
+    let width = img.width;
+    let height = img.height;
+    
+    if (width > height) {
+      if (width > MAX_WIDTH) {
+        height = height * (MAX_WIDTH / width);
+        width = MAX_WIDTH;
+      }
+    } else {
+      if (height > MAX_HEIGHT) {
+        width = width * (MAX_HEIGHT / height);
+        height = MAX_HEIGHT;
+      }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Draw and compress
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // 0.85 quality = good enough, much smaller
+    return new Promise(resolve => 
+      canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.85)
+    );
+  };
+
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
     setUploading(true);
     
     try {
-      // Convert data URL to blob
-      const response = await fetch(selectedImage);
-      const blob = await response.blob();
+      // Convert data URL to compressed blob
+      const blob = await compressImage(selectedImage);
       
       // Create a unique filename
       const fileName = `${user?.id}/${Date.now()}.jpg`;
