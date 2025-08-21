@@ -93,13 +93,16 @@ export default function Messages() {
         
         setKeyboardHeight(info.keyboardHeight);
         
-        // If we were near bottom, adjust scroll to keep messages visible
+        // If we were near bottom, smooth scroll to keep messages visible
         if (isNearBottom) {
           setTimeout(() => {
             if (scrollAreaRef.current) {
-              scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+              scrollAreaRef.current.scrollTo({
+                top: scrollAreaRef.current.scrollHeight,
+                behavior: 'smooth'
+              });
             }
-          }, 50);
+          }, 100);
         }
       } else {
         setKeyboardHeight(info.keyboardHeight);
@@ -641,12 +644,15 @@ export default function Messages() {
       
       setMessages(messagesWithReceipts);
       
-      // Scroll to bottom after loading messages
+      // Smooth scroll to bottom after loading messages
       setTimeout(() => {
         if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+          scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
         }
-      }, 100);
+      }, 50);
       
       // Mark ALL messages in this conversation as read for the current user
       if (data && data.length > 0) {
@@ -766,11 +772,13 @@ export default function Messages() {
       // Add message to local state
       setMessages(prev => [...prev, data]);
       
-      // Scroll to bottom after sending
+      // Smooth scroll to bottom after sending
       setTimeout(() => {
         if (scrollAreaRef.current) {
-          const scrollContainer = scrollAreaRef.current;
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
         }
       }, 50);
       
@@ -820,11 +828,13 @@ export default function Messages() {
       // Add message to local state immediately
       setMessages(prev => [...prev, data]);
       
-      // Scroll to bottom after sending a message
+      // Smooth scroll to bottom after sending a message
       setTimeout(() => {
         if (scrollAreaRef.current) {
-          const scrollContainer = scrollAreaRef.current;
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
         }
       }, 50);
       
