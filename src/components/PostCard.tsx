@@ -109,21 +109,20 @@ const PostCard = memo(function PostCard({
             )}
           </div>
           
-          {/* Comments button - right side, middle aligned */}
-          <Button
-            variant="ghost"
-            size="sm"
+          {/* Comments button - fixed position to prevent jumping */}
+          <button
             onClick={handleToggleReply}
-            className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-primary transition-colors relative"
             title={`${replies.length} comment${replies.length !== 1 ? 's' : ''}`}
+            type="button"
           >
             <MessageCircle className="h-4 w-4" />
             {replies.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
                 {replies.length}
               </span>
             )}
-          </Button>
+          </button>
         </div>
 
         {/* Replies */}
