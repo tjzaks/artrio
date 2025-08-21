@@ -213,17 +213,19 @@ export default function AddFriend() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Search */}
-        <div className="flex gap-2">
+        <div className="relative">
           <Input
             placeholder="Search by username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
-            className="flex-1"
+            className="pl-9"
           />
-          <Button onClick={searchUsers} disabled={loading} className="flex-shrink-0">
-            <Search className="h-4 w-4" />
-          </Button>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {loading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
         </div>
 
         {/* Search Results */}
@@ -232,7 +234,10 @@ export default function AddFriend() {
             <h3 className="font-medium text-sm text-muted-foreground">Search Results</h3>
             {searchResults.map(result => (
               <div key={result.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                  onClick={() => handleUserClick(result.username)}
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={result.avatar_url} />
                     <AvatarFallback>
@@ -267,7 +272,10 @@ export default function AddFriend() {
             <h3 className="font-medium text-sm text-muted-foreground">People You May Know</h3>
             {suggestions.map(suggestion => (
               <div key={suggestion.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                  onClick={() => handleUserClick(suggestion.username)}
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={suggestion.avatar_url} />
                     <AvatarFallback>
