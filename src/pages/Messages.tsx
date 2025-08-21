@@ -223,6 +223,9 @@ export default function Messages() {
   // Load messages and subscribe to real-time updates when conversation is selected
   useEffect(() => {
     if (selectedConversation) {
+      // Reset scroll state when changing conversations
+      setUserScrolledUp(false);
+      setIsInitialLoad(true);
       loadMessages(selectedConversation.id);
       
       // Subscribe to real-time updates for this specific conversation
@@ -283,10 +286,25 @@ export default function Messages() {
     }
   }, [selectedConversation, user]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom only for new messages when user is already at bottom
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Always scroll to bottom on initial load or conversation change
+    // Only auto-scroll for new messages if user hasn't scrolled up
+    if (isInitialLoad || !userScrolledUp) {
+      messagesEndRef.current?.scrollIntoView({ behavior: isInitialLoad ? 'auto' : 'smooth' });
+      setIsInitialLoad(false);
+    }
+  }, [messages, userScrolledUp, isInitialLoad]);
+  
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isAtBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 50;
+    setUserScrolledUp(!isAtBottom);
+  };
 
   // Close context menu when switching conversations or on unmount
   useEffect(() => {
@@ -803,11 +821,12 @@ export default function Messages() {
     <div className="h-[100dvh] bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
-        <header className="bg-background p-4 border-b flex-shrink-0">
+        <header className="sticky top-0 z-40 bg-background p-4 pt-safe border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
               </Button>
               <h1 className="text-lg font-bold">Messages</h1>
             </div>
@@ -851,7 +870,7 @@ export default function Messages() {
       {/* Chat Area */}
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <header className="bg-background p-4 border-b flex-shrink-0">
+          <header className="sticky top-0 z-40 bg-background p-4 pt-safe border-b flex-shrink-0">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <Button
@@ -895,7 +914,11 @@ export default function Messages() {
           </header>
 
 
-          <ScrollArea className="flex-1 overflow-y-auto p-4">
+          <div 
+            ref={scrollAreaRef}
+            className="flex-1 overflow-y-auto p-4"
+            onScroll={handleScroll}
+          >
             <div className="space-y-4">
               {messages.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
@@ -985,7 +1008,7 @@ export default function Messages() {
               )}
               <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Context Menu */}
           {contextMenu && (
