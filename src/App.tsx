@@ -5,10 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SwipeBackProvider } from "@/contexts/SwipeBackContext";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SplashScreen from "@/components/SplashScreen";
 import { hideSplashScreen } from "@/utils/capacitor";
+import { withSwipeBack } from "@/components/withSwipeBack";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
@@ -30,6 +32,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Wrap components with swipe-back functionality
+const ProfileWithSwipe = withSwipeBack(Profile);
+const UserProfileWithSwipe = withSwipeBack(UserProfile);
+const AdminWithSwipe = withSwipeBack(Admin);
+const MessagesWithSwipe = withSwipeBack(Messages);
+const FriendsWithSwipe = withSwipeBack(Friends);
+const DebugWithSwipe = withSwipeBack(Debug);
+const DebugMessagesWithSwipe = withSwipeBack(DebugMessages);
 
 const App = () => {
   console.log('🚀 SIMULATOR DEBUG: App component initializing...');
@@ -88,11 +99,12 @@ const App = () => {
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
+          <SwipeBackProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
               <Route path="/" element={
                 <ProtectedRoute>
                   <Home />
@@ -102,38 +114,39 @@ const App = () => {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/health" element={<Health />} />
               <Route path="/api/health" element={<Health />} />
-              <Route path="/debug" element={<Debug />} />
-              <Route path="/debug-messages" element={<DebugMessages />} />
+              <Route path="/debug" element={<DebugWithSwipe />} />
+              <Route path="/debug-messages" element={<DebugMessagesWithSwipe />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
-                  <Profile />
+                  <ProfileWithSwipe />
                 </ProtectedRoute>
               } />
               <Route path="/user/:userId" element={
                 <ProtectedRoute>
-                  <UserProfile />
+                  <UserProfileWithSwipe />
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
                 <ProtectedRoute>
-                  <Admin />
+                  <AdminWithSwipe />
                 </ProtectedRoute>
               } />
               <Route path="/messages" element={
                 <ProtectedRoute>
-                  <Messages />
+                  <MessagesWithSwipe />
                 </ProtectedRoute>
               } />
               <Route path="/friends" element={
                 <ProtectedRoute>
-                  <Friends />
+                  <FriendsWithSwipe />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </SwipeBackProvider>
       </AuthProvider>
     </QueryClientProvider>
     </GlobalErrorBoundary>

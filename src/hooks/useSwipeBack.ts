@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { useSwipeBackContext } from '@/contexts/SwipeBackContext';
 
 interface SwipeState {
   startX: number;
@@ -20,6 +21,7 @@ export const useSwipeBack = (options?: {
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSwipeBackDisabled } = useSwipeBackContext();
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [isSwipingBack, setIsSwipingBack] = useState(false);
   const swipeStateRef = useRef<SwipeState>({
@@ -50,8 +52,8 @@ export const useSwipeBack = (options?: {
   };
 
   useEffect(() => {
-    // Only enable on iOS and non-root paths
-    if (!isIOS() || options?.disabled || isRootPath()) {
+    // Only enable on iOS and non-root paths, and when not globally disabled
+    if (!isIOS() || options?.disabled || isSwipeBackDisabled || isRootPath()) {
       return;
     }
 
@@ -174,7 +176,7 @@ export const useSwipeBack = (options?: {
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchcancel', handleTouchCancel);
     };
-  }, [navigate, location.pathname, options?.disabled]);
+  }, [navigate, location.pathname, options?.disabled, isSwipeBackDisabled]);
 
   return {
     swipeProgress,
