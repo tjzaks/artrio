@@ -14,6 +14,8 @@ import { ArrowLeft, ArrowUp, MessageSquare, Users, Plus, Camera, Image as ImageI
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
 import { SwipeableConversationItem } from '@/components/SwipeableConversationItem';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 interface Message {
   id: string;
@@ -63,6 +65,7 @@ export default function Messages() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   // Track read receipts globally for messages I sent
   const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Prevent page scrolling when Messages is open
   useEffect(() => {
@@ -75,6 +78,33 @@ export default function Messages() {
     return () => {
       // Restore original style
       document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  // Handle keyboard show/hide on iOS
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
+      setKeyboardHeight(info.keyboardHeight);
+      // Scroll to bottom when keyboard shows
+      if (scrollAreaRef.current) {
+        setTimeout(() => {
+          scrollAreaRef.current?.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }, 100);
+      }
+    });
+
+    const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showListener.remove();
+      hideListener.remove();
     };
   }, []);
 
@@ -1132,7 +1162,8 @@ export default function Messages() {
             style={{ 
               WebkitOverflowScrolling: 'touch',
               paddingTop: '130px', // Height of header with Dynamic Island (increased)
-              paddingBottom: '120px' // Height of input area + safe area
+              paddingBottom: keyboardHeight > 0 ? `${keyboardHeight + 70}px` : '120px', // Adjust for keyboard
+              transition: 'padding-bottom 0.3s'
             }}
           >
             <div className="space-y-4 px-4">
@@ -1299,8 +1330,13 @@ export default function Messages() {
             </>
           )}
 
-          {/* Fixed Input Area */}
-          <div className="absolute bottom-0 left-0 right-0 border-t bg-background z-10 pb-safe">
+          {/* Fixed Input Area - Rises with keyboard */}
+          <div 
+            className="absolute left-0 right-0 border-t bg-background z-10 transition-all duration-300"
+            style={{ 
+              bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '0',
+              paddingBottom: keyboardHeight > 0 ? '0' : 'env(safe-area-inset-bottom)'
+            }}>
             {/* Media Menu Popup */}
             {showMediaMenu && (
               <div className="absolute bottom-full left-0 right-0 bg-background border-t p-4 animate-in slide-in-from-bottom-2">
