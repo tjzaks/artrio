@@ -280,6 +280,18 @@
     animation: slide-up 0.3s ease-out;
   }
   
+  /* Kill ALL animations on dropdown menus */
+  [data-radix-popper-content-wrapper] {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  [data-state="open"],
+  [data-state="closed"] {
+    animation: none !important;
+    transition: none !important;
+  }
+  
   /* Pulse for live/online indicators */
   .pulse {
     animation: pulse-soft 2s ease-in-out infinite;

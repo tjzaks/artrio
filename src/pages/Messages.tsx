@@ -1023,7 +1023,7 @@ export default function Messages() {
             onScroll={handleScroll}
             style={{ 
               WebkitOverflowScrolling: 'touch',
-              paddingTop: '108px', // Height of header with Dynamic Island
+              paddingTop: '130px', // Height of header with Dynamic Island (increased)
               paddingBottom: '120px' // Height of input area + safe area
             }}
           >
