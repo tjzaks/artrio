@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { cleanErrorMessage } from '@/utils/errorMessages';
 import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
 import ClickableAvatar from '@/components/ClickableAvatar';
+import PostCard from '@/components/PostCard';
 
 interface Profile {
   id: string;
@@ -66,7 +67,6 @@ const Home = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [newPost, setNewPost] = useState('');
-  const [newReply, setNewReply] = useState('');
   const [canPost, setCanPost] = useState(true);
   const [secondsUntilNextPost, setSecondsUntilNextPost] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -652,8 +652,8 @@ const Home = () => {
     };
   };
 
-  const handleReplySubmit = async (postId: string) => {
-    if (!newReply.trim()) return;
+  const handleReplySubmit = useCallback(async (postId: string, content: string) => {
+    if (!content.trim()) return;
 
     try {
       const { error } = await supabase
@@ -661,7 +661,7 @@ const Home = () => {
         .insert({
           user_id: user?.id,
           post_id: postId,
-          content: newReply.trim()
+          content: content.trim()
         });
 
       if (error) {
@@ -673,10 +673,9 @@ const Home = () => {
         return;
       }
 
-      setNewReply('');
       toast({
-        title: 'Reply sent!',
-        description: 'Your reply has been posted'
+        title: 'Comment posted!',
+        description: 'Your comment has been added'
       });
       
       // Refresh posts and replies
@@ -687,11 +686,11 @@ const Home = () => {
       logger.error('Error replying:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send reply',
+        description: 'Failed to post comment',
         variant: 'destructive'
       });
     }
-  };
+  }, [user?.id, currentTrio, toast]);
 
   const getTimeUntilNextTrio = () => {
     return 'Daily between 7 AM - 11 PM';
@@ -877,104 +876,14 @@ const Home = () => {
                 const userHasReplied = postReplies.some(reply => reply.user_id === user?.id);
                 
                 return (
-                  <Card key={post.id} className="content-card animate-slide-up">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8 flex-shrink-0">
-                          <AvatarImage src={post.profiles.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {post.profiles.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="font-medium text-sm truncate">@{post.profiles.username}</p>
-                            <p className="text-xs text-muted-foreground flex-shrink-0">
-                              {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          {post.content && <p className="text-sm leading-relaxed break-words">{post.content}</p>}
-                          
-                          {/* Media Display */}
-                          {post.media_url && (
-                            <div className="mt-3">
-                              {post.media_type === 'image' ? (
-                                <img 
-                                  src={post.media_url} 
-                                  alt="Post media" 
-                                  className="max-w-full h-auto rounded-lg border"
-                                  style={{ maxHeight: '300px' }}
-                                />
-                              ) : post.media_type === 'video' ? (
-                                <video 
-                                  src={post.media_url} 
-                                  controls 
-                                  className="max-w-full h-auto rounded-lg border"
-                                  style={{ maxHeight: '300px' }}
-                                />
-                              ) : null}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Replies */}
-                      {postReplies.length > 0 && (
-                        <div className="ml-11 space-y-2 border-l-2 border-muted pl-3">
-                          {postReplies.slice(0, 3).map((reply) => (
-                            <div key={reply.id} className="flex items-start gap-2">
-                              <Avatar className="h-6 w-6 flex-shrink-0">
-                                <AvatarImage src={reply.profiles.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs">
-                                  {reply.profiles.username.substring(0, 1).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium text-xs truncate">@{reply.profiles.username}</p>
-                                  <p className="text-xs text-muted-foreground flex-shrink-0">
-                                    {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                </div>
-                                <p className="text-sm break-words">{reply.content}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {postReplies.length > 3 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{postReplies.length - 3} more replies
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Reply input */}
-                      {post.user_id !== user?.id && !userHasReplied && (
-                        <div className="ml-11 space-y-2">
-                          <Textarea
-                            placeholder="Reply..."
-                            value={newReply}
-                            onChange={(e) => setNewReply(e.target.value)}
-                            className="min-h-[60px] text-sm resize-none"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleReplySubmit(post.id)}
-                            disabled={!newReply.trim()}
-                            className="h-8"
-                          >
-                            Reply
-                          </Button>
-                        </div>
-                      )}
-
-                      {userHasReplied && (
-                        <p className="ml-11 text-xs text-muted-foreground">
-                          ✓ Replied
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    replies={postReplies}
+                    currentUserId={user?.id}
+                    userHasReplied={userHasReplied}
+                    onReplySubmit={handleReplySubmit}
+                  />
                 );
               })}
             </div>
