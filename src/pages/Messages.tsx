@@ -1167,7 +1167,8 @@ export default function Messages() {
           )}
 
           {/* Fixed Input Area */}
-          <div className="absolute bottom-0 left-0 right-0 border-t p-3 bg-background z-10">
+          <div className="absolute bottom-0 left-0 right-0 border-t bg-background z-10 pb-safe">
+            <div className="p-3">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1203,6 +1204,7 @@ export default function Messages() {
                 <ArrowUp className="h-5 w-5" />
               </button>
             </form>
+            </div>
           </div>
         </div>
       ) : (
