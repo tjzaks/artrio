@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, UserPlus, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface SearchResult {
   id: string;
@@ -19,14 +21,21 @@ interface SearchResult {
 export default function AddFriend() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Debounce search query for real-time search
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Search for users by username
-  const searchUsers = async () => {
-    if (!searchQuery.trim()) return;
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -41,7 +50,7 @@ export default function AddFriend() {
       const { data: results } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
-        .ilike('username', `%${searchQuery}%`)
+        .ilike('username', `%${query}%`)
         .neq('user_id', user?.id)
         .limit(10);
 
@@ -181,6 +190,20 @@ export default function AddFriend() {
     } catch (error) {
       console.error('Error loading suggestions:', error);
     }
+  };
+
+  // Search automatically when debounced query changes
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      searchUsers(debouncedSearchQuery);
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedSearchQuery]);
+
+  // Navigate to user profile when clicking on a result
+  const handleUserClick = (username: string) => {
+    navigate(`/user/${username}`);
   };
 
   return (

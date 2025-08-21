@@ -186,9 +186,10 @@ export default function Messages() {
     }
   }, [user]);
 
-  // Handle conversation from URL params
+  // Handle conversation from URL params or user profile navigation
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
+    const userId = searchParams.get('user');
     
     if (conversationId) {
       // If conversations are loaded, select the one from URL
@@ -203,6 +204,9 @@ export default function Messages() {
       else if (!loading) {
         loadConversations();
       }
+    } else if (userId && !loading && conversations.length > 0) {
+      // Handle navigation from user profile with user ID
+      handleUserNavigation(userId);
     }
   }, [searchParams, conversations, loading]);
 
@@ -364,6 +368,91 @@ export default function Messages() {
         variant: 'destructive'
       });
       throw error; // Re-throw to handle in the component
+    }
+  };
+
+  const handleUserNavigation = async (targetUserId: string) => {
+    try {
+      // First check if we already have a conversation with this user
+      const existingConv = conversations.find(conv => {
+        const otherUserId = conv.user1_id === user?.id ? conv.user2_id : conv.user1_id;
+        return otherUserId === targetUserId;
+      });
+      
+      if (existingConv) {
+        // Open existing conversation
+        setSelectedConversation(existingConv);
+        return;
+      }
+      
+      // No existing conversation, create a new one
+      const { data: newConv, error: createError } = await supabase
+        .from('conversations')
+        .insert({
+          user1_id: user?.id,
+          user2_id: targetUserId
+        })
+        .select()
+        .single();
+        
+      if (createError) {
+        // Conversation might already exist (race condition or unique constraint)
+        // Try to fetch it
+        const { data: existingConv } = await supabase
+          .from('conversations')
+          .select('*')
+          .or(`and(user1_id.eq.${user?.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${user?.id})`)
+          .single();
+          
+        if (existingConv) {
+          // Get the other user's profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .eq('user_id', targetUserId)
+            .single();
+            
+          const convWithProfile = {
+            ...existingConv,
+            other_user: profile,
+            last_message: null,
+            last_message_at: null,
+            unread_count: 0
+          };
+          
+          setConversations(prev => [...prev, convWithProfile]);
+          setSelectedConversation(convWithProfile);
+        }
+        return;
+      }
+      
+      if (newConv) {
+        // Get the other user's profile for the new conversation
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .eq('user_id', targetUserId)
+          .single();
+          
+        const convWithProfile = {
+          ...newConv,
+          other_user: profile,
+          last_message: null,
+          last_message_at: null,
+          unread_count: 0
+        };
+        
+        // Add to conversations list and select it
+        setConversations(prev => [...prev, convWithProfile]);
+        setSelectedConversation(convWithProfile);
+      }
+    } catch (error) {
+      console.error('Error handling user navigation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start conversation',
+        variant: 'destructive'
+      });
     }
   };
 
