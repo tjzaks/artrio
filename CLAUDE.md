@@ -27,7 +27,31 @@ git push origin main
 
 ## Xcode Build & Installation Troubleshooting Protocol
 
-**When Tyler says "Build succeeded but app won't install" or similar Xcode installation issues:**
+### 🚨 TRIGGER PHRASES FROM TYLER:
+- "Xcode won't reinstall"
+- "Build succeeded but app won't install"
+- "still didn't reinstall the app"
+- "it won't reinstall the app on my phone"
+- "successful build, again, it didn't install"
+- "ugh...investigate pls"
+
+**WHEN YOU HEAR ANY OF THESE → IMMEDIATELY DO THIS:**
+
+```bash
+# QUICK FIX (90% success rate) - Tyler just runs these 3 commands:
+cd /Users/tyler/Library/CloudStorage/Dropbox/artrio/ios/App
+rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+  -destination 'id=00008140-001A39900162801C' \
+  -allowProvisioningUpdates build 2>&1 | tail -5
+xcrun devicectl device install app --device 00008140-001A39900162801C \
+  ~/Library/Developer/Xcode/DerivedData/App-*/Build/Products/Debug-iphoneos/App.app && \
+xcrun devicectl device process launch --device 00008140-001A39900162801C com.artrio.artrio
+```
+
+**Tyler should see "App installed:" and "Launched application" - DONE!**
+
+### If Tyler needs more detail or quick fix didn't work:
 
 ### DIAGNOSIS STEPS:
 
