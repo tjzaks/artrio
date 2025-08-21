@@ -1202,7 +1202,7 @@ export default function Messages() {
                   <p className="text-xs text-muted-foreground">
                     {selectedConversation.other_user?.id 
                       ? getUserPresenceText(selectedConversation.other_user.id)
-                      : 'Unknown status'}
+                      : 'Offline'}
                   </p>
                 </div>
               </div>

@@ -22,13 +22,19 @@ export function usePresence() {
     // Update user's own presence in database
     const updateOwnPresence = async (isOnline: boolean) => {
       try {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             is_online: isOnline,
             last_seen: new Date().toISOString()
           })
           .eq('user_id', user.id);
+        
+        if (error) {
+          console.error('Error updating presence:', error);
+        } else {
+          console.log(`Updated presence for ${user.id}: ${isOnline ? 'online' : 'offline'}`);
+        }
       } catch (error) {
         console.error('Error updating presence:', error);
       }
@@ -37,8 +43,8 @@ export function usePresence() {
     // Set user as online
     updateOwnPresence(true);
 
-    // Create presence channel
-    const presenceChannel = supabase.channel('presence:trio', {
+    // Create presence channel - use a shared channel name for all users
+    const presenceChannel = supabase.channel('presence:global', {
       config: {
         presence: {
           key: user.id,
@@ -50,9 +56,11 @@ export function usePresence() {
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
+        console.log('[PRESENCE] Sync event - current state:', state);
         const newPresenceState: PresenceState = {};
         
         Object.keys(state).forEach((userId) => {
+          console.log(`[PRESENCE] User ${userId} is online`);
           newPresenceState[userId] = {
             isOnline: true,
             lastSeen: new Date().toISOString(),
@@ -62,6 +70,7 @@ export function usePresence() {
         setPresenceState(newPresenceState);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log(`[PRESENCE] User ${key} joined:`, newPresences);
         setPresenceState((prev) => ({
           ...prev,
           [key]: {
@@ -71,6 +80,7 @@ export function usePresence() {
         }));
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log(`[PRESENCE] User ${key} left:`, leftPresences);
         setPresenceState((prev) => ({
           ...prev,
           [key]: {
@@ -94,8 +104,8 @@ export function usePresence() {
     // Send heartbeat every 30 seconds to maintain presence
     const heartbeatInterval = setInterval(() => {
       updateOwnPresence(true);
-      if (channel) {
-        channel.track({
+      if (presenceChannel) {
+        presenceChannel.track({
           online_at: new Date().toISOString(),
           user_id: user.id,
         });
@@ -123,8 +133,8 @@ export function usePresence() {
       // Set user as offline
       updateOwnPresence(false);
       
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (presenceChannel) {
+        supabase.removeChannel(presenceChannel);
       }
     };
   }, [user]);
@@ -132,13 +142,19 @@ export function usePresence() {
   // Fetch presence data from database for a user
   const fetchUserPresence = async (userId: string) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('is_online, last_seen')
         .eq('user_id', userId)
         .single();
       
+      if (error) {
+        console.error('Error fetching presence for', userId, error);
+        return;
+      }
+      
       if (data) {
+        console.log(`Fetched presence for ${userId}: online=${data.is_online}, last_seen=${data.last_seen}`);
         setPresenceState(prev => ({
           ...prev,
           [userId]: {
@@ -164,11 +180,11 @@ export function usePresence() {
     // Fetch presence if not in state
     if (!presenceState[userId]) {
       fetchUserPresence(userId);
-      return ""; // Return empty while loading
+      return "Offline"; // Return "Offline" instead of empty string while loading
     }
     
     const presence = presenceState[userId];
-    if (!presence) return "";
+    if (!presence) return "Offline";
     
     if (presence.isOnline) {
       return "Active now";
