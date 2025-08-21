@@ -3,20 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SplashScreenProps {
   onComplete: () => void;
+  isLoading?: boolean; // Pass loading state to control animation
 }
 
-const SplashScreen = ({ onComplete }: SplashScreenProps) => {
+const SplashScreen = ({ onComplete, isLoading = false }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // Show splash for 1.5 seconds (animation duration)
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onComplete, 200); // Wait for fade out animation
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+    // Wait for BOTH animation complete AND loading done
+    if (animationComplete && !isLoading) {
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(onComplete, 200); // Wait for fade out animation
+      }, 100); // Small delay after everything is ready
+      
+      return () => clearTimeout(timer);
+    }
+  }, [animationComplete, isLoading, onComplete]);
 
   return (
     <AnimatePresence>
@@ -37,7 +41,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               initial={{ height: 0 }}
               animate={{ height: '200px' }}
               transition={{
-                duration: 0.8,
+                duration: isLoading ? 1.2 : 0.6, // Slower if loading
                 ease: "easeOut"
               }}
             />
@@ -49,8 +53,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               initial={{ height: 0 }}
               animate={{ height: '200px' }}
               transition={{
-                duration: 0.8,
-                delay: 0.6, // 75% of 0.8s
+                duration: isLoading ? 1.2 : 0.6,
+                delay: isLoading ? 0.9 : 0.45, // 75% of duration
                 ease: "easeOut"
               }}
             />
@@ -62,9 +66,13 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               initial={{ height: 0 }}
               animate={{ height: '200px' }}
               transition={{
-                duration: 0.8,
-                delay: 1.2, // Previous delay + 75% of 0.8s
+                duration: isLoading ? 1.2 : 0.6,
+                delay: isLoading ? 1.8 : 0.9, // Previous delay + 75% of duration
                 ease: "easeOut"
+              }}
+              onAnimationComplete={() => {
+                // Mark animation as complete when the last bar finishes
+                setAnimationComplete(true);
               }}
             />
           </div>

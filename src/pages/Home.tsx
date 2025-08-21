@@ -707,11 +707,7 @@ const Home = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading your trio...</div>
-      </div>
-    );
+    return null; // Splash screen handles loading state
   }
 
   return (
@@ -721,7 +717,7 @@ const Home = () => {
         <div className="p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img src="/artrio-text-logo.png" alt="Artrio" className="h-10 w-auto" />
+              <img src="/artrio-text-logo.png" alt="Artrio" className="h-[60px] w-auto" />
             </div>
             <div className="flex items-center gap-2">
               {userProfile && (

@@ -18,7 +18,7 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, onLoadingChange }: { children: ReactNode; onLoadingChange?: (loading: boolean) => void }) {
   console.log('🔑 SIMULATOR DEBUG: AuthProvider initializing...');
   
   // Initialize states without localStorage (will load async)
@@ -30,6 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userRef = useRef<User | null>(null);
 
   console.log('🔑 SIMULATOR DEBUG: AuthProvider states initialized');
+
+  // Notify parent of loading changes
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loading, onLoadingChange]);
 
   // Load stored auth state on mount
   useEffect(() => {

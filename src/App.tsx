@@ -47,6 +47,7 @@ const App = () => {
   
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Only show splash on initial app load
   useEffect(() => {
@@ -90,7 +91,13 @@ const App = () => {
 
   if (showSplash) {
     console.log('🚀 SIMULATOR DEBUG: Showing splash screen');
-    return <SplashScreen onComplete={handleSplashComplete} />;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider onLoadingChange={setIsLoadingData}>
+          <SplashScreen onComplete={handleSplashComplete} isLoading={isLoadingData} />
+        </AuthProvider>
+      </QueryClientProvider>
+    );
   }
 
   console.log('🚀 SIMULATOR DEBUG: About to render main app content...');
