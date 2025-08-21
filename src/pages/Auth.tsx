@@ -14,7 +14,6 @@ import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import { cn } from '@/lib/utils';
 import { WelcomeModal } from '@/components/WelcomeModal';
-import { IOSConnectionTest } from '@/components/IOSConnectionTest';
 
 const PERSONALITY_TYPES = [
   { value: 'creative', label: 'Creative soul', icon: Palette, color: 'from-purple-500 to-pink-500' },
@@ -545,7 +544,6 @@ const Auth = () => {
     // Regular login form
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center bg-background p-4 overflow-hidden">
-        <IOSConnectionTest />
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex justify-center mb-4">

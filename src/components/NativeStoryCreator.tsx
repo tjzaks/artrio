@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
-import NativeGallery from './NativeGallery';
+import CameraRollGallery from './CameraRollGallery';
 
 interface StoryCreatorProps {
   open: boolean;
@@ -359,44 +359,14 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
       <Sheet open={open} onOpenChange={onClose}>
         <SheetContent side="bottom" className="h-screen p-0 bg-black" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           {!selectedImage ? (
-            // Use native photo gallery on iOS, fallback for web
-            Capacitor.getPlatform() === 'ios' ? (
-              <NativeGallery
-                onPhotoSelect={(photo) => {
-                  setSelectedImage(photo);
-                  saveToRecentPhotos(photo);
-                }}
-                onClose={onClose}
-              />
-            ) : (
-              // Fallback gallery for web/Android
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between p-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="text-white"
-                  >
-                    <X className="h-6 w-6" />
-                  </Button>
-                  
-                  <div className="w-10" />
-                  <div className="w-10" />
-                </div>
-
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <Button onClick={handleCameraCapture} size="lg">
-                      Take Photo
-                    </Button>
-                    <Button onClick={handlePhotoSelect} size="lg" variant="secondary">
-                      Choose from Library
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )
+            // Use camera roll gallery for all platforms
+            <CameraRollGallery
+              onPhotoSelect={(photo) => {
+                setSelectedImage(photo);
+                saveToRecentPhotos(photo);
+              }}
+              onClose={onClose}
+            />
           ) : (
             // Edit View
             <div className="h-full flex flex-col">
