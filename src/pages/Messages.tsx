@@ -870,47 +870,47 @@ export default function Messages() {
       {/* Chat Area */}
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <header className="bg-background px-4 pb-3 pt-safe border-b flex-shrink-0">
-            <div className="flex items-center justify-between w-full">
+          <header className="bg-background border-b flex-shrink-0">
+            <div className="px-4 pb-3 pt-14">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="md:hidden"
+                  size="icon"
+                  className="md:hidden flex-shrink-0"
                   onClick={() => setSelectedConversation(null)}
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <div className="relative">
-                {selectedConversation.other_user ? (
-                  <ClickableAvatar
-                    userId={selectedConversation.other_user.id}
-                    username={selectedConversation.other_user.username}
-                    avatarUrl={selectedConversation.other_user.avatar_url}
-                    size="md"
-                  />
-                ) : (
-                  <Avatar>
-                    <AvatarFallback>??</AvatarFallback>
-                  </Avatar>
-                )}
-                {selectedConversation.other_user?.id && isUserCurrentlyActive(selectedConversation.other_user.id) && (
-                  <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
-                )}
-              </div>
-              <div 
-                className="cursor-pointer"
-                onClick={() => navigate(`/user/${selectedConversation.other_user?.id}`)}
-              >
-                <p className="font-medium">@{selectedConversation.other_user?.username || 'Unknown'}</p>
-                <p className="text-xs text-muted-foreground">
-                  {selectedConversation.other_user?.id 
-                    ? getUserPresenceText(selectedConversation.other_user.id)
-                    : 'Unknown status'}
-                </p>
+                <div className="relative flex-shrink-0">
+                  {selectedConversation.other_user ? (
+                    <ClickableAvatar
+                      userId={selectedConversation.other_user.id}
+                      username={selectedConversation.other_user.username}
+                      avatarUrl={selectedConversation.other_user.avatar_url}
+                      size="md"
+                    />
+                  ) : (
+                    <Avatar>
+                      <AvatarFallback>??</AvatarFallback>
+                    </Avatar>
+                  )}
+                  {selectedConversation.other_user?.id && isUserCurrentlyActive(selectedConversation.other_user.id) && (
+                    <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
+                  )}
+                </div>
+                <div 
+                  className="cursor-pointer flex-1 min-w-0"
+                  onClick={() => navigate(`/user/${selectedConversation.other_user?.id}`)}
+                >
+                  <p className="font-medium truncate">@{selectedConversation.other_user?.username || 'Unknown'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConversation.other_user?.id 
+                      ? getUserPresenceText(selectedConversation.other_user.id)
+                      : 'Unknown status'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
           </header>
 
 

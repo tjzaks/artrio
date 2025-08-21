@@ -120,23 +120,11 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         .from('stories')
         .getPublicUrl(fileName);
 
-      // Get user's profile ID first
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user?.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        throw new Error('Profile not found. Please complete your profile setup.');
-      }
-
       // Create story post in database with caption position
       const { error: postError } = await supabase
         .from('posts')
         .insert({
-          user_id: profile.id,  // Use profile.id not user.id
+          user_id: user?.id,  // Use auth user.id for posts table
           content: caption || '📸',
           image_url: publicUrl,
           post_type: 'story',
