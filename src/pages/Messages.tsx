@@ -526,38 +526,11 @@ export default function Messages() {
 
       console.log('Loading conversations for user:', user.id);
 
-      // OPTIMIZED: One query with joins (97% reduction in queries)
+      // Load conversations with profiles in separate queries for now
       const { data: convs, error } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          user1:profiles!conversations_user1_id_fkey(
-            user_id,
-            username,
-            avatar_url
-          ),
-          user2:profiles!conversations_user2_id_fkey(
-            user_id,
-            username,
-            avatar_url
-          ),
-          messages(
-            content,
-            created_at,
-            is_read,
-            sender_id
-          ),
-          notification_counts(
-            unread_count
-          )
-        `)
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .eq('notification_counts.user_id', user.id)
-        .order('created_at', { 
-          foreignTable: 'messages', 
-          ascending: false 
-        })
-        .limit(1, { foreignTable: 'messages' });
+        .select('*')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
 
       if (error) {
         console.error('Error fetching conversations:', error);
@@ -566,30 +539,48 @@ export default function Messages() {
 
       console.log('Found conversations:', convs?.length || 0);
 
-      // Process the joined data
-      const conversationsWithProfiles = (convs || []).map(conv => {
-        const otherUser = conv.user1_id === user.id ? conv.user2 : conv.user1;
-        const lastMessage = conv.messages?.[0];
-        const unreadCount = conv.notification_counts?.[0]?.unread_count || 0;
+      // Load profiles and messages for each conversation
+      const conversationsWithProfiles = await Promise.all((convs || []).map(async (conv) => {
+        const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
         
-        console.log(`Conversation ${conv.id} has ${unreadCount} unread messages (from optimized query)`);
+        // Get other user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_id, username, avatar_url')
+          .eq('user_id', otherUserId)
+          .single();
+        
+        // Get last message
+        const { data: lastMessage } = await supabase
+          .from('messages')
+          .select('content, created_at')
+          .eq('conversation_id', conv.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        // Get unread count
+        const { count: unreadCount } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact' })
+          .eq('conversation_id', conv.id)
+          .eq('is_read', false)
+          .neq('sender_id', user.id);
+        
+        console.log(`Conversation ${conv.id} has ${unreadCount} unread messages`);
 
         return {
           ...conv,
-          other_user: otherUser ? {
-            id: otherUser.user_id,
-            username: otherUser.username,
-            avatar_url: otherUser.avatar_url
-          } : {
-            id: conv.user1_id === user.id ? conv.user2_id : conv.user1_id,
+          other_user: profile || {
+            id: otherUserId,
             username: 'Unknown User',
             avatar_url: null
           },
           last_message: lastMessage?.content,
           last_message_at: lastMessage?.created_at,
-          unread_count: unreadCount
+          unread_count: unreadCount || 0
         };
-      });
+      }));
 
       // Sort conversations by last message timestamp (most recent first)
       const sortedConversations = conversationsWithProfiles.sort((a, b) => {
