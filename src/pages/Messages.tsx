@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, ArrowUp, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, ArrowUp, MessageSquare, Users, Plus, Camera, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
 import { SwipeableConversationItem } from '@/components/SwipeableConversationItem';
@@ -24,6 +24,7 @@ interface Message {
   is_read: boolean;
   edited_at?: string;
   read_at?: string;
+  image_url?: string;
 }
 
 interface Conversation {
@@ -55,6 +56,7 @@ export default function Messages() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showMediaMenu, setShowMediaMenu] = useState(false);
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [contextMenu, setContextMenu] = useState<{messageId: string, x: number, y: number} | null>(null);
@@ -643,6 +645,80 @@ export default function Messages() {
     }
   };
 
+  const sendPhotoMessage = async (imageDataUrl: string) => {
+    if (!selectedConversation || sending) return;
+
+    setSending(true);
+    
+    try {
+      // Convert data URL to blob
+      const response = await fetch(imageDataUrl);
+      const blob = await response.blob();
+      
+      // Upload to Supabase storage
+      const fileName = `${user?.id}/${Date.now()}.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('stories')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('stories')
+        .getPublicUrl(fileName);
+
+      // Send message with image
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: selectedConversation.id,
+          sender_id: user?.id,
+          content: '📷 Photo',
+          image_url: publicUrl,
+          is_read: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add message to local state
+      setMessages(prev => [...prev, data]);
+      
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current;
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }, 50);
+      
+      // Reload conversations
+      setTimeout(() => {
+        loadConversations();
+      }, 100);
+      
+      toast({
+        title: 'Photo sent!',
+        description: 'Your photo has been shared'
+      });
+      
+    } catch (error) {
+      console.error('Error sending photo:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send photo',
+        variant: 'destructive'
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || sending) return;
 
@@ -1095,7 +1171,21 @@ export default function Messages() {
                           </div>
                         ) : (
                           <>
-                            <p className="text-sm">{message.content}</p>
+                            {message.image_url ? (
+                              <div className="space-y-2">
+                                <img 
+                                  src={message.image_url} 
+                                  alt="Shared photo" 
+                                  className="rounded-lg max-w-[200px] max-h-[200px] object-cover"
+                                  onClick={() => window.open(message.image_url, '_blank')}
+                                />
+                                {message.content && message.content !== '📷 Photo' && (
+                                  <p className="text-sm">{message.content}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm">{message.content}</p>
+                            )}
                             <p className={`text-[9px] mt-1 ${isOwn ? 'text-right' : 'text-left'} ${
                               isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/70'
                             }`}>
@@ -1179,42 +1269,119 @@ export default function Messages() {
 
           {/* Fixed Input Area */}
           <div className="absolute bottom-0 left-0 right-0 border-t bg-background z-10 pb-safe">
-            <div className="p-3">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!sending && newMessage.trim()) {
-                  sendMessage();
-                }
-              }}
-              className="relative"
-            >
-              <Input
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!sending && newMessage.trim()) {
-                      sendMessage();
-                    }
+            {/* Media Menu Popup */}
+            {showMediaMenu && (
+              <div className="absolute bottom-full left-0 right-0 bg-background border-t p-4 animate-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium">Send Photo</p>
+                  <button
+                    onClick={() => setShowMediaMenu(false)}
+                    className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={async () => {
+                      setShowMediaMenu(false);
+                      // Import Camera from Capacitor
+                      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+                      try {
+                        const image = await Camera.getPhoto({
+                          quality: 90,
+                          allowEditing: false,
+                          resultType: CameraResultType.DataUrl,
+                          source: CameraSource.Camera
+                        });
+                        if (image.dataUrl) {
+                          await sendPhotoMessage(image.dataUrl);
+                        }
+                      } catch (error) {
+                        console.error('Camera error:', error);
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                  >
+                    <Camera className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Camera</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowMediaMenu(false);
+                      // Import Camera from Capacitor
+                      const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+                      try {
+                        const image = await Camera.getPhoto({
+                          quality: 90,
+                          allowEditing: false,
+                          resultType: CameraResultType.DataUrl,
+                          source: CameraSource.Photos
+                        });
+                        if (image.dataUrl) {
+                          await sendPhotoMessage(image.dataUrl);
+                        }
+                      } catch (error) {
+                        console.error('Photo library error:', error);
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center p-4 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                  >
+                    <ImageIcon className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Photo Library</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            <div className="p-3 flex items-center gap-2">
+              {/* Plus Button */}
+              <button
+                onClick={() => setShowMediaMenu(!showMediaMenu)}
+                className={`h-8 w-8 rounded-full flex items-center justify-center transition-all ${
+                  showMediaMenu ? 'rotate-45 bg-primary text-white' : 'bg-muted hover:bg-muted/80'
+                }`}
+                type="button"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+              
+              {/* Message Input Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!sending && newMessage.trim()) {
+                    sendMessage();
                   }
                 }}
-                disabled={sending}
-                className="pr-12 rounded-full bg-muted/50"
-              />
-              <button 
-                type="submit" 
-                disabled={sending || !newMessage.trim()}
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                style={{ touchAction: 'manipulation' }}
+                className="relative flex-1"
               >
-                <ArrowUp className="h-5 w-5" />
-              </button>
-            </form>
+                <Input
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!sending && newMessage.trim()) {
+                        sendMessage();
+                      }
+                    }
+                  }}
+                  disabled={sending}
+                  className="pr-12 rounded-full bg-muted/50"
+                />
+                <button 
+                  type="submit" 
+                  disabled={sending || !newMessage.trim()}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </button>
+              </form>
             </div>
           </div>
         </div>

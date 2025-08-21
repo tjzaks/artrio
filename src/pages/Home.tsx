@@ -382,13 +382,22 @@ const Home = () => {
     if ((!newPost.trim() && !mediaUrl) || !currentTrio || !canPost) return;
 
     try {
-      // First try with full schema including media_type
+      // Debug logging
+      console.log('Attempting to post with:', {
+        hasContent: !!newPost.trim(),
+        hasMedia: !!mediaUrl,
+        mediaType,
+        userId: user?.id,
+        trioId: currentTrio.id
+      });
+
+      // First try with full schema including media fields
       let { error } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,
           trio_id: currentTrio.id,
-          content: newPost.trim() || null,
+          content: newPost.trim() || (mediaUrl ? 'Shared media' : null),
           media_url: mediaUrl || null,
           media_type: mediaType || null
         });
@@ -407,8 +416,9 @@ const Home = () => {
       }
 
       if (error) {
+        console.error('Post error details:', error);
         toast({
-          title: 'Error',
+          title: 'Upload failed',
           description: error.message === 'new row violates row-level security policy for table "posts"' 
             ? 'Please wait 10 minutes between posts to prevent spam.'
             : cleanErrorMessage(error),
