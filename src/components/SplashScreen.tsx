@@ -9,11 +9,11 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Show splash for 2.5 seconds
+    // Show splash for 2 seconds
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onComplete, 300); // Wait for fade out animation
-    }, 2500);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -28,113 +28,131 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white"
         >
-          {/* Logo animation - pieces coming together */}
+          {/* Paint splash container */}
           <motion.div
             className="relative"
-            initial={{ scale: 0.8 }}
+            initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ 
-              duration: 0.6,
+              duration: 0.5,
               ease: "easeOut"
             }}
           >
-            {/* The main logo image with build effect */}
+            {/* Main logo with paint drip effect */}
             <motion.img
               src="/artrio-logo.png"
               alt=""
-              className="w-56 h-56 object-contain"
+              className="w-64 h-64 object-contain relative z-10"
               initial={{ 
                 opacity: 0,
-                scale: 0.3,
-                filter: "blur(20px)"
+                scale: 0,
+                rotate: -180
               }}
               animate={{ 
                 opacity: 1,
                 scale: 1,
-                filter: "blur(0px)"
+                rotate: 0
               }}
               transition={{
-                duration: 1.2,
-                ease: [0.34, 1.56, 0.64, 1]
-              }}
-              style={{
-                clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)'
+                duration: 0.8,
+                ease: [0.34, 1.56, 0.64, 1],
+                opacity: { duration: 0.4 }
               }}
             />
 
-            {/* Animated mask effect - logo pieces assembling */}
+            {/* Paint splatter effects */}
             <motion.div
-              className="absolute inset-0 pointer-events-none"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 0 }}
-              transition={{ duration: 1, delay: 0.8 }}
+              className="absolute -inset-8 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
             >
-              {/* Left piece sliding in */}
+              {/* Paint splatter 1 - top left */}
               <motion.div
-                className="absolute inset-0 bg-white"
-                initial={{ x: 0 }}
-                animate={{ x: "-100%" }}
-                transition={{ 
-                  duration: 0.5,
-                  delay: 0.1,
-                  ease: "easeInOut"
+                className="absolute top-0 left-0 w-12 h-12 rounded-full"
+                style={{ backgroundColor: '#3B82A0' }}
+                initial={{ scale: 0, x: 50, y: 50 }}
+                animate={{ 
+                  scale: [0, 1.5, 1],
+                  x: 0,
+                  y: 0
                 }}
-                style={{ 
-                  clipPath: 'polygon(0% 0%, 33% 0%, 33% 100%, 0% 100%)'
+                transition={{ 
+                  delay: 0.4,
+                  duration: 0.6,
+                  ease: "easeOut"
                 }}
               />
               
-              {/* Center piece revealing */}
+              {/* Paint splatter 2 - bottom right */}
               <motion.div
-                className="absolute inset-0 bg-white"
-                initial={{ scaleY: 1 }}
-                animate={{ scaleY: 0 }}
-                transition={{ 
-                  duration: 0.5,
-                  delay: 0.3,
-                  ease: "easeInOut"
+                className="absolute bottom-0 right-0 w-16 h-16 rounded-full"
+                style={{ backgroundColor: '#E85D3D' }}
+                initial={{ scale: 0, x: -50, y: -50 }}
+                animate={{ 
+                  scale: [0, 1.3, 0.8],
+                  x: 0,
+                  y: 0
                 }}
-                style={{ 
-                  clipPath: 'polygon(33% 0%, 66% 0%, 66% 100%, 33% 100%)',
-                  transformOrigin: 'center'
-                }}
-              />
-              
-              {/* Right piece sliding in */}
-              <motion.div
-                className="absolute inset-0 bg-white"
-                initial={{ x: 0 }}
-                animate={{ x: "100%" }}
                 transition={{ 
-                  duration: 0.5,
                   delay: 0.5,
-                  ease: "easeInOut"
+                  duration: 0.6,
+                  ease: "easeOut"
                 }}
-                style={{ 
-                  clipPath: 'polygon(66% 0%, 100% 0%, 100% 100%, 66% 100%)'
+              />
+              
+              {/* Paint splatter 3 - top right */}
+              <motion.div
+                className="absolute top-4 right-8 w-8 h-8 rounded-full"
+                style={{ backgroundColor: '#F97316' }}
+                initial={{ scale: 0 }}
+                animate={{ 
+                  scale: [0, 1.2, 0.9]
+                }}
+                transition={{ 
+                  delay: 0.6,
+                  duration: 0.5,
+                  ease: "easeOut"
+                }}
+              />
+              
+              {/* Paint drip effect */}
+              <motion.div
+                className="absolute bottom-16 left-1/2 -translate-x-1/2 w-1"
+                style={{ backgroundColor: '#22C55E' }}
+                initial={{ height: 0 }}
+                animate={{ 
+                  height: [0, 60, 40]
+                }}
+                transition={{ 
+                  delay: 0.7,
+                  duration: 0.8,
+                  ease: "easeOut"
                 }}
               />
             </motion.div>
 
-            {/* Subtle pulse after assembly */}
+            {/* Brush stroke effect */}
             <motion.div
-              className="absolute inset-0"
-              initial={{ opacity: 0 }}
+              className="absolute -bottom-8 left-1/2 -translate-x-1/2"
+              initial={{ opacity: 0, scaleX: 0 }}
               animate={{ 
-                opacity: [0, 0.5, 0],
-                scale: [1, 1.1, 1.2]
+                opacity: [0, 1, 0.8],
+                scaleX: 1
               }}
               transition={{
-                duration: 0.8,
-                delay: 0.9,
+                delay: 0.8,
+                duration: 0.6,
                 ease: "easeOut"
               }}
             >
-              <img
-                src="/artrio-logo.png"
-                alt=""
-                className="w-56 h-56 object-contain opacity-30"
-                style={{ filter: 'blur(15px)' }}
+              <div 
+                className="h-3 rounded-full"
+                style={{
+                  width: '200px',
+                  background: 'linear-gradient(90deg, transparent, #E85D3D 20%, #F97316 50%, #E85D3D 80%, transparent)',
+                  filter: 'blur(1px)'
+                }}
               />
             </motion.div>
           </motion.div>
