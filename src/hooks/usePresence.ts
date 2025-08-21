@@ -21,8 +21,17 @@ export function usePresence() {
 
     // Update user's own presence in database
     const updateOwnPresence = async (isOnline: boolean) => {
-      // Presence tracking temporarily disabled
-      // TODO: Implement user presence tracking
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            is_online: isOnline,
+            last_seen: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.error('Error updating presence:', error);
+      }
     };
 
     // Set user as online
@@ -120,11 +129,44 @@ export function usePresence() {
     };
   }, [user]);
 
+  // Fetch presence data from database for a user
+  const fetchUserPresence = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_online, last_seen')
+        .eq('user_id', userId)
+        .single();
+      
+      if (data) {
+        setPresenceState(prev => ({
+          ...prev,
+          [userId]: {
+            isOnline: data.is_online || false,
+            lastSeen: data.last_seen || new Date().toISOString()
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching presence:', error);
+    }
+  };
+
   const isUserOnline = (userId: string): boolean => {
+    // Fetch presence if not in state
+    if (!presenceState[userId]) {
+      fetchUserPresence(userId);
+    }
     return presenceState[userId]?.isOnline || false;
   };
 
   const getUserPresenceText = (userId: string): string => {
+    // Fetch presence if not in state
+    if (!presenceState[userId]) {
+      fetchUserPresence(userId);
+      return ""; // Return empty while loading
+    }
+    
     const presence = presenceState[userId];
     if (!presence) return "";
     
@@ -136,6 +178,12 @@ export function usePresence() {
   };
 
   const isUserCurrentlyActive = (userId: string): boolean => {
+    // Fetch presence if not in state
+    if (!presenceState[userId]) {
+      fetchUserPresence(userId);
+      return false; // Return false while loading
+    }
+    
     const presence = presenceState[userId];
     if (!presence) return false;
     

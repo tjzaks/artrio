@@ -176,8 +176,20 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
   }, []);
 
   const updatePresence = async (isOnline: boolean, userId?: string) => {
-    // Presence tracking temporarily disabled
-    // TODO: Implement user presence tracking
+    if (!userId) return;
+    
+    try {
+      // Update the user's presence in the profiles table
+      await supabase
+        .from('profiles')
+        .update({
+          is_online: isOnline,
+          last_seen: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+    } catch (error) {
+      console.error('Error updating presence:', error);
+    }
   };
 
   const checkAdminStatus = async (userId: string) => {
