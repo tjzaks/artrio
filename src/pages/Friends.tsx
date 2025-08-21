@@ -183,8 +183,8 @@ export default function Friends() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky safe-top z-40 bg-background border-b p-4 pt-safe">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky safe-top z-40 bg-background border-b p-4">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
@@ -198,7 +198,7 @@ export default function Friends() {
         </div>
       </header>
 
-      <main className="p-4 space-y-4">
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">

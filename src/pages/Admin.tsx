@@ -298,8 +298,8 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky safe-top z-50 bg-background/95 backdrop-blur border-b pt-safe">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky safe-top z-50 bg-background/95 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -318,7 +318,7 @@ const Admin = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto max-w-6xl mx-auto w-full p-6 space-y-6">
         {/* Admin Actions */}
         <Card className="border-amber-500/20 bg-amber-50/5">
           <CardHeader className="pb-3">

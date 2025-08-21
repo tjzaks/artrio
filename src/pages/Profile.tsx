@@ -433,8 +433,8 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card p-4 pt-safe">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky safe-top z-40 border-b bg-card p-4">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -444,7 +444,7 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 space-y-6 pb-safe">
+      <main className="flex-1 overflow-y-auto max-w-2xl mx-auto w-full p-4 space-y-6 pb-safe">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
