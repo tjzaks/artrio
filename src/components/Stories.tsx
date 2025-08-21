@@ -395,7 +395,7 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       </div>
 
       {/* Story Creator */}
-      <NativeStoryCreator 
+      <SnapchatStoryCreator 
         open={showUpload} 
         onClose={() => setShowUpload(false)}
         onSuccess={fetchStories}

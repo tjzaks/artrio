@@ -7,10 +7,9 @@
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
-/* Global fix: Add safe area padding to the entire app */
+/* Global fix: DO NOT add padding to root - let headers handle it */
 #root {
-  /* Apply top padding globally - pages should not override this */
-  padding-top: env(safe-area-inset-top);
+  /* NO top padding - headers will handle safe area */
   /* Bottom padding for home indicator */
   padding-bottom: env(safe-area-inset-bottom);
   /* Side padding for landscape orientation */
@@ -19,6 +18,9 @@
   /* Ensure full height */
   min-height: 100vh;
   min-height: 100dvh; /* Dynamic viewport height for mobile */
+  /* Prevent scrolling issues */
+  position: relative;
+  overflow: hidden;
 }
 
 /* IMPORTANT: Prevent any child from breaking out of safe area */

@@ -69,8 +69,34 @@
   * {
     @apply border-border;
   }
+  
+  /* Fix iOS scrolling and background issues */
+  html {
+    @apply bg-background;
+    /* Prevent rubber band scrolling */
+    position: fixed;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+  
   body {
     @apply bg-background text-foreground;
+    /* Allow body to scroll */
+    position: fixed;
+    overflow: auto;
+    width: 100%;
+    height: 100%;
+    /* Prevent iOS bounce */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+  
+  /* Ensure app container handles scrolling properly */
+  #root {
+    height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
