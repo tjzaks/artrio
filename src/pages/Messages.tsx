@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
+import { SwipeableConversationItem } from '@/components/SwipeableConversationItem';
 
 interface Message {
   id: string;
@@ -296,6 +297,55 @@ export default function Messages() {
       setContextMenu(null);
     };
   }, [selectedConversation, longPressTimer]);
+
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      // Delete all messages in the conversation first
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversationId);
+
+      if (messagesError) {
+        throw messagesError;
+      }
+
+      // Delete the conversation
+      const { error: conversationError } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (conversationError) {
+        throw conversationError;
+      }
+
+      // Update local state
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // Clear selection if this was the selected conversation
+      if (selectedConversation?.id === conversationId) {
+        setSelectedConversation(null);
+        setMessages([]);
+      }
+
+      // Refresh message count
+      refreshMessageCount();
+
+      toast({
+        title: 'Conversation deleted',
+        description: 'The conversation has been removed',
+      });
+    } catch (error: any) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete conversation',
+        variant: 'destructive'
+      });
+      throw error; // Re-throw to handle in the component
+    }
+  };
 
   const loadConversations = async () => {
     try {
@@ -783,61 +833,16 @@ export default function Messages() {
             </div>
           ) : (
             conversations.map((conv) => (
-              <div
+              <SwipeableConversationItem
                 key={conv.id}
+                conversation={conv}
+                isSelected={selectedConversation?.id === conv.id}
                 onClick={() => {
                   setSelectedConversation(conv);
                   // DON'T clear visuals immediately - wait for database confirmation
                 }}
-                className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
-                  selectedConversation?.id === conv.id ? 'bg-muted/50' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    {conv.other_user ? (
-                      <ClickableAvatar
-                        userId={conv.other_user.id}
-                        username={conv.other_user.username}
-                        avatarUrl={conv.other_user.avatar_url}
-                        size="md"
-                      />
-                    ) : (
-                      <Avatar>
-                        <AvatarFallback>??</AvatarFallback>
-                      </Avatar>
-                    )}
-                    {conv.other_user?.id && isUserCurrentlyActive(conv.other_user.id) && (
-                      <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className={`font-medium ${conv.unread_count > 0 ? 'text-primary' : ''}`}>
-                        @{conv.other_user?.username || 'Unknown'}
-                      </p>
-                      {conv.unread_count > 0 && (
-                        <div className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                          {conv.unread_count}
-                        </div>
-                      )}
-                    </div>
-                    <p className={`text-sm truncate ${conv.unread_count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                      {conv.last_message || 'Start a conversation'}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {conv.last_message_at && (
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(conv.last_message_at), 'MMM d')}
-                      </span>
-                    )}
-                    {conv.unread_count > 0 && (
-                      <div className="h-2 w-2 bg-primary rounded-full" />
-                    )}
-                  </div>
-                </div>
-              </div>
+                onDelete={deleteConversation}
+              />
             ))
           )}
         </ScrollArea>
