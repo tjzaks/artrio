@@ -87,15 +87,6 @@ export default function Messages() {
 
     const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
       setKeyboardHeight(info.keyboardHeight);
-      // Scroll to bottom when keyboard shows
-      if (scrollAreaRef.current) {
-        setTimeout(() => {
-          scrollAreaRef.current?.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
-        }, 100);
-      }
     });
 
     const hideListener = Keyboard.addListener('keyboardWillHide', () => {
@@ -1162,8 +1153,7 @@ export default function Messages() {
             style={{ 
               WebkitOverflowScrolling: 'touch',
               paddingTop: '130px', // Height of header with Dynamic Island (increased)
-              paddingBottom: keyboardHeight > 0 ? `${keyboardHeight + 70}px` : '120px', // Adjust for keyboard
-              transition: 'padding-bottom 0.3s'
+              paddingBottom: keyboardHeight > 0 ? `${keyboardHeight + 80}px` : '120px' // Add keyboard height + input bar height
             }}
           >
             <div className="space-y-4 px-4">
