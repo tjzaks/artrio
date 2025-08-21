@@ -241,6 +241,54 @@ Launched application with com.artrio.artrio bundle identifier.
 - The worktrees are set up for parallel development with multiple Claude instances acting as specialized developers
 - Coordinate with the team of Claude instances for complex tasks
 
+## TestFlight Update Process
+
+**When Tyler says "update TestFlight" or "push to TestFlight":**
+
+1. **Bump the build number in Info.plist:**
+   ```bash
+   # Check current build number
+   /usr/libexec/PlistBuddy -c "Print CFBundleVersion" ios/App/App/Info.plist
+   
+   # Increment it (e.g., from 1 to 2, from 2 to 3, etc.)
+   CURRENT_BUILD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" ios/App/App/Info.plist)
+   NEW_BUILD=$((CURRENT_BUILD + 1))
+   /usr/libexec/PlistBuddy -c "Set CFBundleVersion $NEW_BUILD" ios/App/App/Info.plist
+   echo "Build number updated from $CURRENT_BUILD to $NEW_BUILD"
+   ```
+
+2. **Build and sync the iOS app:**
+   ```bash
+   npm run build
+   npx cap sync ios
+   ```
+
+3. **Open Xcode and archive:**
+   ```bash
+   cd ios/App
+   open App.xcworkspace
+   ```
+
+4. **In Xcode (manual steps Tyler does):**
+   - Select "Any iOS Device (arm64)" as destination (top bar)
+   - Menu: Product → Archive
+   - Wait for archive to complete (~2-3 minutes)
+   - When Organizer window opens → Click "Distribute App"
+   - Choose "App Store Connect"
+   - Click through defaults (Next, Next, Next)
+   - Upload (takes ~2-5 minutes)
+
+5. **After upload:**
+   - Build appears in App Store Connect in ~5-15 minutes
+   - TestFlight auto-distributes to existing testers
+   - Testers get push notification about update
+
+**IMPORTANT NOTES:**
+- Build number MUST increment each upload (1, 2, 3, etc.)
+- Version number (1.0.0) can stay the same during TestFlight
+- No Apple review needed after initial TestFlight approval
+- Updates are available to testers immediately after processing
+
 ## Result Verification Protocol
 
 - Any time the results are in, cross-check Orion's answers with the verified answers found in the database/CSV files
