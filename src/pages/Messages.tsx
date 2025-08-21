@@ -818,10 +818,10 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex overflow-hidden pt-safe pb-safe">
+    <div className="h-[100dvh] bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
-        <header className="bg-background p-4 border-b flex-shrink-0">
+        <header className="bg-background p-4 pt-safe border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -870,7 +870,7 @@ export default function Messages() {
       {/* Chat Area */}
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <header className="bg-background p-4 border-b flex-shrink-0">
+          <header className="bg-background px-4 pb-3 pt-safe border-b flex-shrink-0">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <Button
@@ -916,8 +916,9 @@ export default function Messages() {
 
           <div 
             ref={scrollAreaRef}
-            className="flex-1 overflow-y-auto p-4"
+            className="flex-1 overflow-y-auto p-4 overscroll-none"
             onScroll={handleScroll}
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div className="space-y-4">
               {messages.length === 0 ? (
@@ -1070,7 +1071,7 @@ export default function Messages() {
             </>
           )}
 
-          <div className="border-t p-3 flex-shrink-0 bg-background">
+          <div className="border-t p-3 flex-shrink-0 bg-background pb-safe overscroll-none">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
