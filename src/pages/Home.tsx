@@ -18,7 +18,7 @@ import { cleanErrorMessage } from '@/utils/errorMessages';
 import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
 import ClickableAvatar from '@/components/ClickableAvatar';
-import PostCard from '@/components/PostCard';
+import SwipeablePostCard from '@/components/SwipeablePostCard';
 
 interface Profile {
   id: string;
@@ -871,13 +871,18 @@ const Home = () => {
                 const userHasReplied = postReplies.some(reply => reply.user_id === user?.id);
                 
                 return (
-                  <PostCard
+                  <SwipeablePostCard
                     key={post.id}
                     post={post}
                     replies={postReplies}
                     currentUserId={user?.id}
                     userHasReplied={userHasReplied}
                     onReplySubmit={handleReplySubmit}
+                    onPostDeleted={() => {
+                      if (currentTrio) {
+                        fetchTrioPosts(currentTrio.id);
+                      }
+                    }}
                   />
                 );
               })}
