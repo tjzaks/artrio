@@ -818,7 +818,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex overflow-hidden pt-safe">
+    <div className="h-[100dvh] bg-background flex overflow-hidden pt-safe pb-safe">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background p-4 border-b flex-shrink-0">
@@ -1070,7 +1070,7 @@ export default function Messages() {
             </>
           )}
 
-          <div className="border-t p-4 flex-shrink-0 bg-background">
+          <div className="border-t p-3 flex-shrink-0 bg-background">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1079,7 +1079,7 @@ export default function Messages() {
                   sendMessage();
                 }
               }}
-              className="flex gap-2"
+              className="relative"
             >
               <Input
                 placeholder="Type a message..."
@@ -1096,8 +1096,14 @@ export default function Messages() {
                 }}
                 disabled={sending}
                 autoFocus
+                className="pr-12 rounded-full bg-muted/50"
               />
-              <Button type="submit" disabled={sending || !newMessage.trim()}>
+              <Button 
+                type="submit" 
+                disabled={sending || !newMessage.trim()}
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0"
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </form>
