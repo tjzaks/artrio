@@ -64,6 +64,19 @@ export default function Messages() {
   // Track read receipts globally for messages I sent
   const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
 
+  // Prevent page scrolling when Messages is open
+  useEffect(() => {
+    // Add a class to html element to prevent scrolling
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    
+    return () => {
+      // Restore scrolling when component unmounts
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+    };
+  }, []);
+
   // Poll for read receipt updates every 2 seconds
   useEffect(() => {
     if (!user || !selectedConversation) return;
@@ -1014,7 +1027,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex overflow-hidden">
+    <div className="fixed inset-0 bg-background flex">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background border-b flex-shrink-0">
