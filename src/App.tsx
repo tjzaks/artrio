@@ -47,7 +47,6 @@ const App = () => {
   
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Only show splash on initial app load
   useEffect(() => {
@@ -80,8 +79,6 @@ const App = () => {
     console.log('🚀 SIMULATOR DEBUG: Splash completed');
     sessionStorage.setItem('hasShownSplash', 'true');
     setShowSplash(false);
-    // Ensure data loading state is reset
-    setIsLoadingData(false);
   };
 
   console.log('🚀 SIMULATOR DEBUG: App render - appReady:', appReady, 'showSplash:', showSplash);
@@ -93,13 +90,7 @@ const App = () => {
 
   if (showSplash) {
     console.log('🚀 SIMULATOR DEBUG: Showing splash screen');
-    return (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider onLoadingChange={setIsLoadingData}>
-          <SplashScreen onComplete={handleSplashComplete} isLoading={isLoadingData} />
-        </AuthProvider>
-      </QueryClientProvider>
-    );
+    return <SplashScreen onComplete={handleSplashComplete} isLoading={false} />;
   }
 
   console.log('🚀 SIMULATOR DEBUG: About to render main app content...');
@@ -107,7 +98,7 @@ const App = () => {
   return (
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider onLoadingChange={setIsLoadingData}>
+        <AuthProvider>
           <SwipeBackProvider>
             <TooltipProvider>
               <Toaster />

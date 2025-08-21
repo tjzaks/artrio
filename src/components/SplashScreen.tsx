@@ -8,30 +8,18 @@ interface SplashScreenProps {
 
 const SplashScreen = ({ onComplete, isLoading = false }: SplashScreenProps) => {
   const [isVisible, setIsVisible] = useState(true);
-  const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // Wait for animation complete and loading done, but add a max timeout
-    if (animationComplete && !isLoading) {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onComplete, 200); // Wait for fade out animation
-      }, 100); // Small delay after everything is ready
-      
-      return () => clearTimeout(timer);
-    }
-  }, [animationComplete, isLoading, onComplete]);
-
-  // Add a safety timeout to prevent infinite loading
-  useEffect(() => {
-    const maxTimeout = setTimeout(() => {
-      console.log('Splash screen max timeout reached, forcing completion');
+    // Simple timer-based approach - show for fixed duration
+    const displayTime = isLoading ? 2500 : 1800; // Slightly longer if loading
+    
+    const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 200);
-    }, 5000); // Max 5 seconds
-
-    return () => clearTimeout(maxTimeout);
-  }, [onComplete]);
+      setTimeout(onComplete, 200); // Wait for fade out animation
+    }, displayTime);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading, onComplete]);
 
   return (
     <AnimatePresence>
@@ -80,10 +68,6 @@ const SplashScreen = ({ onComplete, isLoading = false }: SplashScreenProps) => {
                 duration: isLoading ? 1.2 : 0.6,
                 delay: isLoading ? 1.8 : 0.9, // Previous delay + 75% of duration
                 ease: "easeOut"
-              }}
-              onAnimationComplete={() => {
-                // Mark animation as complete when the last bar finishes
-                setAnimationComplete(true);
               }}
             />
           </div>
