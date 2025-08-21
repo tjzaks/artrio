@@ -66,14 +66,15 @@ export default function Messages() {
 
   // Prevent page scrolling when Messages is open
   useEffect(() => {
-    // Add a class to html element to prevent scrolling
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.height = '100%';
+    // Save original styles
+    const originalOverflow = document.body.style.overflow;
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
     
     return () => {
-      // Restore scrolling when component unmounts
-      document.documentElement.style.overflow = '';
-      document.documentElement.style.height = '';
+      // Restore original style
+      document.body.style.overflow = originalOverflow;
     };
   }, []);
 
@@ -1027,7 +1028,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="fixed inset-0 bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background border-b flex-shrink-0">
