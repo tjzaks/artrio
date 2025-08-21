@@ -64,6 +64,26 @@ export default function Messages() {
   // Track read receipts globally for messages I sent
   const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
 
+  // Prevent body scrolling when Messages page is open
+  useEffect(() => {
+    // Save current body overflow style
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTouchAction = document.body.style.touchAction;
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.touchAction = 'none';
+    
+    // Cleanup function to restore original styles
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, []);
+
   // Poll for read receipt updates every 2 seconds
   useEffect(() => {
     if (!user || !selectedConversation) return;
@@ -1014,7 +1034,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex overflow-hidden">
+    <div className="fixed inset-0 bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background border-b flex-shrink-0">
@@ -1067,7 +1087,7 @@ export default function Messages() {
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full relative">
           {/* Fixed Header */}
-          <header className="absolute top-0 left-0 right-0 bg-background border-b z-10">
+          <header className="absolute top-0 left-0 right-0 bg-background border-b z-10" style={{ touchAction: 'none' }}>
             <div className="px-4 pb-3 pt-14">
               <div className="flex items-center gap-3">
                 <Button
@@ -1118,7 +1138,8 @@ export default function Messages() {
             style={{ 
               WebkitOverflowScrolling: 'touch',
               paddingTop: '130px', // Height of header with Dynamic Island (increased)
-              paddingBottom: '120px' // Height of input area + safe area
+              paddingBottom: '120px', // Height of input area + safe area
+              touchAction: 'pan-y' // Only allow vertical scrolling within this area
             }}
           >
             <div className="space-y-4 px-4">
@@ -1286,7 +1307,7 @@ export default function Messages() {
           )}
 
           {/* Fixed Input Area */}
-          <div className="absolute bottom-0 left-0 right-0 border-t bg-background z-10 pb-safe">
+          <div className="absolute bottom-0 left-0 right-0 border-t bg-background z-10 pb-safe" style={{ touchAction: 'none' }}>
             {/* Media Menu Popup */}
             {showMediaMenu && (
               <div className="absolute bottom-full left-0 right-0 bg-background border-t p-4 animate-in slide-in-from-bottom-2">
