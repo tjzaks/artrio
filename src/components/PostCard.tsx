@@ -71,7 +71,7 @@ const PostCard = memo(function PostCard({
   return (
     <Card className="content-card animate-slide-up">
       <CardContent className="p-4 space-y-3">
-        <div className="flex items-start gap-3">
+        <div className="relative flex items-start gap-3">
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={post.profiles.avatar_url || undefined} />
             <AvatarFallback className="text-xs">
@@ -108,25 +108,25 @@ const PostCard = memo(function PostCard({
               </div>
             )}
           </div>
-        </div>
-
-        {/* Comments button - only show if not your own post */}
-        {post.user_id !== currentUserId && (
-          <div className="ml-11 flex items-center gap-4">
+          
+          {/* Comments button - right side, middle aligned */}
+          {post.user_id !== currentUserId && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleToggleReply}
-              className="h-8 px-2 text-muted-foreground hover:text-foreground"
+              className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title={`${replies.length} comment${replies.length !== 1 ? 's' : ''}`}
             >
-              <MessageCircle className="h-4 w-4 mr-1" />
-              <span className="text-xs">
-                {replies.length > 0 ? `${replies.length} ` : ''}
-                Comment{replies.length !== 1 ? 's' : ''}
-              </span>
+              <MessageCircle className="h-4 w-4" />
+              {replies.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                  {replies.length}
+                </span>
+              )}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Replies */}
         {replies.length > 0 && (
