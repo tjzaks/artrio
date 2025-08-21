@@ -95,13 +95,28 @@ export default function NativeStoryCreator({ open, onClose, onSuccess }: StoryCr
         .from('stories')
         .getPublicUrl(fileName);
 
+      // Get today's trio to associate story with it
+      const { data: todaysTrio } = await supabase
+        .from('trios')
+        .select('id')
+        .eq('date', new Date().toISOString().split('T')[0])
+        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
+        .single();
+
+      if (!todaysTrio?.id) {
+        throw new Error('You need to be in a trio to post stories');
+      }
+
       // Create story post in database
       const { error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,  // Use auth user.id for posts table
+          trio_id: todaysTrio.id,  // Required field
           content: caption || '📸',
           image_url: publicUrl,
+          media_url: publicUrl,  // Also set media_url for compatibility
+          media_type: 'image',
           post_type: 'story'
         });
 

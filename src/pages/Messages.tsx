@@ -47,7 +47,7 @@ export default function Messages() {
   const { toast } = useToast();
   const { isUserOnline, getUserPresenceText, isUserCurrentlyActive } = usePresence();
   const { refreshCount: refreshMessageCount } = useMessageNotifications();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Removed messagesEndRef - using scrollAreaRef directly for scrolling
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -294,8 +294,10 @@ export default function Messages() {
   useEffect(() => {
     // Always scroll to bottom on initial load or conversation change
     // Only auto-scroll for new messages if user hasn't scrolled up
-    if (isInitialLoad || !userScrolledUp) {
-      messagesEndRef.current?.scrollIntoView({ behavior: isInitialLoad ? 'auto' : 'smooth' });
+    if ((isInitialLoad || !userScrolledUp) && scrollAreaRef.current) {
+      // Use the scroll container directly instead of scrollIntoView to prevent full page scroll
+      const scrollContainer = scrollAreaRef.current;
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
       setIsInitialLoad(false);
     }
   }, [messages, userScrolledUp, isInitialLoad]);
@@ -1007,7 +1009,7 @@ export default function Messages() {
                   );
                 })
               )}
-              <div ref={messagesEndRef} />
+              {/* Removed messagesEndRef - using scrollAreaRef directly now */}
             </div>
           </div>
 
