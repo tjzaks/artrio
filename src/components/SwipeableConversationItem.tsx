@@ -209,7 +209,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
               <p className="text-sm text-muted-foreground truncate">
                 {conversation.last_message || 'No messages yet'}
               </p>
-              {conversation.unread_count && conversation.unread_count > 0 && (
+              {conversation.unread_count > 0 && (
                 <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
                   {conversation.unread_count}
                 </span>
