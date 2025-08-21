@@ -1356,10 +1356,11 @@ export default function Messages() {
 
           {/* Fixed Input Area - Rises with keyboard */}
           <div 
-            className="absolute left-0 right-0 border-t bg-background z-10 transition-all duration-300"
+            className="absolute left-0 right-0 border-t bg-background z-50 transition-all duration-300"
             style={{ 
               bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '0',
-              paddingBottom: keyboardHeight > 0 ? '0' : 'env(safe-area-inset-bottom)'
+              paddingBottom: keyboardHeight > 0 ? '0' : 'env(safe-area-inset-bottom)',
+              pointerEvents: 'auto'
             }}>
             {/* Media Menu Popup */}
             {showMediaMenu && (
@@ -1468,8 +1469,19 @@ export default function Messages() {
                 <button 
                   type="submit" 
                   disabled={sending || !newMessage.trim()}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  style={{ touchAction: 'manipulation' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!sending && newMessage.trim()) {
+                      sendMessage();
+                    }
+                  }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity z-10"
+                  style={{ 
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
+                    pointerEvents: 'auto'
+                  }}
                 >
                   <ArrowUp className="h-5 w-5" />
                 </button>
