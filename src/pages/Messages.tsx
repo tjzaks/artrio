@@ -671,8 +671,8 @@ export default function Messages() {
         .from('stories')
         .getPublicUrl(fileName);
 
-      // Send message with image
-      const { data, error } = await supabase
+      // Send message with image - try with image_url first
+      let { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: selectedConversation.id,
@@ -683,6 +683,24 @@ export default function Messages() {
         })
         .select()
         .single();
+
+      // If image_url column doesn't exist, try without it
+      if (error && error.message.includes('column')) {
+        console.log('image_url column not available, sending photo URL in content');
+        const fallbackResult = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: selectedConversation.id,
+            sender_id: user?.id,
+            content: `📷 Photo: ${publicUrl}`,
+            is_read: false
+          })
+          .select()
+          .single();
+        
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
 
@@ -1171,15 +1189,15 @@ export default function Messages() {
                           </div>
                         ) : (
                           <>
-                            {message.image_url ? (
+                            {message.image_url || (message.content && message.content.includes('Photo: http')) ? (
                               <div className="space-y-2">
                                 <img 
-                                  src={message.image_url} 
+                                  src={message.image_url || message.content.split('Photo: ')[1]} 
                                   alt="Shared photo" 
-                                  className="rounded-lg max-w-[200px] max-h-[200px] object-cover"
-                                  onClick={() => window.open(message.image_url, '_blank')}
+                                  className="rounded-lg max-w-[200px] max-h-[200px] object-cover cursor-pointer"
+                                  onClick={() => window.open(message.image_url || message.content.split('Photo: ')[1], '_blank')}
                                 />
-                                {message.content && message.content !== '📷 Photo' && (
+                                {message.content && !message.content.includes('Photo: http') && message.content !== '📷 Photo' && (
                                   <p className="text-sm">{message.content}</p>
                                 )}
                               </div>
