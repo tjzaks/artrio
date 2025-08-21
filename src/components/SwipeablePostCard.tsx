@@ -347,7 +347,7 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-40 bg-background/95 backdrop-blur-sm border-border">
               {post.user_id === currentUserId && (
                 <>
                   <DropdownMenuItem onClick={handleEdit}>
@@ -392,7 +392,7 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
 
         {/* Reply input field */}
         {showReplyField && !userHasReplied && (
-          <div className="ml-11 space-y-2 animate-in slide-in-from-top-2">
+          <div className="ml-11 space-y-2">
             <Textarea
               placeholder="Add a comment..."
               value={replyContent}
