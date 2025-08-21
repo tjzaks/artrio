@@ -1,21 +1,28 @@
 import { useToast } from "@/hooks/use-toast"
 import {
-  Toast,
   ToastClose,
   ToastDescription,
   ToastProvider,
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { SwipeableToast } from "@/components/ui/swipeable-toast"
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts, dismiss } = useToast()
 
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props}>
+          <SwipeableToast 
+            key={id} 
+            {...props}
+            onSwipeAway={() => dismiss(id)}
+            onOpenChange={(open) => {
+              if (!open) dismiss(id);
+            }}
+          >
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
@@ -24,7 +31,7 @@ export function Toaster() {
             </div>
             {action}
             <ToastClose />
-          </Toast>
+          </SwipeableToast>
         )
       })}
       <ToastViewport />
