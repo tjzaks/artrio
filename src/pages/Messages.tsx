@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Send, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, ArrowUp, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
 import { SwipeableConversationItem } from '@/components/SwipeableConversationItem';
@@ -1194,14 +1194,14 @@ export default function Messages() {
                 disabled={sending}
                 className="pr-12 rounded-full bg-muted/50"
               />
-              <Button 
+              <button 
                 type="submit" 
                 disabled={sending || !newMessage.trim()}
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full p-0 flex items-center justify-center bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                style={{ touchAction: 'manipulation' }}
               >
-                <Send className="h-4 w-4" />
-              </Button>
+                <ArrowUp className="h-5 w-5" />
+              </button>
             </form>
           </div>
         </div>

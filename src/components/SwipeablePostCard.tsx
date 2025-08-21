@@ -253,17 +253,16 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
   return (
     <Card className="content-card animate-slide-up overflow-hidden relative">
       <CardContent className="p-4 space-y-3">
-        {/* Delete button for posts - positioned behind content */}
+        {/* Delete button for posts - rounded style matching comments */}
         {post.user_id === currentUserId && (
-          <div
-            className={`absolute right-0 top-4 h-12 px-4 bg-red-500 text-white flex items-center transition-opacity ${
+          <button
+            onClick={handleDeletePost}
+            className={`absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-red-500 text-white flex items-center justify-center transition-opacity ${
               showDelete ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <button onClick={handleDeletePost} className="flex items-center">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+            <Trash2 className="h-5 w-5" />
+          </button>
         )}
         
         <div 
