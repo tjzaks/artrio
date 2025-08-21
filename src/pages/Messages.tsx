@@ -818,10 +818,10 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[100dvh] bg-background flex overflow-hidden">
+    <div className="h-[100dvh] bg-background flex overflow-hidden pt-safe">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
-        <header className="sticky top-0 z-40 bg-background p-4 pt-safe border-b flex-shrink-0">
+        <header className="bg-background p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -870,7 +870,7 @@ export default function Messages() {
       {/* Chat Area */}
       {selectedConversation ? (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <header className="sticky top-0 z-40 bg-background p-4 pt-safe border-b flex-shrink-0">
+          <header className="bg-background p-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <Button
