@@ -194,7 +194,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
           {!selectedImage ? (
             // Photo selection screen
             <div className="h-full flex flex-col bg-background">
-              <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center justify-between pt-safe px-4 pb-4 border-b">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -254,7 +254,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
               />
               
               {/* Top Controls */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-20">
+              <div className="absolute top-0 left-0 right-0 pt-safe px-4 pb-4 flex items-center justify-between z-20">
                 <Button
                   variant="ghost"
                   size="icon"
