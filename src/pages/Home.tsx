@@ -61,7 +61,7 @@ const Home = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isSubscribed } = useRealtimeNotifications();
+  useRealtimeNotifications();
   const { isUserOnline, getUserPresenceText, isUserCurrentlyActive } = usePresence();
   const [currentTrio, setCurrentTrio] = useState<Trio | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -712,11 +712,6 @@ const Home = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/artrio-text-logo.png" alt="Artrio" className="h-10 w-auto" />
-              {isSubscribed && (
-                <Badge className="badge-green text-xs px-2 py-0 pulse">
-                  Live
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-2">
               {userProfile && (
