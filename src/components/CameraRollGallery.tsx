@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { 
-  X, Camera as CameraIcon, ChevronDown, Loader2
+  X, Camera as CameraIcon, ChevronDown, Loader2, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PhotoLibrary, { Photo } from '@/plugins/PhotoLibrary';
@@ -22,16 +22,36 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
   const [offset, setOffset] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false); // Prevent race conditions
   
   const PHOTOS_PER_PAGE = 30;
+  const MAX_PHOTOS_IN_MEMORY = 150; // Prevent memory leaks
 
   useEffect(() => {
-    if (Capacitor.getPlatform() === 'ios') {
-      loadPhotos(true);
-    } else {
-      // For web/other platforms, just show camera option
-      setLoading(false);
-    }
+    console.log('🎯 CameraRollGallery mounted, platform:', Capacitor.getPlatform());
+    
+    const initializeGallery = async () => {
+      if (Capacitor.getPlatform() === 'ios') {
+        // Check if we already have permission by trying to load
+        // The Swift plugin will handle permission state
+        await loadPhotos(true);
+      } else if (Capacitor.getPlatform() === 'web') {
+        // For web platform, show file input fallback
+        setLoading(false);
+        setNeedsPermission(false);
+      } else {
+        // For other platforms
+        setLoading(false);
+      }
+    };
+    
+    initializeGallery();
+    
+    // Cleanup on unmount
+    return () => {
+      setPhotos([]);
+      isLoadingRef.current = false;
+    };
   }, []);
 
   // Infinite scroll observer
@@ -53,6 +73,7 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
   }, [hasMore, loadingMore, loading, offset]);
 
   const loadPhotos = async (initial = false) => {
+    console.log('📸 loadPhotos called, initial:', initial);
     try {
       if (initial) {
         setLoading(true);
@@ -60,29 +81,53 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
         setPhotos([]);
       }
       
+      console.log('📸 Calling PhotoLibrary.loadRecentPhotos...');
       const result = await PhotoLibrary.loadRecentPhotos({ 
         count: PHOTOS_PER_PAGE, 
         offset: 0 
       });
       
+      console.log('📸 PhotoLibrary result:', {
+        photosCount: result.photos?.length || 0,
+        needsPermission: result.needsPermission,
+        permissionDenied: result.permissionDenied,
+        hasMore: result.hasMore
+      });
+      
       if (result.needsPermission) {
+        console.log('🚫 Need permission, denied:', result.permissionDenied);
         setNeedsPermission(true);
         setPermissionDenied(result.permissionDenied || false);
-      } else {
-        console.log(`Loaded ${result.photos.length} photos from device`);
+        setLoading(false);
+      } else if (result.photos && result.photos.length > 0) {
+        console.log(`✅ Loaded ${result.photos.length} photos from device`);
         setPhotos(result.photos);
         setHasMore(result.hasMore || false);
         setOffset(result.photos.length);
+        setNeedsPermission(false);
+      } else {
+        console.log('⚠️ No photos returned from PhotoLibrary');
+        // This might mean we need permission
+        setHasMore(false);
+        // Check if it's really empty or permission issue
+        if (!result.photos || result.photos.length === 0) {
+          console.log('🚫 No photos - might be permission issue');
+          // Don't set needsPermission here - trust the plugin's response
+        }
       }
     } catch (error) {
-      console.error('Error loading photos:', error);
+      console.error('❌ Error loading photos:', error);
+      // On error, show permission screen as fallback
+      setNeedsPermission(true);
     } finally {
       setLoading(false);
     }
   };
 
   const loadMorePhotos = async () => {
-    if (loadingMore || !hasMore) return;
+    if (isLoadingRef.current || loadingMore || !hasMore) return;
+    
+    isLoadingRef.current = true;
     
     try {
       setLoadingMore(true);
@@ -92,7 +137,14 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
       });
       
       if (result.photos.length > 0) {
-        setPhotos(prev => [...prev, ...result.photos]);
+        setPhotos(prev => {
+          const newPhotos = [...prev, ...result.photos];
+          // Prevent memory overflow by limiting total photos
+          if (newPhotos.length > MAX_PHOTOS_IN_MEMORY) {
+            return newPhotos.slice(-MAX_PHOTOS_IN_MEMORY);
+          }
+          return newPhotos;
+        });
         setHasMore(result.hasMore || false);
         setOffset(prev => prev + result.photos.length);
       } else {
@@ -102,11 +154,29 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
       console.error('Error loading more photos:', error);
     } finally {
       setLoadingMore(false);
+      isLoadingRef.current = false;
     }
   };
   
   const requestPermission = async () => {
-    await loadPhotos(true);
+    console.log('📸 Requesting photo permission...');
+    try {
+      // First request Camera permissions which will trigger the iOS permission dialog
+      const permissions = await Camera.requestPermissions();
+      console.log('📸 Permission result:', permissions);
+      
+      if (permissions.photos === 'granted' || permissions.photos === 'limited') {
+        // Permission granted, now load photos
+        await loadPhotos(true);
+      } else {
+        console.log('📸 Permission denied');
+        setPermissionDenied(true);
+      }
+    } catch (error) {
+      console.error('📸 Error requesting permissions:', error);
+      // Try to load photos anyway
+      await loadPhotos(true);
+    }
   };
 
   const handleCameraCapture = async () => {
@@ -223,21 +293,68 @@ export default function CameraRollGallery({ onPhotoSelect, onClose }: CameraRoll
               <span className="text-xs text-gray-400">Camera</span>
             </button>
             
-            {/* Photo Grid */}
-            {photos.map((photo) => (
-              <button
-                key={photo.id}
-                onClick={() => handlePhotoTap(photo)}
-                className="aspect-square bg-gray-900 overflow-hidden hover:opacity-80 transition-opacity"
-              >
-                <img 
-                  src={`data:image/jpeg;base64,${photo.data}`}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+            {/* Web Fallback: File Upload Button */}
+            {Capacitor.getPlatform() === 'web' && (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  id="file-upload"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    files.forEach(file => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        if (reader.result) {
+                          onPhotoSelect(reader.result as string);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }}
                 />
-              </button>
-            ))}
+                <label
+                  htmlFor="file-upload"
+                  className="aspect-square bg-gray-900 flex flex-col items-center justify-center hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  <Upload className="h-8 w-8 text-gray-400 mb-1" />
+                  <span className="text-xs text-gray-400">Upload</span>
+                </label>
+              </>
+            )}
+            
+            {/* Photo Grid */}
+            {photos.length > 0 ? (
+              photos.map((photo) => (
+                <button
+                  key={photo.id}
+                  onClick={() => handlePhotoTap(photo)}
+                  className="aspect-square bg-gray-900 overflow-hidden hover:opacity-80 transition-opacity"
+                >
+                  <img 
+                    src={`data:image/jpeg;base64,${photo.data}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </button>
+              ))
+            ) : (
+              !loading && !loadingMore && Capacitor.getPlatform() === 'ios' && (
+                <div className="col-span-3 py-8 text-center">
+                  <p className="text-gray-400 text-sm mb-4">No photos found</p>
+                  <Button 
+                    onClick={() => loadPhotos(true)}
+                    variant="outline"
+                    className="text-white border-gray-600"
+                  >
+                    Retry Loading Photos
+                  </Button>
+                </div>
+              )
+            )}
             
             {/* Loading more indicator */}
             {loadingMore && (

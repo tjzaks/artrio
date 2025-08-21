@@ -1,12 +1,12 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.szakacsmedia.artrio',
+  appId: 'com.artrio.artrio',
   appName: 'Artrio',
   webDir: 'dist',
   server: {
     // IMPORTANT: 'capacitor' works on real devices, 'ionic' works in simulator
-    // Using 'capacitor' as it's more reliable on actual phones
+    // Using 'capacitor' for real device testing (simulators are unreliable)
     iosScheme: 'capacitor',
     androidScheme: 'https',
     // Allow connections to Supabase from iOS
