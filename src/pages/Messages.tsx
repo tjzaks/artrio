@@ -1066,7 +1066,6 @@ export default function Messages() {
                               value={editContent}
                               onChange={(e) => setEditContent(e.target.value)}
                               className="text-sm bg-background/10 border-none focus:ring-1 focus:ring-white/50"
-                              autoFocus
                             />
                             <div className="flex gap-2">
                               <button
@@ -1193,7 +1192,6 @@ export default function Messages() {
                   }
                 }}
                 disabled={sending}
-                autoFocus
                 className="pr-12 rounded-full bg-muted/50"
               />
               <Button 

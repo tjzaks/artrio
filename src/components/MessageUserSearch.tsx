@@ -171,7 +171,6 @@ export default function MessageUserSearch() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-9 h-9 rounded-lg bg-white/5 border border-white/10 focus:bg-white/10 focus:border-white/20 transition-all"
-            autoFocus
           />
           {searchQuery && (
             <button
