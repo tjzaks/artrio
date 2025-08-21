@@ -138,7 +138,7 @@ const SwipeableReply = memo(function SwipeableReply({
       {reply.user_id === currentUserId && (
         <button
           onClick={handleDelete}
-          className={`absolute right-0 top-0 h-full px-4 bg-red-500 text-white flex items-center transition-opacity ${
+          className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-red-500 text-white flex items-center justify-center transition-opacity ${
             showDelete ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
