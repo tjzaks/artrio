@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { User, Mail, Phone, Calendar, MapPin, Shield, Ban, AlertTriangle, MessageSquare, Users, Clock } from 'lucide-react';
+import { User, Mail, Phone, Calendar, MapPin, Shield, Ban, AlertTriangle, MessageSquare, Users, Clock, Heart, Sparkles, Coffee, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
@@ -32,6 +32,12 @@ interface UserProfile {
   is_banned: boolean;
   ban_reason: string | null;
   banned_at: string | null;
+  personality_type: string | null;
+  vibes: string[] | null;
+  friend_type: string | null;
+  excited_about: string | null;
+  conversation_style: string | null;
+  chat_time: string | null;
 }
 
 interface UserAccountInfo {
@@ -39,6 +45,8 @@ interface UserAccountInfo {
   birthday: string | null;
   age: number | null;
   last_sign_in: string | null;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 interface UserActivity {
@@ -67,54 +75,77 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
     setLoading(true);
     try {
       // Fetch profile data
+      console.log('🔍 Fetching profile data for user:', userId);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
 
+      console.log('🔍 Profile data response:', { profileData, profileError });
+
       if (profileError) throw profileError;
       setProfile(profileData);
+      console.log('✅ Profile data set successfully:', profileData);
 
       // Fetch auth user data (email) using admin RPC function
       let authUser: any = null;
       try {
+        console.log('🔍 Fetching auth data for user:', userId);
         const { data: authData, error: authError } = await supabase
           .rpc('admin_get_user_email', { target_user_id: userId });
         
+        console.log('🔍 Admin get user email response:', { authData, authError });
+        
         if (!authError && authData && !authData.error) {
           authUser = authData;
+          console.log('✅ Auth user data fetched successfully:', authUser);
         } else {
+          console.log('⚠️ Primary admin function failed, trying fallback...');
           // Fallback to the old function if new one doesn't exist yet
           const { data: userData, error: fallbackError } = await supabase
             .rpc('get_user_email_for_admin', { target_user_id: userId });
           
+          console.log('🔍 Fallback function response:', { userData, fallbackError });
+          
           if (!fallbackError && userData && userData.length > 0) {
             authUser = userData[0];
+            console.log('✅ Fallback auth data fetched:', authUser);
           }
         }
       } catch (error) {
+        console.error('❌ Error fetching auth user data:', error);
         logger.warn('Could not fetch auth user data:', error);
       }
       
       // Fetch sensitive data (birthday) - try admin function first
       let sensitiveData: any = null;
       try {
-        const { data: sensitiveResponse } = await supabase
+        console.log('🔍 Fetching sensitive data for user:', userId);
+        const { data: sensitiveResponse, error: sensitiveError } = await supabase
           .rpc('admin_get_sensitive_data', { target_user_id: userId });
+        
+        console.log('🔍 Sensitive data response:', { sensitiveResponse, sensitiveError });
         
         if (sensitiveResponse && !sensitiveResponse.error) {
           sensitiveData = sensitiveResponse;
+          console.log('✅ Sensitive data fetched successfully:', sensitiveData);
         }
       } catch (error) {
+        console.log('⚠️ Admin sensitive data function failed, trying direct query...');
         // Fallback to direct query (will only work for own data)
-        const { data: fallbackData } = await supabase
+        const { data: fallbackData, error: fallbackError } = await supabase
           .from('sensitive_user_data')
           .select('birthday')
           .eq('user_id', userId)
           .maybeSingle();
         
+        console.log('🔍 Direct sensitive data query:', { fallbackData, fallbackError });
+        
         sensitiveData = fallbackData;
+        if (fallbackData) {
+          console.log('✅ Fallback sensitive data fetched:', sensitiveData);
+        }
       }
       
       if (authUser || sensitiveData) { // Continue if we have any data
@@ -137,7 +168,9 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
           email: authUser?.email || 'Unable to load',
           birthday: sensitiveData?.birthday || null,
           age: age,
-          last_sign_in: authUser?.last_sign_in_at || null
+          last_sign_in: authUser?.last_sign_in_at || null,
+          first_name: authUser?.user_metadata?.first_name || authUser?.raw_user_meta_data?.first_name || null,
+          last_name: authUser?.user_metadata?.last_name || authUser?.raw_user_meta_data?.last_name || null
         });
       }
 
@@ -175,6 +208,88 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
     }
     return phone;
+  };
+
+  const formatVibes = (vibes: string[] | null): string => {
+    if (!vibes || vibes.length === 0) return 'Not provided';
+    return vibes.map(vibe => {
+      // Convert database values back to readable labels
+      const vibeLabels: Record<string, string> = {
+        'creative': '🎨 Creative soul',
+        'gamer': '🎮 Gamer at heart',
+        'bookworm': '📚 Book nerd',
+        'fitness': '🏃 Fitness enthusiast',
+        'music': '🎵 Music lover',
+        'foodie': '🍕 Foodie',
+        'tech': '💻 Tech wizard',
+        'adventure': '🌍 Adventure seeker'
+      };
+      return vibeLabels[vibe] || vibe;
+    }).join(', ');
+  };
+
+  const formatFriendType = (friendType: string | null): string => {
+    if (!friendType) return 'Not provided';
+    const friendTypeLabels: Record<string, string> = {
+      'snacks': 'Always has snacks 🍿',
+      'tea': 'Knows all the tea ☕',
+      'planner': 'Plans the adventures 🗺️',
+      'advisor': 'Gives the best advice 💭',
+      'comedian': 'Makes everyone laugh 😂',
+      'dj': 'DJs the road trips 🎵'
+    };
+    return friendTypeLabels[friendType] || friendType;
+  };
+
+  const formatConversationStyle = (style: string | null): string => {
+    if (!style) return 'Not provided';
+    const styleLabels: Record<string, string> = {
+      'facts': '🎲 Random fun facts',
+      'deep': '🤔 Deep questions',
+      'memes': '😂 Memes & jokes',
+      'hottakes': '💭 Hot takes',
+      'advice': '🎯 Life advice'
+    };
+    return styleLabels[style] || style;
+  };
+
+  const formatChatTime = (chatTime: string | null): string => {
+    if (!chatTime) return 'Not provided';
+    const timeLabels: Record<string, string> = {
+      'earlybird': 'Early bird 🌅 (6am-12pm)',
+      'afternoon': 'Afternoon vibes ☀️ (12pm-6pm)',
+      'nightowl': 'Night owl 🦉 (6pm-12am)',
+      'vampire': 'Vampire hours 🦇 (12am-6am)'
+    };
+    return timeLabels[chatTime] || chatTime;
+  };
+
+  const formatPersonalityType = (type: string | null): string => {
+    if (!type) return 'Not provided';
+    // Convert the value back to a readable label
+    const personalityLabels: Record<string, string> = {
+      'creative': 'Creative soul',
+      'gamer': 'Gamer at heart',
+      'bookworm': 'Book nerd',
+      'fitness': 'Fitness enthusiast',
+      'music': 'Music lover',
+      'foodie': 'Foodie',
+      'tech': 'Tech wizard',
+      'adventurer': 'Adventure seeker',
+      'movie': 'Movie buff',
+      'nature': 'Nature lover',
+      'fashionista': 'Fashion forward',
+      'comedian': 'Class clown',
+      'athlete': 'Sports fanatic',
+      'social': 'Social butterfly',
+      'introvert': 'Homebody',
+      'nightowl': 'Night owl',
+      'earlybird': 'Early bird',
+      'wanderlust': 'World traveler',
+      'pet': 'Pet parent',
+      'coffee': 'Coffee addict'
+    };
+    return personalityLabels[type] || type;
   };
 
   const handleBanUser = async () => {
@@ -400,6 +515,73 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                         Last Sign In: {accountInfo?.last_sign_in ? format(new Date(accountInfo.last_sign_in), 'PPP') : 'Never'}
                       </span>
                     </div>
+                    {(accountInfo?.first_name || accountInfo?.last_name) && (
+                      <div className="flex items-start gap-2">
+                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <span className="text-sm break-words">
+                          Real Name: {[accountInfo?.first_name, accountInfo?.last_name].filter(Boolean).join(' ') || 'Not provided'}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Signup Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
+                        Personality Type: {formatPersonalityType(profile?.personality_type)}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Heart className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
+                        Vibes: {formatVibes(profile?.vibes)}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
+                        Friend Type: {formatFriendType(profile?.friend_type)}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
+                        Conversation Style: {formatConversationStyle(profile?.conversation_style)}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-sm break-words">
+                        Best Chat Time: {formatChatTime(profile?.chat_time)}
+                      </span>
+                    </div>
+                    {profile?.excited_about && (
+                      <div className="flex items-start gap-2">
+                        <Zap className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <div className="text-sm break-words">
+                          <div className="font-medium mb-1">What they're excited about:</div>
+                          <div className="text-muted-foreground italic">"{profile.excited_about}"</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Debug information - only show in development */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mt-4 p-2 bg-muted/50 rounded text-xs">
+                        <div className="font-medium mb-1">Debug Info:</div>
+                        <div>Profile fields available: {profile ? Object.keys(profile).join(', ') : 'No profile data'}</div>
+                        <div>Auth user available: {accountInfo?.email ? 'Yes' : 'No'}</div>
+                        <div>Sensitive data available: {accountInfo?.birthday ? 'Yes' : 'No'}</div>
+                        <div>User ID: {userId}</div>
+                        <div>Profile ID: {profile?.id}</div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
