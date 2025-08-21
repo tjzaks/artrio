@@ -708,7 +708,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
-      <header className="sticky top-0 z-40 navigation-glass">
+      <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
