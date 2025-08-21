@@ -184,7 +184,7 @@ export default function Friends() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background border-b p-4">
+      <header className="sticky safe-top z-40 bg-background border-b p-4 pt-safe">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 

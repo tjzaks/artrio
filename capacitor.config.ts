@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Artrio',
   webDir: 'dist',
   server: {
-    iosScheme: 'https',  // Changed from 'capacitor' to fix network requests
+    iosScheme: 'ionic',  // Using 'ionic' scheme which handles CORS better
     androidScheme: 'https',
     // Allow connections to Supabase from iOS Simulator
     allowNavigation: ['*'],  // Allow all for debugging

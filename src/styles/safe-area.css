@@ -9,8 +9,8 @@
 
 /* Global fix: Add safe area padding to the entire app */
 #root {
-  /* Remove top padding - will be handled by individual components */
-  /* padding-top: env(safe-area-inset-top); */
+  /* Apply top padding globally - pages should not override this */
+  padding-top: env(safe-area-inset-top);
   /* Bottom padding for home indicator */
   padding-bottom: env(safe-area-inset-bottom);
   /* Side padding for landscape orientation */
@@ -19,6 +19,11 @@
   /* Ensure full height */
   min-height: 100vh;
   min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* IMPORTANT: Prevent any child from breaking out of safe area */
+#root > * {
+  max-width: 100%;
 }
 
 /* For pages that need to opt-out of root padding */

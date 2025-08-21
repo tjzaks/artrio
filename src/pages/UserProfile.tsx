@@ -409,7 +409,7 @@ const UserProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3">
+        <header className="sticky safe-top z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3 pt-safe">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-8 px-2">
               <ArrowLeft className="h-4 w-4" />
@@ -441,7 +441,7 @@ const UserProfile = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3">
+        <header className="sticky safe-top z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3 pt-safe">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="h-8 px-2">
               <ArrowLeft className="h-4 w-4" />

@@ -12,6 +12,17 @@ export function IOSConnectionTest() {
     setIsRunning(true);
     setTests({});
 
+    // Test 0: Show current URL scheme
+    const currentUrl = window.location.href;
+    const urlScheme = currentUrl.split('://')[0];
+    setTests(prev => ({
+      ...prev,
+      urlScheme: {
+        status: 'pending',
+        message: `Current: ${urlScheme}:// (href: ${currentUrl.substring(0, 30)}...)`
+      }
+    }));
+
     // Test 1: Check if we're in iOS app
     const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
     setTests(prev => ({
