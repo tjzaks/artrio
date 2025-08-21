@@ -296,15 +296,18 @@ export default function Messages() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   useEffect(() => {
-    // Always scroll to bottom on initial load or conversation change
-    // Only auto-scroll for new messages if user hasn't scrolled up
-    if ((isInitialLoad || !userScrolledUp) && scrollAreaRef.current) {
-      // Use the scroll container directly instead of scrollIntoView to prevent full page scroll
-      const scrollContainer = scrollAreaRef.current;
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      setIsInitialLoad(false);
+    // Only scroll to bottom on initial conversation load, not on every message update
+    if (isInitialLoad && messages.length > 0 && scrollAreaRef.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current;
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+        setIsInitialLoad(false);
+      }, 100);
     }
-  }, [messages, userScrolledUp, isInitialLoad]);
+  }, [selectedConversation?.id]); // Only trigger on conversation change, not message updates
   
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const element = e.currentTarget;
@@ -663,6 +666,14 @@ export default function Messages() {
 
       // Add message to local state immediately
       setMessages(prev => [...prev, data]);
+      
+      // Scroll to bottom after sending a message
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current;
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }, 50);
       
       // Don't reload conversations immediately - let real-time handle it
       // This prevents the conversation list from jumping around

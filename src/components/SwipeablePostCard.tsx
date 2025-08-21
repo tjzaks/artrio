@@ -347,7 +347,15 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="bottom" className="w-40 bg-background/95 backdrop-blur-sm border-border">
+            <DropdownMenuContent 
+              align="end" 
+              side="bottom" 
+              className="w-40 bg-background/95 backdrop-blur-sm border-border"
+              style={{ 
+                animation: 'none !important',
+                transition: 'none !important',
+                transform: 'none !important'
+              }}>
               {post.user_id === currentUserId && (
                 <>
                   <DropdownMenuItem onClick={handleEdit}>
