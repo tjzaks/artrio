@@ -202,7 +202,7 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
   
   const handleTouchEnd = () => {
     if (showDelete) {
-      setTranslateX(-100);
+      setTranslateX(-80);
     } else {
       setTranslateX(0);
       setShowDelete(false);
@@ -251,10 +251,23 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
   };
 
   return (
-    <Card className="content-card animate-slide-up overflow-hidden">
+    <Card className="content-card animate-slide-up overflow-hidden relative">
       <CardContent className="p-4 space-y-3">
+        {/* Delete button for posts - positioned behind content */}
+        {post.user_id === currentUserId && (
+          <div
+            className={`absolute right-0 top-4 h-12 px-4 bg-red-500 text-white flex items-center transition-opacity ${
+              showDelete ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <button onClick={handleDeletePost} className="flex items-center">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        
         <div 
-          className="relative flex items-start gap-3 transition-transform duration-200"
+          className="relative flex items-start gap-3 transition-transform duration-200 bg-background"
           style={{ transform: `translateX(${translateX}px)` }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -312,19 +325,6 @@ const SwipeablePostCard = memo(function SwipeablePostCard({
             )}
           </button>
         </div>
-        
-        {/* Delete button for posts */}
-        {post.user_id === currentUserId && (
-          <button
-            onClick={handleDeletePost}
-            className={`absolute right-0 top-4 h-12 px-4 bg-red-500 text-white flex items-center transition-opacity ${
-              showDelete ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-            style={{ transform: 'translateX(100px)' }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
 
         {/* Replies */}
         {localReplies.length > 0 && (
