@@ -14,28 +14,19 @@ if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.e
 }
 
 // Debug for iOS Simulator issues
-console.log('💾 SIMULATOR DEBUG: Supabase client initializing...');
-console.log('💾 SIMULATOR DEBUG: SUPABASE_URL:', SUPABASE_URL);
-console.log('💾 SIMULATOR DEBUG: Has ANON_KEY:', !!SUPABASE_PUBLISHABLE_KEY);
 
 if (typeof window !== 'undefined') {
-  console.log('💾 SIMULATOR DEBUG: Window available');
-  console.log('💾 SIMULATOR DEBUG: User Agent:', window.navigator.userAgent);
-  console.log('💾 SIMULATOR DEBUG: Platform:', window.navigator.platform);
-  console.log('💾 SIMULATOR DEBUG: localStorage available:', !!localStorage);
   
   if (window.navigator?.userAgent?.includes('Artrio iOS App')) {
     console.log('🔧 iOS App detected - Supabase URL:', SUPABASE_URL);
     console.log('🔧 User Agent:', window.navigator.userAgent);
   }
 } else {
-  console.log('💾 SIMULATOR DEBUG: Window not available (SSR?)');
 }
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-console.log('💾 SIMULATOR DEBUG: About to create Supabase client...');
 
 let supabase: any;
 
@@ -56,25 +47,18 @@ try {
     }
   });
   
-  console.log('💾 SIMULATOR DEBUG: Supabase client created successfully');
   
   // Test basic connectivity for iOS Simulator
   if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
-    console.log('💾 SIMULATOR DEBUG: Testing basic connectivity...');
     
     // Test fetch to Google (basic network test)
     fetch('https://www.google.com', { mode: 'no-cors' })
-      .then(() => console.log('💾 SIMULATOR DEBUG: ✅ Network connectivity OK'))
-      .catch(err => console.error('💾 SIMULATOR DEBUG: ❌ Network connectivity FAILED:', err));
     
     // Test Supabase URL accessibility
     fetch(SUPABASE_URL, { mode: 'no-cors' })
-      .then(() => console.log('💾 SIMULATOR DEBUG: ✅ Supabase URL reachable'))
-      .catch(err => console.error('💾 SIMULATOR DEBUG: ❌ Supabase URL unreachable:', err));
   }
   
 } catch (error) {
-  console.error('💾 SIMULATOR DEBUG: ❌ FAILED TO CREATE SUPABASE CLIENT:', error);
   throw error;
 }
 

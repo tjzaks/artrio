@@ -19,7 +19,6 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children, onLoadingChange }: { children: ReactNode; onLoadingChange?: (loading: boolean) => void }) {
-  console.log('🔑 SIMULATOR DEBUG: AuthProvider initializing...');
   
   // Initialize states without localStorage (will load async)
   const [user, setUser] = useState<User | null>(null);
@@ -29,7 +28,6 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
   const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
   const userRef = useRef<User | null>(null);
 
-  console.log('🔑 SIMULATOR DEBUG: AuthProvider states initialized');
 
   // Notify parent of loading changes
   useEffect(() => {
@@ -40,18 +38,13 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
 
   // Load stored auth state on mount
   useEffect(() => {
-    console.log('🔑 SIMULATOR DEBUG: Starting loadStoredAuth useEffect...');
     
     const loadStoredAuth = async () => {
       try {
-        console.log('🔑 SIMULATOR DEBUG: Loading stored auth data...');
         const storedUser = await storage.getItem('artrio-auth-user');
         const storedSession = await storage.getItem('artrio-auth-session');
         const storedAdmin = await storage.getItem('artrio-is-admin');
         
-        console.log('🔑 SIMULATOR DEBUG: Stored user:', !!storedUser);
-        console.log('🔑 SIMULATOR DEBUG: Stored session:', !!storedSession);
-        console.log('🔑 SIMULATOR DEBUG: Stored admin:', storedAdmin);
         
         if (storedUser) {
           setUser(JSON.parse(storedUser));
@@ -65,11 +58,9 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
         
         // Only set loading false if no stored user (wait for auth check otherwise)
         if (!storedUser) {
-          console.log('🔑 SIMULATOR DEBUG: No stored user, setting loading to false');
           setLoading(false);
         }
       } catch (error) {
-        console.error('🔑 SIMULATOR DEBUG: Error loading stored auth:', error);
         logger.error('Error loading stored auth:', error);
         setLoading(false);
       }
@@ -79,15 +70,11 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
   }, []);
 
   useEffect(() => {
-    console.log('🔑 SIMULATOR DEBUG: Setting up Supabase auth listener...');
     
     try {
       // Set up auth state listener FIRST
-      console.log('🔑 SIMULATOR DEBUG: Creating auth state listener...');
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('🔑 SIMULATOR DEBUG: Auth state changed - event:', event);
-          console.log('🔑 SIMULATOR DEBUG: Auth state changed - session:', !!session);
           
           setSession(session);
           setUser(session?.user ?? null);
@@ -121,9 +108,7 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
     );
 
     // THEN check for existing session
-    console.log('🔑 SIMULATOR DEBUG: About to call supabase.auth.getSession()...');
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('🔑 SIMULATOR DEBUG: getSession completed - session:', !!session);
       setSession(session);
       setUser(session?.user ?? null);
       userRef.current = session?.user ?? null;
@@ -139,12 +124,10 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
       
       setLoading(false);
     }).catch((error) => {
-      console.error('🔑 SIMULATOR DEBUG: getSession failed:', error);
       setLoading(false);
     });
 
     } catch (error) {
-      console.error('🔑 SIMULATOR DEBUG: Error setting up auth:', error);
       setLoading(false);
     }
 
@@ -292,7 +275,6 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
       const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
       
       if (isIOSApp) {
-        console.log('📱 iOS SIMULATOR DEBUG - Sign In Attempt');
         console.log('📱 Email:', email);
         console.log('📱 Supabase client exists:', !!supabase);
         console.log('📱 Supabase auth exists:', !!supabase?.auth);
