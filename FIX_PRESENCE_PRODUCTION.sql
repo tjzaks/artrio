@@ -13,10 +13,20 @@ ON profiles(user_id, is_online, last_seen);
 
 -- Step 3: Enable realtime for profiles table
 -- This is CRITICAL - without this, presence updates won't broadcast
-BEGIN;
-ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS profiles;
-ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
-COMMIT;
+-- First check if table is already in publication, then add if not
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND tablename = 'profiles'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+        RAISE NOTICE 'Added profiles table to realtime publication';
+    ELSE
+        RAISE NOTICE 'Profiles table already in realtime publication';
+    END IF;
+END $$;
 
 -- Step 4: Fix RLS policies for presence updates
 -- Drop all old presence policies
