@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, Clock, Check, X } from 'lucide-react';
+import { ArrowLeft, UserPlus, Clock, Check, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,15 +41,25 @@ export default function Friends() {
   const [activeTab, setActiveTab] = useState('friends');
 
   useEffect(() => {
+    console.log('[FRIENDS] useEffect triggered, user:', user);
     if (user) {
       loadFriends();
       loadFriendRequests();
+    } else {
+      console.error('[FRIENDS] No user in auth context');
+      setLoading(false);
     }
   }, [user]);
 
   const loadFriends = async () => {
     try {
       console.log('[FRIENDS] Loading friends for user:', user?.id);
+      
+      if (!user?.id) {
+        console.error('[FRIENDS] No user ID available');
+        setLoading(false);
+        return;
+      }
       
       // Get user's profile ID
       const { data: userProfile, error: profileError } = await supabase
@@ -60,8 +70,15 @@ export default function Friends() {
 
       console.log('[FRIENDS] User profile:', userProfile, 'Error:', profileError);
       
+      if (profileError) {
+        console.error('[FRIENDS] Profile error:', profileError.message, profileError.details);
+        setLoading(false);
+        return;
+      }
+      
       if (!userProfile) {
         console.error('[FRIENDS] No user profile found');
+        setLoading(false);
         return;
       }
 
@@ -99,6 +116,13 @@ export default function Friends() {
       }
     } catch (error) {
       console.error('[FRIENDS] Error loading friends:', error);
+      toast({
+        title: 'Error loading friends',
+        description: 'Please check your connection and try again',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -236,16 +260,31 @@ export default function Friends() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 bg-background border-b p-4 pt-safe">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-xl font-bold">Friends</h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log('[FRIENDS] Manual refresh triggered');
+              setLoading(true);
+              loadFriends();
+              loadFriendRequests();
+            }}
+            disabled={loading}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          <h1 className="text-xl font-bold">Friends</h1>
         </div>
       </header>
 
@@ -262,7 +301,13 @@ export default function Friends() {
           </TabsList>
 
           <TabsContent value="friends" className="space-y-4">
-            {friends.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">Loading friends...</p>
+                </CardContent>
+              </Card>
+            ) : friends.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
                   <p className="text-muted-foreground">No friends yet</p>
