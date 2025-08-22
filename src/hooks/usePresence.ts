@@ -61,19 +61,30 @@ export function usePresence() {
 
     // Update user's own presence in database
     const updateOwnPresence = async (isOnline: boolean) => {
+      console.log(`[PRESENCE-DEBUG] Attempting to update presence for ${user.id} to ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .update({
             is_online: isOnline,
             last_seen: new Date().toISOString()
           })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select()
+          .single();
         
         if (error) {
-          console.error('Error updating presence:', error);
+          console.error('[PRESENCE-ERROR] Database update failed:', {
+            error,
+            userId: user.id,
+            attempted: isOnline
+          });
         } else {
-          console.log(`[PRESENCE-DB] Updated ${user.id}: ${isOnline ? 'ONLINE' : 'OFFLINE'} at ${new Date().toISOString()}`);
+          console.log(`[PRESENCE-SUCCESS] Updated ${user.id}:`, {
+            isOnline: data?.is_online,
+            lastSeen: data?.last_seen,
+            username: data?.username
+          });
         }
       } catch (error) {
         console.error('Error updating presence:', error);
