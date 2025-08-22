@@ -222,6 +222,41 @@ Launched application with com.artrio.artrio bundle identifier.
 3. Build succeeds but no app → Skip to Step 4 (Manual install)
 4. Everything fails → Use COMPLETE REBUILD WORKFLOW
 
+## The Tyler Protocol: Systematic Engineering Approach
+
+**ALWAYS follow this approach - no exceptions:**
+
+### Audit → Plan → Execute → Verify
+
+1. **AUDIT** - Document what exists, understand the current state
+   - Check all file imports/dependencies
+   - Document technical debt
+   - Understand the mess before touching anything
+
+2. **PLAN** - Write out exactly what we're going to do
+   - Create detailed action items
+   - Identify risks and dependencies
+   - Document the intended outcome
+
+3. **EXECUTE** - Do it systematically
+   - Make atomic commits at each step
+   - Never delete without verification
+   - Keep changes focused and reversible
+
+4. **VERIFY** - Check that nothing broke
+   - Run grep for imports before deleting
+   - Test the app after changes
+   - Run verification scripts
+   - Ensure no regressions
+
+**Example from Tyler's actual work:**
+- Created TECHNICAL_DEBT_AUDIT.md (Audit)
+- Wrote SURGICAL_REFACTOR_PROMPT.md (Plan)
+- Ran QUICK_CLEANUP.sh (Execute)
+- Used VERIFY_REFACTOR.sh (Verify)
+
+**This is how senior engineers work. No cowboy coding. No "delete first, ask questions later."**
+
 ## Challenge Analysis Protocol
 
 - When I say "tackle this challenge", follow a systematic architectural audit:
