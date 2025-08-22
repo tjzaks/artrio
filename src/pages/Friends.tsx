@@ -49,75 +49,126 @@ export default function Friends() {
 
   const loadFriends = async () => {
     try {
+      console.log('[FRIENDS] Loading friends for user:', user?.id);
+      
       // Get user's profile ID
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user?.id)
         .single();
 
-      if (!userProfile) return;
+      console.log('[FRIENDS] User profile:', userProfile, 'Error:', profileError);
+      
+      if (!userProfile) {
+        console.error('[FRIENDS] No user profile found');
+        return;
+      }
 
-      // Get accepted friendships
-      const { data: friendships } = await supabase
+      // Get accepted friendships - simplified query first
+      const { data: friendships, error: friendshipError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio),
-          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('status', 'accepted')
         .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
 
-      if (friendships) {
-        const friendsList = friendships.map(f => {
-          // Return the friend (not the current user)
-          return f.user_id === userProfile.id ? f.friend : f.user;
-        });
-        setFriends(friendsList);
+      console.log('[FRIENDS] Friendships query result:', friendships, 'Error:', friendshipError);
+
+      if (friendships && friendships.length > 0) {
+        // Get the profile IDs of friends
+        const friendProfileIds = friendships.map(f => 
+          f.user_id === userProfile.id ? f.friend_id : f.user_id
+        );
+        
+        console.log('[FRIENDS] Friend profile IDs:', friendProfileIds);
+        
+        // Fetch the profiles of friends
+        const { data: friendProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio, is_online')
+          .in('id', friendProfileIds);
+        
+        console.log('[FRIENDS] Friend profiles:', friendProfiles, 'Error:', profilesError);
+        
+        if (friendProfiles) {
+          setFriends(friendProfiles);
+        }
+      } else {
+        console.log('[FRIENDS] No friendships found');
+        setFriends([]);
       }
     } catch (error) {
-      console.error('Error loading friends:', error);
+      console.error('[FRIENDS] Error loading friends:', error);
     }
   };
 
   const loadFriendRequests = async () => {
     try {
+      console.log('[FRIENDS] Loading friend requests for user:', user?.id);
+      
       // Get user's profile ID
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user?.id)
         .single();
 
+      console.log('[FRIENDS] Profile for requests:', userProfile, 'Error:', profileError);
+      
       if (!userProfile) return;
 
-      // Get pending requests TO this user
-      const { data: received } = await supabase
+      // Get pending requests TO this user - simplified query
+      const { data: received, error: receivedError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          user:profiles!friendships_user_id_fkey(id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('friend_id', userProfile.id)
         .eq('status', 'pending');
+      
+      console.log('[FRIENDS] Received requests:', received, 'Error:', receivedError);
 
-      if (received) {
-        setPendingRequests(received.map(r => ({ ...r, requester: r.user })));
-      }
-
-      // Get pending requests FROM this user
-      const { data: sent } = await supabase
+      // Get pending requests FROM this user - simplified query
+      const { data: sent, error: sentError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          friend:profiles!friendships_friend_id_fkey(id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('user_id', userProfile.id)
         .eq('status', 'pending');
+      
+      console.log('[FRIENDS] Sent requests:', sent, 'Error:', sentError);
 
-      if (sent) {
-        setSentRequests(sent.map(r => ({ ...r, requested: r.friend })));
+      // Fetch profiles for received requests
+      if (received && received.length > 0) {
+        const requesterIds = received.map(r => r.user_id);
+        const { data: requesterProfiles } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio')
+          .in('id', requesterIds);
+        
+        const receivedWithProfiles = received.map(req => ({
+          ...req,
+          requester: requesterProfiles?.find(p => p.id === req.user_id)
+        }));
+        
+        setPendingRequests(receivedWithProfiles);
+      } else {
+        setPendingRequests([]);
+      }
+
+      // Fetch profiles for sent requests
+      if (sent && sent.length > 0) {
+        const requestedIds = sent.map(s => s.friend_id);
+        const { data: requestedProfiles } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio')
+          .in('id', requestedIds);
+        
+        const sentWithProfiles = sent.map(req => ({
+          ...req,
+          requested: requestedProfiles?.find(p => p.id === req.friend_id)
+        }));
+        
+        setSentRequests(sentWithProfiles);
+      } else {
+        setSentRequests([]);
       }
     } catch (error) {
       console.error('Error loading friend requests:', error);
