@@ -15,7 +15,6 @@ import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
-import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
@@ -72,7 +71,6 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [mediaUrl, setMediaUrl] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [showHealthCheck, setShowHealthCheck] = useState(false);
   const [inQueue, setInQueue] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
@@ -132,7 +130,7 @@ const Home = () => {
     const handleKeydown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
         e.preventDefault();
-        setShowHealthCheck(!showHealthCheck);
+        // Health check removed - was unused
       }
       // Refresh shortcut: Cmd/Ctrl + R
       if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
@@ -145,7 +143,7 @@ const Home = () => {
     
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [showHealthCheck, unreadMessages, pendingFriendRequests, user]);
+  }, [unreadMessages, pendingFriendRequests, user]);
 
   useEffect(() => {
     if (!canPost && secondsUntilNextPost > 0) {
@@ -712,7 +710,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">

@@ -42,30 +42,56 @@ export default function Friends() {
 
   useEffect(() => {
     console.log('[FRIENDS] useEffect triggered, user:', user);
-    if (user) {
-      loadFriends();
-      loadFriendRequests();
-    } else {
-      console.error('[FRIENDS] No user in auth context');
-      setLoading(false);
-    }
+    
+    // Add a small delay on mount to ensure auth is ready
+    const loadData = async () => {
+      // First verify we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user || user) {
+        console.log('[FRIENDS] Session ready, loading data');
+        await loadFriends();
+        await loadFriendRequests();
+      } else {
+        console.error('[FRIENDS] No session available yet');
+        // Retry once after a short delay
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (retrySession?.user) {
+            console.log('[FRIENDS] Session ready on retry');
+            await loadFriends();
+            await loadFriendRequests();
+          } else {
+            setLoading(false);
+          }
+        }, 1000);
+      }
+    };
+    
+    loadData();
   }, [user]);
 
   const loadFriends = async () => {
     try {
       console.log('[FRIENDS] Loading friends for user:', user?.id);
       
-      if (!user?.id) {
-        console.error('[FRIENDS] No user ID available');
+      // Double-check we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || user?.id;
+      
+      if (!currentUserId) {
+        console.error('[FRIENDS] No user ID available from session or context');
         setLoading(false);
         return;
       }
+      
+      console.log('[FRIENDS] Using user ID:', currentUserId);
       
       // Get user's profile ID
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUserId)
         .single();
 
       console.log('[FRIENDS] User profile:', userProfile, 'Error:', profileError);
@@ -130,11 +156,20 @@ export default function Friends() {
     try {
       console.log('[FRIENDS] Loading friend requests for user:', user?.id);
       
+      // Double-check we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || user?.id;
+      
+      if (!currentUserId) {
+        console.error('[FRIENDS] No user ID for friend requests');
+        return;
+      }
+      
       // Get user's profile ID
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUserId)
         .single();
 
       console.log('[FRIENDS] Profile for requests:', userProfile, 'Error:', profileError);
