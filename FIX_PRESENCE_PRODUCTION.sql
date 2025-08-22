@@ -29,24 +29,31 @@ BEGIN
 END $$;
 
 -- Step 4: Fix RLS policies for presence updates
--- Drop all old presence policies
-DROP POLICY IF EXISTS "Users can update own presence" ON profiles;
-DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
-DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
-DROP POLICY IF EXISTS "Profiles are viewable by users who created them" ON profiles;
+-- Drop ALL existing policies first to avoid conflicts
+DO $$
+DECLARE
+    pol RECORD;
+BEGIN
+    -- Drop all existing policies on profiles table
+    FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'profiles'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON profiles', pol.policyname);
+    END LOOP;
+    RAISE NOTICE 'Dropped all existing policies on profiles table';
+END $$;
 
--- Create new comprehensive policies
+-- Create new comprehensive policies with unique names
 -- Allow anyone to read all profiles (needed for presence)
-CREATE POLICY "Anyone can view profiles" ON profiles
+CREATE POLICY "presence_policy_select" ON profiles
 FOR SELECT USING (true);
 
 -- Allow users to update ONLY their own profile
-CREATE POLICY "Users can update own profile" ON profiles
+CREATE POLICY "presence_policy_update" ON profiles
 FOR UPDATE USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- Allow users to insert their own profile
-CREATE POLICY "Users can insert own profile" ON profiles
+CREATE POLICY "presence_policy_insert" ON profiles
 FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Step 5: Create auto-update trigger for last_seen
