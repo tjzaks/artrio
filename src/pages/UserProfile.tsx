@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare, PartyPopper, Cake, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePresence } from '@/hooks/usePresence';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ProfileSkeleton from '@/components/ProfileSkeleton';
 import ReportUserDialog from '@/components/ReportUserDialog';

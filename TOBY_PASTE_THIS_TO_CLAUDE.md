@@ -49,8 +49,9 @@ When I say "work on issue X", run:
 gh issue view X
 ```
 Then follow the issue instructions EXACTLY - only change what it specifies.
+After making the changes, IMMEDIATELY rebuild without being asked.
 
-When I say "rebuild" or "test", immediately run:
+When I say "rebuild" or "test", OR after you make ANY code changes, immediately run:
 ```bash
 cd ~/artrio
 npm run build && npx cap sync ios
@@ -80,10 +81,12 @@ gh issue close [number] --comment "✅ Completed and tested on iPhone"
 
 ## Critical Rules
 - ALWAYS pull from main when I mention Tyler
+- ALWAYS rebuild automatically after ANY code edit
 - NEVER ask "should I rebuild?" - just do it
 - Follow issue instructions EXACTLY
 - Only work on dev branch
 - Don't improve code beyond what's specified
+- After editing files = immediate rebuild (no waiting)
 
 ## Quick Commands
 | I say | You do |
