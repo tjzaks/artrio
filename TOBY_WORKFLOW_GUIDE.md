@@ -55,12 +55,23 @@ Please help me complete this task exactly as specified. Follow the step-by-step 
 ## Completing Tasks
 
 ### 1. Test Everything
-Before marking complete, always run:
+
+#### For Web-Only Tasks:
 ```bash
 npm run lint
 npm run build
 npm run dev  # Then test in browser
 ```
+
+#### For iOS Tasks (labeled 'ios'):
+Just say to Claude: "rebuild and reinstall on my phone"
+Then test the fix on your actual iPhone!
+
+Claude will automatically:
+- Build the code
+- Sync with iOS
+- Install on your iPhone
+- Launch the app
 
 ### 2. Commit Your Changes
 ```bash
@@ -137,9 +148,14 @@ gh issue view 3
 # 4. Claude makes the changes
 
 # 5. Test it
+# For web tasks:
 npm run lint
 npm run build
 npm run dev
+
+# For iOS tasks, just say:
+"rebuild and reinstall on my phone"
+# Then test on your actual iPhone!
 
 # 6. Commit
 git add -A
@@ -188,10 +204,19 @@ git reset --hard HEAD
 - [ ] Check assigned issues
 - [ ] Pick one labeled "easy" 
 - [ ] Complete it with Claude Code
-- [ ] Test everything
+- [ ] Test everything (browser OR iPhone)
 - [ ] Commit and push
 - [ ] Close the issue
 - [ ] Pick the next one!
+
+## iPhone Testing Setup (One Time)
+
+1. Connect your iPhone to your Mac via USB
+2. Tell Claude: "Help me find my iPhone device ID"
+3. Save the ID Claude finds
+4. Now you can test any iOS issue on your real phone!
+
+After setup, just say "rebuild and reinstall on my phone" and Claude does everything!
 
 ## Success Metrics
 
