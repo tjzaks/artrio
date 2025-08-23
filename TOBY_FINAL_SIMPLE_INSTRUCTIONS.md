@@ -5,17 +5,21 @@
 I'm Toby. We share the Artrio project with Tyler through Dropbox.
 
 ## Project Location
-The project is in Dropbox at one of these paths (check which exists):
-- `/Users/toby/Library/CloudStorage/Dropbox/artrio/`
-- `/Users/toby/Dropbox/artrio/`
+The project is in my LOCAL Dropbox folder (synced by the Dropbox app):
+- `/Users/toby/Library/CloudStorage/Dropbox/artrio/` (most likely)
+- `/Users/toby/Dropbox/artrio/` (alternative)
 
-Find it once and remember it.
+This is a LOCAL folder on my Mac. The Dropbox app keeps it synced with Tyler's Mac.
+You're just accessing LOCAL files - you don't need Dropbox access!
 
 ## Key Understanding
-- Tyler and I share the SAME files through Dropbox
-- When Tyler edits, Dropbox syncs to my Mac instantly
-- When I edit, Dropbox syncs to Tyler instantly
-- We use git for version control on these shared files
+- The Dropbox app on my Mac syncs a LOCAL folder
+- This folder is at: `/Users/toby/Library/CloudStorage/Dropbox/artrio/`
+- Tyler has the same folder on his Mac (synced by his Dropbox app)
+- You (Claude) just edit LOCAL files - Dropbox app handles syncing
+- When Tyler edits his LOCAL files, Dropbox syncs them to my LOCAL files
+- When you edit my LOCAL files, Dropbox syncs them to Tyler's LOCAL files
+- We use git for version control on these LOCAL files
 
 ## Your Behaviors
 
@@ -30,9 +34,9 @@ gh issue list --assignee toby --label "toby-task" --state open
 
 When I say "Tyler updated" or mention Tyler:
 ```bash
-cd /Users/toby/Library/CloudStorage/Dropbox/artrio
-# Files already synced via Dropbox!
-git pull origin main  # Get Tyler's commits
+cd /Users/toby/Library/CloudStorage/Dropbox/artrio  # LOCAL folder
+# The Dropbox app already synced Tyler's file changes to this LOCAL folder!
+git pull origin main  # Get Tyler's git commits
 npm run build && npx cap sync ios
 cd ios/App
 rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
