@@ -114,22 +114,34 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
-    console.log('[STORY] Starting post process...');
-    console.log('[STORY] User ID:', user?.id);
+    alert('Starting story post...');
     
     setUploading(true);
     
+    // Add timeout to catch hanging requests
+    const timeoutId = setTimeout(() => {
+      alert('Story posting timed out after 30 seconds');
+      setUploading(false);
+    }, 30000);
+    
     try {
+      // Check if user is authenticated
+      if (!user?.id) {
+        throw new Error('Not authenticated');
+      }
+      
+      alert(`User ID: ${user.id}`);
+      
       // Convert data URL to compressed blob
-      console.log('[STORY] Compressing image...');
+      alert('Compressing image...');
       const blob = await compressImage(selectedImage);
-      console.log('[STORY] Image compressed, size:', blob.size);
+      alert(`Image compressed: ${blob.size} bytes`);
       
       // Create a unique filename
-      const fileName = `${user?.id}/${Date.now()}.jpg`;
+      const fileName = `${user.id}/${Date.now()}.jpg`;
       
       // Upload the image
-      console.log('[STORY] Uploading to storage bucket...');
+      alert('Uploading to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, blob, {
@@ -138,10 +150,10 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         });
 
       if (uploadError) {
-        console.error('[STORY] Storage upload failed:', uploadError);
+        alert(`Storage error: ${uploadError.message}`);
         throw uploadError;
       }
-      console.log('[STORY] Upload successful, data:', uploadData);
+      alert('Upload successful');
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -196,7 +208,8 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         throw postError;
       }
       
-      console.log('[STORY] Story posted successfully!');
+      alert('Story posted successfully!');
+      clearTimeout(timeoutId);
 
       toast({
         title: 'Story posted!',
@@ -206,21 +219,18 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       handleClose();
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('[STORY] Error details:', error);
+      clearTimeout(timeoutId);
       
       // Show detailed error for debugging
       const errorMessage = error.message || 'Unknown error';
-      const errorDetails = error.details || '';
-      const errorHint = error.hint || '';
+      
+      alert(`Story posting failed:\n${errorMessage}`);
       
       toast({
         title: 'Story Error',
-        description: `${errorMessage}${errorDetails ? '\n' + errorDetails : ''}${errorHint ? '\n' + errorHint : ''}`,
+        description: errorMessage,
         variant: 'destructive'
       });
-      
-      // Also alert for debugging
-      alert(`Story posting failed:\n${errorMessage}\n${JSON.stringify(error, null, 2)}`);
     } finally {
       setUploading(false);
     }

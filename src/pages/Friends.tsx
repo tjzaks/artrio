@@ -71,6 +71,40 @@ export default function Friends() {
     loadData();
   }, [user]);
 
+  // Subscribe to real-time presence updates for friends
+  useEffect(() => {
+    if (!user || friends.length === 0) return;
+
+    // Subscribe to presence updates for all friends
+    const channel = supabase
+      .channel('friends-presence')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=in.(${friends.map(f => f.user_id).join(',')})`
+        },
+        (payload) => {
+          console.log('[FRIENDS] Presence update:', payload);
+          // Update the friend's online status in state
+          setFriends(prev => 
+            prev.map(friend => 
+              friend.user_id === payload.new.user_id
+                ? { ...friend, is_online: payload.new.is_online }
+                : friend
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, friends.length]);
+
   const loadFriends = async () => {
     try {
       console.log('[FRIENDS] Loading friends for user:', user?.id);
