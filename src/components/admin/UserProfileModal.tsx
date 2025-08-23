@@ -57,7 +57,7 @@ interface UserActivity {
   lastActive: string | null;
 }
 
-export default function UserProfileModal({ userId, isOpen, onClose }: UserProfileModalProps) {
+function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [accountInfo, setAccountInfo] = useState<UserAccountInfo | null>(null);
   const [activity, setActivity] = useState<UserActivity | null>(null);
@@ -74,6 +74,7 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
     
     setLoading(true);
     try {
+      console.log('🔍 Starting fetchUserData for userId:', userId);
       // Fetch profile data
       console.log('🔍 Fetching profile data for user:', userId);
       const { data: profileData, error: profileError } = await supabase
@@ -92,6 +93,8 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       let authUser: any = null;
       try {
         console.log('🔍 Fetching auth data for user:', userId);
+        console.log('🔍 Current user (should be admin):', await supabase.auth.getUser());
+        
         const { data: authData, error: authError } = await supabase
           .rpc('admin_get_user_email', { target_user_id: userId });
         
@@ -101,16 +104,23 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
           authUser = authData;
           console.log('✅ Auth user data fetched successfully:', authUser);
         } else {
-          console.log('⚠️ Primary admin function failed, trying fallback...');
+          console.log('⚠️ Primary admin function failed, trying fallback...', { authError, authData });
           // Fallback to the old function if new one doesn't exist yet
-          const { data: userData, error: fallbackError } = await supabase
-            .rpc('get_user_email_for_admin', { target_user_id: userId });
-          
-          console.log('🔍 Fallback function response:', { userData, fallbackError });
-          
-          if (!fallbackError && userData && userData.length > 0) {
-            authUser = userData[0];
-            console.log('✅ Fallback auth data fetched:', authUser);
+          try {
+            const { data: userData, error: fallbackError } = await supabase
+              .rpc('get_user_email_for_admin', { target_user_id: userId });
+            
+            console.log('🔍 Fallback function response:', { userData, fallbackError });
+            
+            if (!fallbackError && userData && userData.length > 0) {
+              authUser = userData[0];
+              console.log('✅ Fallback auth data fetched:', authUser);
+            } else {
+              console.log('❌ Both admin functions failed:', { authError, fallbackError });
+              logger.error('Both admin functions failed', { authError, fallbackError });
+            }
+          } catch (fallbackError) {
+            console.error('❌ Fallback function threw error:', fallbackError);
           }
         }
       } catch (error) {
@@ -127,52 +137,71 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
         
         console.log('🔍 Sensitive data response:', { sensitiveResponse, sensitiveError });
         
-        if (sensitiveResponse && !sensitiveResponse.error) {
+        if (!sensitiveError && sensitiveResponse && !sensitiveResponse.error) {
           sensitiveData = sensitiveResponse;
           console.log('✅ Sensitive data fetched successfully:', sensitiveData);
+        } else {
+          console.log('⚠️ Admin sensitive data function failed, trying direct query...', { sensitiveError, sensitiveResponse });
         }
       } catch (error) {
-        console.log('⚠️ Admin sensitive data function failed, trying direct query...');
-        // Fallback to direct query (will only work for own data)
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('sensitive_user_data')
-          .select('birthday')
-          .eq('user_id', userId)
-          .maybeSingle();
-        
-        console.log('🔍 Direct sensitive data query:', { fallbackData, fallbackError });
-        
-        sensitiveData = fallbackData;
-        if (fallbackData) {
-          console.log('✅ Fallback sensitive data fetched:', sensitiveData);
+        console.error('❌ Admin sensitive data function threw error:', error);
+      }
+      
+      // Try direct query as fallback if admin function failed
+      if (!sensitiveData) {
+        try {
+          console.log('🔍 Trying direct query to sensitive_user_data...');
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('sensitive_user_data')
+            .select('birthday')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          console.log('🔍 Direct sensitive data query:', { fallbackData, fallbackError });
+          
+          if (!fallbackError && fallbackData) {
+            sensitiveData = fallbackData;
+            console.log('✅ Fallback sensitive data fetched:', sensitiveData);
+          } else {
+            console.log('❌ Direct query also failed:', { fallbackError });
+          }
+        } catch (directError) {
+          console.error('❌ Direct query threw error:', directError);
         }
       }
       
-      if (authUser || sensitiveData) { // Continue if we have any data
-
-        // Use age from backend if available, otherwise calculate it
-        let age = sensitiveData?.age || null;
-        
-        // Fallback: Calculate age if not provided by backend
-        if (!age && sensitiveData?.birthday) {
-          const birthDate = new Date(sensitiveData.birthday);
+      // Always set account info, even if we couldn't get all the data
+      // Use age from backend if available, otherwise calculate it
+      let age = sensitiveData?.age || null;
+      let birthdayToUse = sensitiveData?.birthday || authUser?.raw_user_meta_data?.birthday || null;
+      
+      // Calculate age if we have a birthday but no age
+      if (!age && birthdayToUse) {
+        try {
+          const birthDate = new Date(birthdayToUse);
           const today = new Date();
           age = today.getFullYear() - birthDate.getFullYear();
           const monthDiff = today.getMonth() - birthDate.getMonth();
           if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
             age--;
           }
+          console.log('🎂 Calculated age:', age, 'from birthday:', birthdayToUse);
+        } catch (error) {
+          console.error('❌ Error calculating age:', error, 'birthday:', birthdayToUse);
         }
-
-        setAccountInfo({
-          email: authUser?.email || 'Unable to load',
-          birthday: sensitiveData?.birthday || null,
-          age: age,
-          last_sign_in: authUser?.last_sign_in_at || null,
-          first_name: authUser?.user_metadata?.first_name || authUser?.raw_user_meta_data?.first_name || null,
-          last_name: authUser?.user_metadata?.last_name || authUser?.raw_user_meta_data?.last_name || null
-        });
       }
+
+      const accountData = {
+        email: authUser?.email || 'Unable to load - admin functions may need setup',
+        birthday: sensitiveData?.birthday || authUser?.raw_user_meta_data?.birthday || null,
+        age: age,
+        last_sign_in: authUser?.last_sign_in_at || null,
+        first_name: authUser?.raw_user_meta_data?.first_name || null,
+        last_name: authUser?.raw_user_meta_data?.last_name || null
+      };
+      
+      console.log('🔧 Setting account info:', accountData);
+      setAccountInfo(accountData);
 
       // Fetch activity stats
       const [
@@ -196,7 +225,18 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       });
 
     } catch (error) {
+      console.error('❌ Critical error in fetchUserData:', error);
       logger.error('Error fetching user data:', error);
+      
+      // Set some fallback data so the component doesn't crash
+      setAccountInfo({
+        email: 'Error loading email',
+        birthday: null,
+        age: null,
+        last_sign_in: null,
+        first_name: null,
+        last_name: null
+      });
     } finally {
       setLoading(false);
     }
@@ -494,7 +534,7 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
                     <div className="flex items-start gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                       <span className="text-sm break-words">
-                        Phone: {formatPhoneNumber(profile.phone_number)}
+                        Phone: {formatPhoneNumber(profile.phone_number || authUser?.phone)}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
@@ -669,4 +709,28 @@ export default function UserProfileModal({ userId, isOpen, onClose }: UserProfil
       </DialogContent>
     </Dialog>
   );
+}
+
+// Wrapper component with error boundary
+export default function UserProfileModal(props: UserProfileModalProps) {
+  try {
+    return <UserProfileModalContent {...props} />;
+  } catch (error) {
+    console.error('❌ UserProfileModal crashed:', error);
+    return (
+      <Dialog open={props.isOpen} onOpenChange={props.onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Error Loading User Profile</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 text-center">
+            <p className="text-muted-foreground mb-4">
+              Sorry, there was an error loading the user profile. Please try again.
+            </p>
+            <Button onClick={props.onClose}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 }
