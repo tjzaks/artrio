@@ -85,6 +85,12 @@ Example of good explanation:
 - **NOTIFY TOBY**: When pulling Tyler's changes, say something like:
   "Hey, I just grabbed Tyler's latest updates - you now have [describe what changed in simple terms]"
 
+**TOBY'S "CHECK GIT" COMMAND**:
+When Toby says "check git" or "check the latest":
+1. Review the ENTIRE artrio repo for any changes
+2. Act accordingly on what I find (pull updates, resolve conflicts, etc.)
+3. Tell Toby in simple terms what I discovered
+
 This is a standing instruction for all work in this repository.
 
 ## Project Overview
