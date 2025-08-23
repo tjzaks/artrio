@@ -206,11 +206,21 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       handleClose();
       if (onSuccess) onSuccess();
     } catch (error: any) {
+      console.error('[STORY] Error details:', error);
+      
+      // Show detailed error for debugging
+      const errorMessage = error.message || 'Unknown error';
+      const errorDetails = error.details || '';
+      const errorHint = error.hint || '';
+      
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to post story. Please try again.',
+        title: 'Story Error',
+        description: `${errorMessage}${errorDetails ? '\n' + errorDetails : ''}${errorHint ? '\n' + errorHint : ''}`,
         variant: 'destructive'
       });
+      
+      // Also alert for debugging
+      alert(`Story posting failed:\n${errorMessage}\n${JSON.stringify(error, null, 2)}`);
     } finally {
       setUploading(false);
     }

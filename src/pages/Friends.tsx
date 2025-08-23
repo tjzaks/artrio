@@ -365,12 +365,17 @@ export default function Friends() {
                           className="flex items-center gap-3 flex-1"
                           onClick={() => navigate(`/user/${friend.user_id}`)}
                         >
-                          <ClickableAvatar
-                            userId={friend.user_id}
-                            username={friend.username}
-                            avatarUrl={friend.avatar_url}
-                            size="md"
-                          />
+                          <div className="relative">
+                            <ClickableAvatar
+                              userId={friend.user_id}
+                              username={friend.username}
+                              avatarUrl={friend.avatar_url}
+                              size="md"
+                            />
+                            {friend.is_online && (
+                              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
+                            )}
+                          </div>
                           <div>
                             <p className="font-medium">@{friend.username}</p>
                             {friend.bio && (
