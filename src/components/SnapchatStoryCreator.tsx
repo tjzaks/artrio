@@ -114,11 +114,16 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
+    console.log('[STORY] Starting post process...');
+    console.log('[STORY] User ID:', user?.id);
+    
     setUploading(true);
     
     try {
       // Convert data URL to compressed blob
+      console.log('[STORY] Compressing image...');
       const blob = await compressImage(selectedImage);
+      console.log('[STORY] Image compressed, size:', blob.size);
       
       // Create a unique filename
       const fileName = `${user?.id}/${Date.now()}.jpg`;
@@ -136,12 +141,14 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         console.error('[STORY] Storage upload failed:', uploadError);
         throw uploadError;
       }
-      console.log('[STORY] Upload successful');
+      console.log('[STORY] Upload successful, data:', uploadData);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
+      
+      console.log('[STORY] Public URL:', publicUrl);
 
       // Get today's trio if user is in one (optional for stories)
       let trioId = null;
