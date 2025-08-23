@@ -758,7 +758,7 @@ const Home = () => {
                 <Avatar 
                   className={`h-7 w-7 transition-all duration-300 ${
                     user?.id && !isUserOnline(user.id) 
-                      ? 'grayscale opacity-50' 
+                      ? 'grayscale' 
                       : ''
                   }`}
                 >
@@ -766,14 +766,14 @@ const Home = () => {
                     src={userProfile?.avatar_url || undefined}
                     className={`${
                       user?.id && !isUserOnline(user.id) 
-                        ? 'grayscale opacity-60' 
+                        ? 'opacity-60' 
                         : ''
                     }`}
                   />
                   <AvatarFallback 
                     className={`text-xs ${
                       user?.id && !isUserOnline(user.id) 
-                        ? 'grayscale opacity-50' 
+                        ? 'opacity-60' 
                         : ''
                     }`}
                   >

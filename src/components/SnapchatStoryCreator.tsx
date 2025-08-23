@@ -114,39 +114,16 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
-    console.log('[STORY] Starting upload process...');
     setUploading(true);
     
     try {
       // Convert data URL to compressed blob
-      console.log('[STORY] Compressing image...');
       const blob = await compressImage(selectedImage);
-      console.log('[STORY] Image compressed, size:', blob.size);
       
       // Create a unique filename
       const fileName = `${user?.id}/${Date.now()}.jpg`;
-      console.log('[STORY] Filename:', fileName);
-      
-      // First, check if the bucket exists and create it if needed
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const storiesBucket = buckets?.find(b => b.name === 'stories');
-      
-      if (!storiesBucket) {
-        console.log('[STORY] Creating stories bucket...');
-        // Create the bucket with public access
-        const { error: createError } = await supabase.storage.createBucket('stories', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-        });
-        
-        if (createError && !createError.message.includes('already exists')) {
-          throw createError;
-        }
-      }
       
       // Upload the image
-      console.log('[STORY] Uploading to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, blob, {
@@ -155,39 +132,37 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         });
 
       if (uploadError) {
-        console.error('[STORY] Upload error:', uploadError);
         throw uploadError;
       }
-      console.log('[STORY] Upload successful:', uploadData);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
-      console.log('[STORY] Public URL:', publicUrl);
 
-      // For now, create a dummy trio_id since it's required in the database
-      // We'll use a special UUID that indicates this is a story without a trio
-      const STORY_PLACEHOLDER_TRIO = '00000000-0000-0000-0000-000000000000';
-      
-      // Try to get today's trio, but don't fail if none exists
-      console.log('[STORY] Checking for trio...');
-      const { data: todaysTrio } = await supabase
-        .from('trios')
-        .select('id')
-        .eq('date', new Date().toISOString().split('T')[0])
-        .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
-        .maybeSingle();
+      // Get today's trio if user is in one (optional for stories)
+      let trioId = null;
+      try {
+        const { data: todaysTrio } = await supabase
+          .from('trios')
+          .select('id')
+          .eq('date', new Date().toISOString().split('T')[0])
+          .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
+          .maybeSingle();
+        
+        if (todaysTrio?.id) {
+          trioId = todaysTrio.id;
+        }
+      } catch (error) {
+        // Trio is optional for stories, continue without it
+      }
 
-      console.log('[STORY] Trio found:', todaysTrio?.id || 'none - using placeholder');
-
-      // Create story post in database with caption position
-      console.log('[STORY] Creating post in database...');
-      const { data: postData, error: postError } = await supabase
+      // Create story post (trio_id is optional for stories)
+      const { data: insertedPost, error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,
-          trio_id: todaysTrio?.id || STORY_PLACEHOLDER_TRIO,  // Use placeholder if no trio
+          trio_id: trioId, // Can be null for stories
           content: caption || '📸',
           image_url: publicUrl,
           media_url: publicUrl,
@@ -201,10 +176,9 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         .single();
 
       if (postError) {
-        console.error('[STORY] Post error:', postError);
+        console.error('[STORY] Failed to post story:', postError);
         throw postError;
       }
-      console.log('[STORY] Post created successfully:', postData);
 
       toast({
         title: 'Story posted!',
@@ -214,10 +188,9 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       handleClose();
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('[STORY] Error posting story:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to post story',
+        description: error.message || 'Failed to post story. Please try again.',
         variant: 'destructive'
       });
     } finally {
@@ -262,72 +235,45 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
           {!selectedImage ? (
             // Photo selection screen
             <div className="h-full flex flex-col bg-background">
-              <div className="flex items-center justify-between pt-safe px-4 pb-4 border-b">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleClose}
-                >
+              <div className="flex items-center justify-between p-4">
+                <h2 className="text-xl font-semibold">Create Story</h2>
+                <Button variant="ghost" size="icon" onClick={handleClose}>
                   <X className="h-5 w-5" />
                 </Button>
-                <h2 className="font-semibold">Create Story</h2>
-                <div className="w-10" />
               </div>
               
-              <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
-                <div className="text-6xl mb-4">📸</div>
-                <h3 className="text-lg font-medium">Add to your story</h3>
-                <p className="text-muted-foreground text-center mb-6">
-                  Share a moment with your trios
-                </p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
+                <Button
+                  size="lg"
+                  className="w-full max-w-xs h-32 flex flex-col gap-3"
+                  variant="outline"
+                  onClick={takePhoto}
+                >
+                  <CameraIcon className="h-8 w-8" />
+                  <span>Take Photo</span>
+                </Button>
                 
-                <div className="w-full max-w-xs space-y-3">
-                  <Button
-                    onClick={takePhoto}
-                    className="w-full"
-                    size="lg"
-                  >
-                    <CameraIcon className="h-5 w-5 mr-2" />
-                    Take Photo
-                  </Button>
-                  
-                  <Button
-                    onClick={choosePhoto}
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                  >
-                    <ImageIcon className="h-5 w-5 mr-2" />
-                    Choose from Library
-                  </Button>
-                </div>
+                <Button
+                  size="lg"
+                  className="w-full max-w-xs h-32 flex flex-col gap-3"
+                  variant="outline"
+                  onClick={choosePhoto}
+                >
+                  <ImageIcon className="h-8 w-8" />
+                  <span>Choose from Gallery</span>
+                </Button>
               </div>
             </div>
           ) : (
-            // Snapchat-style editor
-            <div 
-              ref={canvasRef}
-              className="relative h-full w-full overflow-hidden"
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              onTouchMove={handleDragMove}
-              onTouchEnd={handleDragEnd}
-            >
-              {/* Background Image */}
-              <img 
-                src={selectedImage}
-                alt="Story"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              
-              {/* Top Controls */}
-              <div className="absolute top-0 left-0 right-0 pt-safe px-4 pb-4 flex items-center justify-between z-20">
+            // Editing screen
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setSelectedImage(null)}
-                  className="bg-black/30 hover:bg-black/50 text-white"
+                  onClick={handleReset}
+                  className="text-white hover:bg-white/20"
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -337,74 +283,79 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowCaptionInput(!showCaptionInput)}
-                    className="bg-black/30 hover:bg-black/50 text-white"
+                    className="text-white hover:bg-white/20"
                   >
                     <Type className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
-              
-              {/* Draggable Caption */}
-              {caption && (
-                <div
-                  className="absolute left-0 right-0 flex justify-center px-4 cursor-move select-none"
-                  style={{ 
-                    top: `${captionPosition}%`,
-                    transform: 'translateY(-50%)'
-                  }}
-                  onMouseDown={handleDragStart}
-                  onTouchStart={handleDragStart}
-                >
-                  <div className="bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full max-w-[90%]">
-                    <p className="text-white text-center font-medium">
-                      {caption}
-                    </p>
+
+              {/* Canvas area */}
+              <div 
+                ref={canvasRef}
+                className="flex-1 relative overflow-hidden"
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+              >
+                <img 
+                  src={selectedImage} 
+                  alt="Story" 
+                  className="w-full h-full object-contain"
+                />
+                
+                {/* Caption overlay */}
+                {caption && (
+                  <div 
+                    className="absolute left-0 right-0 flex justify-center px-4"
+                    style={{ top: `${captionPosition}%`, transform: 'translateY(-50%)' }}
+                    onMouseDown={handleDragStart}
+                    onTouchStart={handleDragStart}
+                  >
+                    <div className="bg-black/70 text-white px-4 py-2 rounded-full max-w-[90%] cursor-move">
+                      <p className="text-center text-lg font-medium">{caption}</p>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {/* Caption Input (Snapchat-style) */}
+                )}
+              </div>
+
+              {/* Caption input */}
               {showCaptionInput && (
-                <div className="absolute bottom-20 left-0 right-0 px-4 z-30">
+                <div className="absolute bottom-20 left-0 right-0 p-4">
                   <input
                     type="text"
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
-                    placeholder="Add caption..."
-                    className="w-full bg-black/50 backdrop-blur-sm text-white placeholder-gray-400 px-4 py-3 rounded-full border border-white/20 focus:outline-none focus:border-white/40"
-                    maxLength={100}
+                    placeholder="Add a caption..."
+                    className="w-full bg-black/70 text-white px-4 py-3 rounded-full placeholder-white/60 outline-none"
                     autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setShowCaptionInput(false);
-                      }
-                    }}
                   />
                 </div>
               )}
-              
-              {/* Bottom Action Bar */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-between z-20">
-                <div className="flex-1" />
-                
+
+              {/* Bottom actions */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
                 <Button
+                  size="lg"
                   onClick={handlePost}
                   disabled={uploading}
-                  className="bg-white text-black hover:bg-gray-200 rounded-full px-6"
+                  className="w-full bg-white text-black hover:bg-gray-100"
                 >
-                  {uploading ? 'Posting...' : 'Share'}
-                  {!uploading && <Send className="h-4 w-4 ml-2" />}
+                  {uploading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full" />
+                      Posting...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Send className="h-4 w-4" />
+                      Share Story
+                    </span>
+                  )}
                 </Button>
               </div>
-              
-              {/* Drag Instruction */}
-              {caption && !isDragging && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                  <p className="text-white/50 text-xs animate-pulse">
-                    Drag text to reposition
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
