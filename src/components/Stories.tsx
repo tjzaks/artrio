@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import SnapchatStoryCreator from './SnapchatStoryCreator';
+import InstagramStoryCreator from './InstagramStoryCreator';
 
 interface Story {
   id: string;
@@ -395,7 +395,7 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       </div>
 
       {/* Story Creator */}
-      <SnapchatStoryCreator 
+      <InstagramStoryCreator 
         open={showUpload} 
         onClose={() => setShowUpload(false)}
         onSuccess={fetchStories}

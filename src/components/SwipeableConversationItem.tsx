@@ -40,6 +40,14 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
   const SWIPE_THRESHOLD = 60; // pixels to reveal delete button
   const DELETE_BUTTON_WIDTH = 80; // width of delete button
   
+  // Log presence status for debugging
+  useEffect(() => {
+    if (conversation.other_user) {
+      const online = isUserOnline(conversation.other_user.id);
+      console.log(`[CONVERSATION] ${conversation.other_user.username} is ${online ? '🟢 ONLINE' : '⚫ OFFLINE'}`);
+    }
+  }, [conversation.other_user, isUserOnline]);
+  
   // Check if we're on iOS
   const isIOS = () => {
     return Capacitor.getPlatform() === 'ios';
@@ -191,7 +199,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
               </Avatar>
             )}
             {conversation.other_user && isUserOnline(conversation.other_user.id) && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-background z-10" />
             )}
           </div>
           <div className="flex-1 min-w-0">

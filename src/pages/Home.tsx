@@ -15,10 +15,9 @@ import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
-import Stories from '@/components/Stories';
+import InstagramStories from '@/components/InstagramStories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
-import TestStoryButton from '@/components/TestStoryButton';
 
 interface Profile {
   id: string;
@@ -711,7 +710,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <TestStoryButton />
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
@@ -796,7 +794,7 @@ const Home = () => {
         </div>
         
         {/* Stories Bar */}
-        <Stories trioMemberIds={currentTrio?.profiles.map(p => p.user_id) || []} />
+        <InstagramStories />
       </header>
 
       <main className="p-4 space-y-4 pb-20">
