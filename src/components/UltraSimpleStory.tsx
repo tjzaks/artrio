@@ -57,7 +57,6 @@ export default function UltraSimpleStory() {
           post_type: 'story',
           media_url: publicUrl,
           media_type: 'image',
-          image_url: publicUrl,
           trio_id: null
         })
         .select()

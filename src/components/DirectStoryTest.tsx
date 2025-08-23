@@ -25,7 +25,6 @@ export default function DirectStoryTest() {
           post_type: 'story',
           media_url: 'https://via.placeholder.com/150',
           media_type: 'image',
-          image_url: 'https://via.placeholder.com/150',
           trio_id: null
         })
         .select()

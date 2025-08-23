@@ -99,7 +99,6 @@ export default function InstagramStoryCreator({ open, onClose, onSuccess }: Stor
           media_url: publicUrl,
           media_type: 'image',
           post_type: 'story',
-          image_url: publicUrl,
           trio_id: null
         });
       
