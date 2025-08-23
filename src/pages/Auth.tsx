@@ -284,11 +284,13 @@ const Auth = () => {
       }
 
       // Just use the username directly - let database handle uniqueness
+      const phoneToSend = phone ? phone.replace(/\D/g, '') : null;
+      console.log('📱 Auth.tsx - Phone being sent to signUp:', phoneToSend, 'from original:', phone);
       const { error } = await signUp(email, password, {
         username: username.toLowerCase(),
         birthday: format(birthday, 'yyyy-MM-dd'),
         bio: description || '',
-        phone: phone ? phone.replace(/\D/g, '') : undefined,
+        phone: phoneToSend,
         personality_type: personalityType,
         first_name: firstName,
         last_name: lastName
@@ -488,8 +490,16 @@ const Auth = () => {
 
   const validatePhone = (phoneNumber: string): boolean => {
     const digitsOnly = phoneNumber.replace(/\D/g, '');
-    if (digitsOnly.length < 7 || digitsOnly.length > 15) return false;
-    if (digitsOnly.length === 10 && (digitsOnly[0] === '0' || digitsOnly[0] === '1')) return false;
+    console.log('📱 validatePhone called with:', phoneNumber, 'digits only:', digitsOnly);
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      console.log('📱 Phone validation failed: length', digitsOnly.length);
+      return false;
+    }
+    if (digitsOnly.length === 10 && (digitsOnly[0] === '0' || digitsOnly[0] === '1')) {
+      console.log('📱 Phone validation failed: invalid area code');
+      return false;
+    }
+    console.log('📱 Phone validation passed');
     return true;
   };
 
@@ -515,7 +525,11 @@ const Auth = () => {
     switch (currentStepData?.fields[0]) {
       case 'name': return firstName && lastName;
       case 'email': return email;
-      case 'phone': return phone && validatePhone(phone);
+      case 'phone': {
+        const result = phone && validatePhone(phone);
+        console.log('📱 canProceed phone check - phone:', phone, 'validation:', validatePhone(phone), 'result:', result);
+        return result;
+      }
       case 'username': return username && username.length >= 3;
       case 'password': return password && password.length >= 6 && confirmPassword && password === confirmPassword;
       case 'birthday': return birthdayText;
