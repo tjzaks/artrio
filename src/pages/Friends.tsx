@@ -75,7 +75,9 @@ export default function Friends() {
   useEffect(() => {
     if (!user || friends.length === 0) return;
 
-    // Subscribe to presence updates for all friends
+    console.log('[FRIENDS] Setting up presence subscription for:', friends.map(f => f.username));
+
+    // Subscribe to ALL profile updates (simpler and more reliable)
     const channel = supabase
       .channel('friends-presence')
       .on(
@@ -83,27 +85,34 @@ export default function Friends() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'profiles',
-          filter: `user_id=in.(${friends.map(f => f.user_id).join(',')})`
+          table: 'profiles'
         },
-        (payload) => {
-          console.log('[FRIENDS] Presence update:', payload);
-          // Update the friend's online status in state
-          setFriends(prev => 
-            prev.map(friend => 
-              friend.user_id === payload.new.user_id
-                ? { ...friend, is_online: payload.new.is_online }
-                : friend
-            )
-          );
+        (payload: any) => {
+          // Check if this update is for one of our friends
+          const friendUserIds = friends.map(f => f.user_id);
+          if (friendUserIds.includes(payload.new.user_id)) {
+            console.log('[FRIENDS] Friend presence update:', payload.new.username, 'is_online:', payload.new.is_online);
+            
+            // Update the friend's online status in state
+            setFriends(prev => 
+              prev.map(friend => 
+                friend.user_id === payload.new.user_id
+                  ? { ...friend, is_online: payload.new.is_online, last_seen: payload.new.last_seen }
+                  : friend
+              )
+            );
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[FRIENDS] Subscription status:', status);
+      });
 
     return () => {
+      console.log('[FRIENDS] Cleaning up presence subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, friends.length]);
+  }, [user, friends]);
 
   const loadFriends = async () => {
     try {

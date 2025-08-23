@@ -114,34 +114,21 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
-    alert('Starting story post...');
-    
     setUploading(true);
-    
-    // Add timeout to catch hanging requests
-    const timeoutId = setTimeout(() => {
-      alert('Story posting timed out after 30 seconds');
-      setUploading(false);
-    }, 30000);
     
     try {
       // Check if user is authenticated
       if (!user?.id) {
-        throw new Error('Not authenticated');
+        throw new Error('Not authenticated - please sign in');
       }
       
-      alert(`User ID: ${user.id}`);
-      
       // Convert data URL to compressed blob
-      alert('Compressing image...');
       const blob = await compressImage(selectedImage);
-      alert(`Image compressed: ${blob.size} bytes`);
       
       // Create a unique filename
       const fileName = `${user.id}/${Date.now()}.jpg`;
       
-      // Upload the image
-      alert('Uploading to storage...');
+      // Upload the image to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, blob, {
@@ -150,17 +137,13 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         });
 
       if (uploadError) {
-        alert(`Storage error: ${uploadError.message}`);
         throw uploadError;
       }
-      alert('Upload successful');
 
-      // Get public URL
+      // Get public URL for the uploaded image
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
-      
-      console.log('[STORY] Public URL:', publicUrl);
 
       // Get today's trio if user is in one (optional for stories)
       let trioId = null;
@@ -169,7 +152,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
           .from('trios')
           .select('id')
           .eq('date', new Date().toISOString().split('T')[0])
-          .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id},user3_id.eq.${user.id}`)
           .maybeSingle();
         
         if (todaysTrio?.id) {
@@ -179,11 +162,11 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         // Trio is optional for stories, continue without it
       }
 
-      // Create story post (trio_id is optional for stories)
+      // Create story post in database
       const { data: insertedPost, error: postError } = await supabase
         .from('posts')
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           trio_id: trioId, // Can be null for stories
           content: caption || '📸',
           image_url: publicUrl,
@@ -198,18 +181,8 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         .single();
 
       if (postError) {
-        console.error('[STORY] Failed to post story:', postError);
-        console.error('[STORY] Post data was:', {
-          user_id: user?.id,
-          trio_id: trioId,
-          post_type: 'story',
-          media_url: publicUrl
-        });
         throw postError;
       }
-      
-      alert('Story posted successfully!');
-      clearTimeout(timeoutId);
 
       toast({
         title: 'Story posted!',
@@ -218,16 +191,25 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
 
       handleClose();
       if (onSuccess) onSuccess();
+      
     } catch (error: any) {
-      clearTimeout(timeoutId);
+      console.error('[STORY] Error:', error);
       
-      // Show detailed error for debugging
-      const errorMessage = error.message || 'Unknown error';
+      // Show user-friendly error message
+      let errorMessage = 'Failed to post story';
       
-      alert(`Story posting failed:\n${errorMessage}`);
+      if (error.message?.includes('Not authenticated')) {
+        errorMessage = 'Please sign in to post stories';
+      } else if (error.message?.includes('storage')) {
+        errorMessage = 'Failed to upload image. Please try again.';
+      } else if (error.message?.includes('posts')) {
+        errorMessage = 'Failed to save story. Please try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
       toast({
-        title: 'Story Error',
+        title: 'Error',
         description: errorMessage,
         variant: 'destructive'
       });
