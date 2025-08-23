@@ -10,10 +10,12 @@ export interface PhotoLibraryResponse {
   photos: Photo[];
   needsPermission?: boolean;
   permissionDenied?: boolean;
+  hasMore?: boolean;
+  totalCount?: number;
 }
 
 export interface PhotoLibraryPlugin {
-  loadRecentPhotos(options: { count?: number }): Promise<PhotoLibraryResponse>;
+  loadRecentPhotos(options: { count?: number; offset?: number }): Promise<PhotoLibraryResponse>;
   getFullImage(options: { identifier: string }): Promise<{ data: string }>;
 }
 

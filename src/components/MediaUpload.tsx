@@ -125,13 +125,13 @@ export default function MediaUpload({ onMediaUploaded, className = '' }: MediaUp
       const fileName = `${user.data.user.id}/${Date.now()}.${fileExt}`;
 
       const { data, error } = await supabase.storage
-        .from('post-media')
+        .from('stories')
         .upload(fileName, file);
 
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('post-media')
+        .from('stories')
         .getPublicUrl(data.path);
 
       onMediaUploaded(publicUrl, type);

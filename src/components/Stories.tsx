@@ -7,8 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import NativeStoryCreator from './NativeStoryCreator';
-import ClickableAvatar from './ClickableAvatar';
+import SnapchatStoryCreator from './SnapchatStoryCreator';
 
 interface Story {
   id: string;
@@ -207,16 +206,16 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
 
   return (
     <>
-      <div className="flex gap-2 p-4 overflow-x-auto border-b bg-background/50">
+      <div className="flex gap-4 p-4 overflow-x-auto border-b bg-background/50">
         {/* Add Story button */}
         <div 
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => setShowUpload(true)}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             {myStories.length > 0 ? (
               <Avatar 
-                className="h-16 w-16 ring-2 ring-offset-2 ring-primary cursor-pointer"
+                className="h-16 w-16 ring-2 ring-offset-4 ring-primary cursor-pointer transition-all group-hover:ring-4"
                 onClick={(e) => {
                   e.stopPropagation();
                   viewStory(myStories[0]);
@@ -226,7 +225,7 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
                 <AvatarFallback>You</AvatarFallback>
               </Avatar>
             ) : (
-              <Avatar className="h-16 w-16 border-2 border-dashed border-primary">
+              <Avatar className="h-16 w-16 border-2 border-dashed border-primary transition-all group-hover:border-4">
                 <AvatarFallback>
                   <Plus className="h-6 w-6" />
                 </AvatarFallback>
@@ -245,13 +244,13 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       {trioUserStories.map(userStory => (
         <div
           key={userStory.user_id}
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => viewStory(userStory.stories[0])}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             <Avatar className={cn(
-              "h-16 w-16 ring-2 ring-offset-2",
-              userStory.has_unviewed ? "ring-primary" : "ring-muted"
+              "h-16 w-16 ring-2 ring-offset-4 transition-all",
+              userStory.has_unviewed ? "ring-primary group-hover:ring-4" : "ring-muted group-hover:ring-2 group-hover:ring-primary/50"
             )}>
               <AvatarImage src={userStory.avatar_url} />
               <AvatarFallback>
@@ -274,13 +273,13 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       {friendUserStories.map(userStory => (
         <div
           key={userStory.user_id}
-          className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
+          className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           onClick={() => viewStory(userStory.stories[0])}
         >
-          <div className="relative">
+          <div className="relative transition-transform group-hover:scale-105">
             <Avatar className={cn(
-              "h-16 w-16 ring-2 ring-offset-2",
-              userStory.has_unviewed ? "ring-blue-500" : "ring-muted"
+              "h-16 w-16 ring-2 ring-offset-4 transition-all",
+              userStory.has_unviewed ? "ring-blue-500 group-hover:ring-4" : "ring-muted group-hover:ring-2 group-hover:ring-blue-500/50"
             )}>
               <AvatarImage src={userStory.avatar_url} />
               <AvatarFallback>
@@ -308,13 +307,12 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
             {/* Story header */}
             <div className="absolute top-0 left-0 right-0 p-4 z-10 bg-gradient-to-b from-black/50 to-transparent">
               <div className="flex items-center gap-2">
-                <ClickableAvatar
-                  userId={selectedStory.user_id}
-                  username={selectedStory.profiles.username}
-                  avatarUrl={selectedStory.profiles.avatar_url}
-                  size="md"
-                  showHoverEffect={false}
-                />
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={selectedStory.profiles.avatar_url} />
+                  <AvatarFallback>
+                    {selectedStory.profiles.username.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="text-white font-medium">
                   {selectedStory.profiles.username}
                 </span>
@@ -397,7 +395,7 @@ export default function Stories({ trioMemberIds = [] }: StoriesProps) {
       </div>
 
       {/* Story Creator */}
-      <NativeStoryCreator 
+      <SnapchatStoryCreator 
         open={showUpload} 
         onClose={() => setShowUpload(false)}
         onSuccess={fetchStories}

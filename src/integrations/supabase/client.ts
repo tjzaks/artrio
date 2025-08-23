@@ -13,24 +13,56 @@ if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.e
   logger.warn('⚠️ Using default Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env file.');
 }
 
+// Debug for iOS Simulator issues
+
+if (typeof window !== 'undefined') {
+  
+  if (window.navigator?.userAgent?.includes('Artrio iOS App')) {
+    console.log('🔧 iOS App detected - Supabase URL:', SUPABASE_URL);
+    console.log('🔧 User Agent:', window.navigator.userAgent);
+  }
+} else {
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'artrio-auth-token',
-    flowType: 'pkce'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
+
+let supabase: any;
+
+try {
+  supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: 'artrio-auth-token',
+      flowType: 'pkce'
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
     }
+  });
+  
+  
+  // Test basic connectivity for iOS Simulator
+  if (typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App')) {
+    
+    // Test fetch to Google (basic network test)
+    fetch('https://www.google.com', { mode: 'no-cors' })
+    
+    // Test Supabase URL accessibility
+    fetch(SUPABASE_URL, { mode: 'no-cors' })
   }
-});
+  
+} catch (error) {
+  throw error;
+}
+
+export { supabase };
 
 // Helper function to ensure user is authenticated before making RPC calls
 export const authenticatedRpc = async (functionName: string, args: any = {}) => {

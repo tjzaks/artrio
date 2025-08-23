@@ -90,7 +90,7 @@ const ResetPassword = () => {
 
   if (!isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="h-[100dvh] flex items-center justify-center bg-background p-4 overflow-hidden">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Invalid Link</CardTitle>
@@ -109,7 +109,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="h-[100dvh] flex items-center justify-center bg-background p-4 overflow-hidden">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">Reset Your Password</CardTitle>

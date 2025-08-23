@@ -7,6 +7,12 @@ PODS:
     - Capacitor
     - SDWebImage
   - CapacitorCordova (7.4.2)
+  - CapacitorKeyboard (7.0.2):
+    - Capacitor
+  - CapacitorSplashScreen (7.0.2):
+    - Capacitor
+  - CapacitorStatusBar (7.0.2):
+    - Capacitor
   - SDWebImage (5.21.1):
     - SDWebImage/Core (= 5.21.1)
   - SDWebImage/Core (5.21.1)
@@ -16,6 +22,9 @@ DEPENDENCIES:
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorCommunityMedia (from `../../node_modules/@capacitor-community/media`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
+  - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
+  - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
 
 SPEC REPOS:
   trunk:
@@ -30,14 +39,23 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor-community/media"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorKeyboard:
+    :path: "../../node_modules/@capacitor/keyboard"
+  CapacitorSplashScreen:
+    :path: "../../node_modules/@capacitor/splash-screen"
+  CapacitorStatusBar:
+    :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
   Capacitor: 9d9e481b79ffaeacaf7a85d6a11adec32bd33b59
   CapacitorCamera: f9e54db0a18bb218a8dc360907d63aaefe9209ff
   CapacitorCommunityMedia: d1538b56a3303298e7cf45a18b11e624fbcbdc8e
   CapacitorCordova: 5e58d04631bc5094894ac106e2bf1da18a9e6151
+  CapacitorKeyboard: a86aa9e4741b6444a802df26440a92ae041b34a6
+  CapacitorSplashScreen: 157947576b59d913792063a8d442a79e6d283ee5
+  CapacitorStatusBar: e04d05e121d5a5979c29eb4249186a4e4a84cacb
   SDWebImage: f29024626962457f3470184232766516dee8dfea
 
-PODFILE CHECKSUM: 89e275e88f5f4dd94d484bff6b297d5335dda150
+PODFILE CHECKSUM: 77744b8cce6a4831fe78e256cd3368d1dc39f92c
 
 COCOAPODS: 1.16.2

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, UserPlus, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface SearchResult {
   id: string;
@@ -19,14 +21,21 @@ interface SearchResult {
 export default function AddFriend() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Debounce search query for real-time search
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Search for users by username
-  const searchUsers = async () => {
-    if (!searchQuery.trim()) return;
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -41,7 +50,7 @@ export default function AddFriend() {
       const { data: results } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
-        .ilike('username', `%${searchQuery}%`)
+        .ilike('username', `%${query}%`)
         .neq('user_id', user?.id)
         .limit(10);
 
@@ -183,6 +192,20 @@ export default function AddFriend() {
     }
   };
 
+  // Search automatically when debounced query changes
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      searchUsers(debouncedSearchQuery);
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedSearchQuery]);
+
+  // Navigate to user profile when clicking on a result
+  const handleUserClick = (username: string) => {
+    navigate(`/user/${username}`);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -190,16 +213,19 @@ export default function AddFriend() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Search */}
-        <div className="flex gap-2">
+        <div className="relative">
           <Input
             placeholder="Search by username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
+            className="pl-9"
           />
-          <Button onClick={searchUsers} disabled={loading}>
-            <Search className="h-4 w-4" />
-          </Button>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {loading && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
         </div>
 
         {/* Search Results */}
@@ -208,7 +234,10 @@ export default function AddFriend() {
             <h3 className="font-medium text-sm text-muted-foreground">Search Results</h3>
             {searchResults.map(result => (
               <div key={result.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                  onClick={() => handleUserClick(result.username)}
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={result.avatar_url} />
                     <AvatarFallback>
@@ -243,7 +272,10 @@ export default function AddFriend() {
             <h3 className="font-medium text-sm text-muted-foreground">People You May Know</h3>
             {suggestions.map(suggestion => (
               <div key={suggestion.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-2">
+                <div 
+                  className="flex items-center gap-2 flex-1 cursor-pointer"
+                  onClick={() => handleUserClick(suggestion.username)}
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={suggestion.avatar_url} />
                     <AvatarFallback>

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, Clock, Check, X } from 'lucide-react';
+import { ArrowLeft, UserPlus, Clock, Check, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ClickableAvatar from '@/components/ClickableAvatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AddFriend from '@/components/AddFriend';
-import ClickableAvatar from '@/components/ClickableAvatar';
 
 interface Friend {
   id: string;
@@ -38,85 +38,196 @@ export default function Friends() {
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('friends');
 
   useEffect(() => {
-    if (user) {
-      loadFriends();
-      loadFriendRequests();
-    }
+    console.log('[FRIENDS] useEffect triggered, user:', user);
+    
+    // Add a small delay on mount to ensure auth is ready
+    const loadData = async () => {
+      // First verify we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user || user) {
+        console.log('[FRIENDS] Session ready, loading data');
+        await loadFriends();
+        await loadFriendRequests();
+      } else {
+        console.error('[FRIENDS] No session available yet');
+        // Retry once after a short delay
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (retrySession?.user) {
+            console.log('[FRIENDS] Session ready on retry');
+            await loadFriends();
+            await loadFriendRequests();
+          } else {
+            setLoading(false);
+          }
+        }, 1000);
+      }
+    };
+    
+    loadData();
   }, [user]);
 
   const loadFriends = async () => {
     try {
+      console.log('[FRIENDS] Loading friends for user:', user?.id);
+      
+      // Double-check we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || user?.id;
+      
+      if (!currentUserId) {
+        console.error('[FRIENDS] No user ID available from session or context');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('[FRIENDS] Using user ID:', currentUserId);
+      
       // Get user's profile ID
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUserId)
         .single();
 
-      if (!userProfile) return;
+      console.log('[FRIENDS] User profile:', userProfile, 'Error:', profileError);
+      
+      if (profileError) {
+        console.error('[FRIENDS] Profile error:', profileError.message, profileError.details);
+        setLoading(false);
+        return;
+      }
+      
+      if (!userProfile) {
+        console.error('[FRIENDS] No user profile found');
+        setLoading(false);
+        return;
+      }
 
-      // Get accepted friendships
-      const { data: friendships } = await supabase
+      // Get accepted friendships - simplified query first
+      const { data: friendships, error: friendshipError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio),
-          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('status', 'accepted')
         .or(`user_id.eq.${userProfile.id},friend_id.eq.${userProfile.id}`);
 
-      if (friendships) {
-        const friendsList = friendships.map(f => {
-          // Return the friend (not the current user)
-          return f.user_id === userProfile.id ? f.friend : f.user;
-        });
-        setFriends(friendsList);
+      console.log('[FRIENDS] Friendships query result:', friendships, 'Error:', friendshipError);
+
+      if (friendships && friendships.length > 0) {
+        // Get the profile IDs of friends
+        const friendProfileIds = friendships.map(f => 
+          f.user_id === userProfile.id ? f.friend_id : f.user_id
+        );
+        
+        console.log('[FRIENDS] Friend profile IDs:', friendProfileIds);
+        
+        // Fetch the profiles of friends
+        const { data: friendProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio, is_online')
+          .in('id', friendProfileIds);
+        
+        console.log('[FRIENDS] Friend profiles:', friendProfiles, 'Error:', profilesError);
+        
+        if (friendProfiles) {
+          setFriends(friendProfiles);
+        }
+      } else {
+        console.log('[FRIENDS] No friendships found');
+        setFriends([]);
       }
     } catch (error) {
-      console.error('Error loading friends:', error);
+      console.error('[FRIENDS] Error loading friends:', error);
+      toast({
+        title: 'Error loading friends',
+        description: 'Please check your connection and try again',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadFriendRequests = async () => {
     try {
+      console.log('[FRIENDS] Loading friend requests for user:', user?.id);
+      
+      // Double-check we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || user?.id;
+      
+      if (!currentUserId) {
+        console.error('[FRIENDS] No user ID for friend requests');
+        return;
+      }
+      
       // Get user's profile ID
-      const { data: userProfile } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUserId)
         .single();
 
+      console.log('[FRIENDS] Profile for requests:', userProfile, 'Error:', profileError);
+      
       if (!userProfile) return;
 
-      // Get pending requests TO this user
-      const { data: received } = await supabase
+      // Get pending requests TO this user - simplified query
+      const { data: received, error: receivedError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          user:profiles!friendships_user_id_fkey(id, user_id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('friend_id', userProfile.id)
         .eq('status', 'pending');
+      
+      console.log('[FRIENDS] Received requests:', received, 'Error:', receivedError);
 
-      if (received) {
-        setPendingRequests(received.map(r => ({ ...r, requester: r.user })));
-      }
-
-      // Get pending requests FROM this user
-      const { data: sent } = await supabase
+      // Get pending requests FROM this user - simplified query
+      const { data: sent, error: sentError } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          friend:profiles!friendships_friend_id_fkey(id, user_id, username, avatar_url, bio)
-        `)
+        .select('*')
         .eq('user_id', userProfile.id)
         .eq('status', 'pending');
+      
+      console.log('[FRIENDS] Sent requests:', sent, 'Error:', sentError);
 
-      if (sent) {
-        setSentRequests(sent.map(r => ({ ...r, requested: r.friend })));
+      // Fetch profiles for received requests
+      if (received && received.length > 0) {
+        const requesterIds = received.map(r => r.user_id);
+        const { data: requesterProfiles } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio')
+          .in('id', requesterIds);
+        
+        const receivedWithProfiles = received.map(req => ({
+          ...req,
+          requester: requesterProfiles?.find(p => p.id === req.user_id)
+        }));
+        
+        setPendingRequests(receivedWithProfiles);
+      } else {
+        setPendingRequests([]);
+      }
+
+      // Fetch profiles for sent requests
+      if (sent && sent.length > 0) {
+        const requestedIds = sent.map(s => s.friend_id);
+        const { data: requestedProfiles } = await supabase
+          .from('profiles')
+          .select('id, user_id, username, avatar_url, bio')
+          .in('id', requestedIds);
+        
+        const sentWithProfiles = sent.map(req => ({
+          ...req,
+          requested: requestedProfiles?.find(p => p.id === req.friend_id)
+        }));
+        
+        setSentRequests(sentWithProfiles);
+      } else {
+        setSentRequests([]);
       }
     } catch (error) {
       console.error('Error loading friend requests:', error);
@@ -182,23 +293,38 @@ export default function Friends() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background border-b p-4">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')}
-            className="h-8 w-8 p-0"
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-40 bg-background border-b p-4 pt-safe">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-xl font-bold">Friends</h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log('[FRIENDS] Manual refresh triggered');
+              setLoading(true);
+              loadFriends();
+              loadFriendRequests();
+            }}
+            disabled={loading}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          <h1 className="text-xl font-bold">Friends</h1>
         </div>
       </header>
 
-      <main className="p-4 space-y-4">
-        <Tabs defaultValue="friends" className="w-full">
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="friends">
               Friends {friends.length > 0 && `(${friends.length})`}
@@ -210,13 +336,19 @@ export default function Friends() {
           </TabsList>
 
           <TabsContent value="friends" className="space-y-4">
-            {friends.length === 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-muted-foreground">Loading friends...</p>
+                </CardContent>
+              </Card>
+            ) : friends.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
                   <p className="text-muted-foreground">No friends yet</p>
                   <Button 
                     className="mt-4"
-                    onClick={() => document.querySelector('[value="add"]')?.click()}
+                    onClick={() => setActiveTab('add')}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add Friends
@@ -226,15 +358,18 @@ export default function Friends() {
             ) : (
               <div className="space-y-2">
                 {friends.map(friend => (
-                  <Card key={friend.id}>
+                  <Card key={friend.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div 
+                          className="flex items-center gap-3 flex-1"
+                          onClick={() => navigate(`/user/${friend.user_id}`)}
+                        >
                           <ClickableAvatar
                             userId={friend.user_id}
                             username={friend.username}
                             avatarUrl={friend.avatar_url}
-                            size="lg"
+                            size="md"
                           />
                           <div>
                             <p className="font-medium">@{friend.username}</p>
@@ -243,7 +378,42 @@ export default function Friends() {
                             )}
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            // Create or find conversation then navigate
+                            try {
+                              // Check if conversation exists between these two users
+                              const { data: existing } = await supabase
+                                .from('conversations')
+                                .select('id')
+                                .or(`and(user1_id.eq.${user?.id},user2_id.eq.${friend.user_id}),and(user1_id.eq.${friend.user_id},user2_id.eq.${user?.id})`)
+                                .single();
+
+                              if (!existing) {
+                                // Create new conversation
+                                const { data: newConv, error } = await supabase
+                                  .from('conversations')
+                                  .insert({
+                                    user1_id: user?.id,
+                                    user2_id: friend.user_id
+                                  })
+                                  .select()
+                                  .single();
+                                
+                                if (error) throw error;
+                                navigate(`/messages?conversation=${newConv.id}`);
+                              } else {
+                                navigate(`/messages?conversation=${existing.id}`);
+                              }
+                            } catch (error) {
+                              console.error('Error creating conversation:', error);
+                              navigate('/messages');
+                            }
+                          }}
+                        >
                           Message
                         </Button>
                       </div>
@@ -272,12 +442,18 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <ClickableAvatar
-                                userId={request.requester?.user_id || ''}
-                                username={request.requester?.username || 'Unknown'}
-                                avatarUrl={request.requester?.avatar_url}
-                                size="lg"
-                              />
+                              {request.requester ? (
+                                <ClickableAvatar
+                                  userId={request.requester.id}
+                                  username={request.requester.username}
+                                  avatarUrl={request.requester.avatar_url}
+                                  size="md"
+                                />
+                              ) : (
+                                <Avatar>
+                                  <AvatarFallback>??</AvatarFallback>
+                                </Avatar>
+                              )}
                               <div>
                                 <p className="font-medium">@{request.requester?.username}</p>
                                 <p className="text-sm text-muted-foreground">
@@ -316,12 +492,18 @@ export default function Friends() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <ClickableAvatar
-                                userId={request.requested?.user_id || ''}
-                                username={request.requested?.username || 'Unknown'}
-                                avatarUrl={request.requested?.avatar_url}
-                                size="lg"
-                              />
+                              {request.requested ? (
+                                <ClickableAvatar
+                                  userId={request.requested.id}
+                                  username={request.requested.username}
+                                  avatarUrl={request.requested.avatar_url}
+                                  size="md"
+                                />
+                              ) : (
+                                <Avatar>
+                                  <AvatarFallback>??</AvatarFallback>
+                                </Avatar>
+                              )}
                               <div>
                                 <p className="font-medium">@{request.requested?.username}</p>
                                 <p className="text-sm text-muted-foreground flex items-center gap-1">

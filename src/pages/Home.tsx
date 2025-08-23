@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
@@ -6,18 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Send, Users, Settings, Shield, Bell, MessageSquare, PartyPopper, UserPlus, Loader2 } from 'lucide-react';
+import { Send, Users, Shield, MessageSquare, PartyPopper, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
-import NotificationBell from '@/components/NotificationBell';
+import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
-import HealthCheck from '@/components/HealthCheck';
 import Stories from '@/components/Stories';
 import ClickableAvatar from '@/components/ClickableAvatar';
+import SwipeablePostCard from '@/components/SwipeablePostCard';
 
 interface Profile {
   id: string;
@@ -57,56 +57,93 @@ interface Reply {
 }
 
 const Home = () => {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isSubscribed } = useRealtimeNotifications();
-  const { isUserOnline } = usePresence();
+  useRealtimeNotifications();
+  const { isUserOnline, getUserPresenceText, isUserCurrentlyActive } = usePresence();
   const [currentTrio, setCurrentTrio] = useState<Trio | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [newPost, setNewPost] = useState('');
-  const [newReply, setNewReply] = useState('');
   const [canPost, setCanPost] = useState(true);
   const [secondsUntilNextPost, setSecondsUntilNextPost] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mediaUrl, setMediaUrl] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [showHealthCheck, setShowHealthCheck] = useState(false);
   const [inQueue, setInQueue] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [joiningQueue, setJoiningQueue] = useState(false);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState<number>(0);
+  
+  // Use the new clean notification hook
+  const { unreadCount: unreadMessages, refreshCount: refreshMessageCount } = useMessageNotifications();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[HOME] Notification badge shows:', unreadMessages);
+  }, [unreadMessages]);
 
   useEffect(() => {
     if (user) {
+      fetchUserProfile();
       fetchTodaysTrio();
       checkPostRateLimit();
       checkQueueStatus();
+      fetchFriendRequests();
       
       // Set up subscriptions and store cleanup functions
       const cleanupTrio = subscribeToTrioUpdates();
       const cleanupQueue = subscribeToQueueUpdates();
       
-      // Return cleanup function
+      // Subscribe to friendship changes
+      const friendshipsChannel = supabase
+        .channel('notification-friendships')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'friendships'
+          },
+          () => {
+            fetchFriendRequests();
+          }
+        )
+        .subscribe();
+      
       return () => {
+        friendshipsChannel.unsubscribe();
         if (cleanupTrio) cleanupTrio();
         if (cleanupQueue) cleanupQueue();
       };
+    } else {
+      // Clear counts when no user
+      setPendingFriendRequests(0);
     }
   }, [user]);
 
-  // Add keyboard shortcut for health check (Ctrl/Cmd + H + H)
+
+  // Add keyboard shortcuts for health check and debug
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
         e.preventDefault();
-        setShowHealthCheck(!showHealthCheck);
+        // Health check removed - was unused
+      }
+      // Refresh shortcut: Cmd/Ctrl + R
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        console.log('Refreshing message count...');
+        refreshMessageCount();
+        fetchFriendRequests();
       }
     };
     
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [showHealthCheck]);
+  }, [unreadMessages, pendingFriendRequests, user]);
 
   useEffect(() => {
     if (!canPost && secondsUntilNextPost > 0) {
@@ -122,6 +159,24 @@ const Home = () => {
       return () => clearInterval(timer);
     }
   }, [canPost, secondsUntilNextPost]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile) {
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      logger.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchTodaysTrio = async () => {
     try {
@@ -201,6 +256,31 @@ const Home = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFriendRequests = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userProfile) {
+        const { count } = await supabase
+          .from('friendships')
+          .select('*', { count: 'exact', head: true })
+          .eq('friend_id', userProfile.id)
+          .eq('status', 'pending');
+        
+        setPendingFriendRequests(count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching friend requests:', error);
+      setPendingFriendRequests(0);
     }
   };
 
@@ -300,19 +380,43 @@ const Home = () => {
     if ((!newPost.trim() && !mediaUrl) || !currentTrio || !canPost) return;
 
     try {
-      const { error } = await supabase
+      // Debug logging
+      console.log('Attempting to post with:', {
+        hasContent: !!newPost.trim(),
+        hasMedia: !!mediaUrl,
+        mediaType,
+        userId: user?.id,
+        trioId: currentTrio.id
+      });
+
+      // First try with full schema including media fields
+      let { error } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,
           trio_id: currentTrio.id,
-          content: newPost.trim() || null,
+          content: newPost.trim() || (mediaUrl ? 'Shared media' : null),
           media_url: mediaUrl || null,
           media_type: mediaType || null
         });
 
+      // If media_type column error, try fallback without media fields
+      if (error && error.message.includes('media_type')) {
+        console.log('Media columns not available, trying fallback insert...');
+        const fallbackResult = await supabase
+          .from('posts')
+          .insert({
+            user_id: user?.id,
+            trio_id: currentTrio.id,
+            content: newPost.trim() || 'Shared media content'
+          });
+        error = fallbackResult.error;
+      }
+
       if (error) {
+        console.error('Post error details:', error);
         toast({
-          title: 'Error',
+          title: 'Upload failed',
           description: error.message === 'new row violates row-level security policy for table "posts"' 
             ? 'Please wait 10 minutes between posts to prevent spam.'
             : cleanErrorMessage(error),
@@ -362,10 +466,35 @@ const Home = () => {
   const joinQueue = async () => {
     setJoiningQueue(true);
     try {
-      const { data, error } = await supabase.rpc('join_trio_queue');
+      // Get the user's profile_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
       
-      if (error) throw error;
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
       
+      const { data, error } = await supabase.rpc('join_trio_queue', {
+        p_profile_id: profile.id
+      });
+      
+      if (error) {
+        // Check for specific error types
+        if (error.message?.includes('Already in queue')) {
+          setInQueue(true);
+          return;
+        }
+        if (error.message?.includes('Already in a trio')) {
+          await fetchTodaysTrio();
+          return;
+        }
+        throw error;
+      }
+      
+      // Handle different response types from the queue function
       if (data?.action === 'trio_created') {
         toast({
           title: 'Trio Formed! 🎉',
@@ -404,6 +533,17 @@ const Home = () => {
           description: `You're in position ${data.queue_position}. We'll notify you when your trio is ready!`,
           className: 'gradient-toast'
         });
+      } else if (data?.matched) {
+        // Fallback for old response format
+        toast({
+          title: 'Matched!',
+          description: 'You\'ve been matched into a trio!'
+        });
+        await fetchTodaysTrio();
+      } else {
+        // Fallback for simple queue join
+        setInQueue(true);
+        setQueueCount(data?.queue_position || 1);
       }
     } catch (error) {
       logger.error('Error joining queue:', error);
@@ -520,8 +660,8 @@ const Home = () => {
     };
   };
 
-  const handleReplySubmit = async (postId: string) => {
-    if (!newReply.trim()) return;
+  const handleReplySubmit = useCallback(async (postId: string, content: string) => {
+    if (!content.trim()) return;
 
     try {
       const { error } = await supabase
@@ -529,7 +669,7 @@ const Home = () => {
         .insert({
           user_id: user?.id,
           post_id: postId,
-          content: newReply.trim()
+          content: content.trim()
         });
 
       if (error) {
@@ -541,10 +681,9 @@ const Home = () => {
         return;
       }
 
-      setNewReply('');
       toast({
-        title: 'Reply sent!',
-        description: 'Your reply has been posted'
+        title: 'Comment posted!',
+        description: 'Your comment has been added'
       });
       
       // Refresh posts and replies
@@ -555,56 +694,73 @@ const Home = () => {
       logger.error('Error replying:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send reply',
+        description: 'Failed to post comment',
         variant: 'destructive'
       });
     }
-  };
+  }, [user?.id, currentTrio, toast]);
 
   const getTimeUntilNextTrio = () => {
     return 'Daily between 7 AM - 11 PM';
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading your trio...</div>
-      </div>
-    );
+    return null; // Splash screen handles loading state
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {showHealthCheck && <HealthCheck onClose={() => setShowHealthCheck(false)} />}
-      <header className="sticky top-0 z-40 navigation-glass">
-        <div className="p-3">
+      <header className="sticky top-0 z-40 navigation-glass pt-safe">
+        <div className="p-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <img src="/artrio-logo-smooth.png" alt="Artrio" className="h-11 w-auto" />
-              {isSubscribed && (
-                <Badge className="badge-green text-xs px-2 py-0 pulse">
-                  Live
-                </Badge>
-              )}
+            <div className="flex items-center gap-3">
+              <img src="/artrio-text-logo.png" alt="Artrio" className="h-[60px] w-auto" />
             </div>
-            <div className="flex items-center gap-1">
-              <NotificationBell />
-              <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2">
-                <UserPlus className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              {userProfile && (
+                <div className="text-sm font-medium mr-2">
+                  Hey @{userProfile.username}!
+                </div>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => navigate('/friends')} className="h-8 px-2 relative">
+                <User className="h-4 w-4" />
+                {pendingFriendRequests > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {pendingFriendRequests}
+                  </div>
+                )}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/messages')} className="h-8 px-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/messages')} 
+                className="h-8 px-2 relative"
+              >
                 <MessageSquare className="h-4 w-4" />
+                {unreadMessages > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadMessages}
+                  </div>
+                )}
               </Button>
               {isAdmin && (
                 <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="h-8 px-2">
                   <Shield className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="h-8 px-2">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 px-2">
-                <LogOut className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate('/profile')} 
+                className="h-8 w-8 p-0 rounded-full hover:bg-muted"
+                title="Your Profile"
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={userProfile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {userProfile?.username?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </div>
           </div>
@@ -649,7 +805,7 @@ const Home = () => {
                           <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1">
                             <PartyPopper className="h-3 w-3 text-white" />
                           </div>
-                        ) : isUserOnline(profile.user_id) ? (
+                        ) : isUserCurrentlyActive(profile.user_id) ? (
                           <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
                         ) : null}
                       </div>
@@ -718,106 +874,19 @@ const Home = () => {
                 const userHasReplied = postReplies.some(reply => reply.user_id === user?.id);
                 
                 return (
-                  <Card key={post.id} className="content-card animate-slide-up">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <ClickableAvatar
-                          userId={post.profiles.user_id}
-                          username={post.profiles.username}
-                          avatarUrl={post.profiles.avatar_url}
-                          size="md"
-                          className="flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="font-medium text-sm truncate">@{post.profiles.username}</p>
-                            <p className="text-xs text-muted-foreground flex-shrink-0">
-                              {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          {post.content && <p className="text-sm leading-relaxed break-words">{post.content}</p>}
-                          
-                          {/* Media Display */}
-                          {post.media_url && (
-                            <div className="mt-3">
-                              {post.media_type === 'image' ? (
-                                <img 
-                                  src={post.media_url} 
-                                  alt="Post media" 
-                                  className="max-w-full h-auto rounded-lg border"
-                                  style={{ maxHeight: '300px' }}
-                                />
-                              ) : post.media_type === 'video' ? (
-                                <video 
-                                  src={post.media_url} 
-                                  controls 
-                                  className="max-w-full h-auto rounded-lg border"
-                                  style={{ maxHeight: '300px' }}
-                                />
-                              ) : null}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Replies */}
-                      {postReplies.length > 0 && (
-                        <div className="ml-11 space-y-2 border-l-2 border-muted pl-3">
-                          {postReplies.slice(0, 3).map((reply) => (
-                            <div key={reply.id} className="flex items-start gap-2">
-                              <ClickableAvatar
-                                userId={reply.profiles.user_id}
-                                username={reply.profiles.username}
-                                avatarUrl={reply.profiles.avatar_url}
-                                size="sm"
-                                className="flex-shrink-0"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium text-xs truncate">@{reply.profiles.username}</p>
-                                  <p className="text-xs text-muted-foreground flex-shrink-0">
-                                    {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                </div>
-                                <p className="text-sm break-words">{reply.content}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {postReplies.length > 3 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{postReplies.length - 3} more replies
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Reply input */}
-                      {post.user_id !== user?.id && !userHasReplied && (
-                        <div className="ml-11 space-y-2">
-                          <Textarea
-                            placeholder="Reply..."
-                            value={newReply}
-                            onChange={(e) => setNewReply(e.target.value)}
-                            className="min-h-[60px] text-sm resize-none"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleReplySubmit(post.id)}
-                            disabled={!newReply.trim()}
-                            className="h-8"
-                          >
-                            Reply
-                          </Button>
-                        </div>
-                      )}
-
-                      {userHasReplied && (
-                        <p className="ml-11 text-xs text-muted-foreground">
-                          ✓ Replied
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <SwipeablePostCard
+                    key={post.id}
+                    post={post}
+                    replies={postReplies}
+                    currentUserId={user?.id}
+                    userHasReplied={userHasReplied}
+                    onReplySubmit={handleReplySubmit}
+                    onPostDeleted={() => {
+                      if (currentTrio) {
+                        fetchTrioPosts(currentTrio.id);
+                      }
+                    }}
+                  />
                 );
               })}
             </div>
@@ -827,23 +896,13 @@ const Home = () => {
             <CardContent className="p-6 text-center space-y-4">
               <div>
                 <h2 className="text-lg font-semibold mb-2">
-                  {inQueue ? 'Waiting for match...' : 'No trio yet'}
+                  {inQueue ? 'Looking for your Trio' : 'No trio yet'}
                 </h2>
                 <p className="text-muted-foreground text-sm">
                   {inQueue 
-                    ? queueCount === 1 
-                      ? '2 more people needed for a trio'
-                      : queueCount === 2
-                      ? '1 more person needed for a trio'
-                      : `${Math.max(0, 3 - queueCount)} more ${Math.max(0, 3 - queueCount) === 1 ? 'person' : 'people'} needed for a trio`
+                    ? `${3 - queueCount} more ${3 - queueCount === 1 ? 'person' : 'people'} needed for a trio`
                     : 'Join the queue to get matched instantly when others are ready'}
                 </p>
-                {inQueue && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{queueCount} {queueCount === 1 ? 'person' : 'people'} in queue</span>
-                  </div>
-                )}
               </div>
               
               {inQueue ? (
@@ -889,8 +948,7 @@ const Home = () => {
                         />
                       </div>
                     </div>
-                    <div className="text-center space-y-1">
-                      <span className="text-sm font-medium block">Finding your Trio</span>
+                    <div className="text-center">
                       <span className="text-xs text-muted-foreground">
                         Matching you with the right people
                       </span>

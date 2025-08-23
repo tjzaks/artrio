@@ -3,16 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, Calendar, BarChart3, Shield, AlertTriangle, Settings, FileText, Phone, Mail, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowLeft, Users, Calendar, BarChart3, Shield, RefreshCw, Search, Shuffle, Trash2, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
-import ReportedContentPanel from '@/components/admin/ReportedContentPanel';
-import UserModerationPanel from '@/components/admin/UserModerationPanel';
-import SystemControlsPanel from '@/components/admin/SystemControlsPanel';
-import AdminLogsPanel from '@/components/admin/AdminLogsPanel';
 import UserProfileModal from '@/components/admin/UserProfileModal';
 
 interface AdminStats {
@@ -23,15 +20,13 @@ interface AdminStats {
   totalPosts: number;
   todaysPosts: number;
   recentUsers: Array<{
-    id: string;
     user_id: string;
     username: string;
-    bio: string | null;
     avatar_url: string | null;
-    phone_number: string | null;
     created_at: string;
-    is_admin: boolean;
     ageRange: string;
+    is_admin?: boolean;
+    is_banned?: boolean;
   }>;
 }
 
@@ -42,8 +37,9 @@ const Admin = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<AdminStats['recentUsers'][0] | null>(null);
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -89,14 +85,110 @@ const Admin = () => {
     }
   };
 
+  const handleRandomizeTrios = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to randomize today\'s trios?\n\n' +
+      'This will:\n' +
+      '• Delete all existing trios for today\n' +
+      '• Create new random trios from all active users\n' +
+      '• Notify users of their new trio assignments'
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      // Just call our working randomize_trios function!
+      const { error } = await supabase.rpc('randomize_trios');
+      
+      if (error) {
+        logger.error('Error randomizing trios:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to randomize trios',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      toast({
+        title: 'Trios randomized',
+        description: 'Successfully created new trios for today',
+      });
+      
+      // Refresh stats to show new trio count
+      await fetchAdminStats();
+      
+    } catch (error) {
+      logger.error('Error randomizing trios:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to randomize trios',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteAllTrios = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete ALL trios?\n\n' +
+      'This action CANNOT be undone and will:\n' +
+      '• Remove all trio history\n' +
+      '• Reset all trio-related data\n' +
+      '• Affect user experience'
+    );
+    
+    if (!confirmed) return;
+    
+    const doubleConfirmed = window.confirm(
+      'FINAL CONFIRMATION: Delete all trios permanently?'
+    );
+    
+    if (!doubleConfirmed) return;
+    
+    try {
+      // Use our delete_todays_trios function
+      const { error } = await supabase.rpc('delete_todays_trios');
+      
+      if (error) {
+        logger.error('Error deleting trios:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to delete trios',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      toast({
+        title: 'Trios deleted',
+        description: 'Today\'s trios have been deleted',
+      });
+      
+      await fetchAdminStats();
+    } catch (error) {
+      logger.error('Error deleting trios:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete trios',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const fetchAdminStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
       // Get total users count
-      const { count: totalUsers } = await supabase
+      const { count: totalUsers, error: countError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        logger.error('Error getting user count:', countError);
+      }
+      
+      logger.log('Total users count:', totalUsers);
 
       // Get total profiles count (should be same as users)
       const { count: totalProfiles } = await supabase
@@ -125,23 +217,32 @@ const Admin = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', today);
 
-      // Get ALL users with detailed information sorted by most recent first
-      const { data: recentProfiles } = await supabase
+      // Get ALL users sorted by most recent first with more details
+      const { data: recentProfiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, user_id, username, bio, avatar_url, phone_number, created_at, is_admin')
+        .select('user_id, username, avatar_url, created_at, is_admin')
         .order('created_at', { ascending: false });
 
-      const recentUsers = recentProfiles?.map(profile => ({
-        id: profile.id,
-        user_id: profile.user_id,
-        username: profile.username,
-        bio: profile.bio,
-        avatar_url: profile.avatar_url,
-        phone_number: profile.phone_number,
-        created_at: profile.created_at,
-        is_admin: profile.is_admin,
-        ageRange: 'Hidden' // Age information is now protected
-      })) || [];
+      if (profilesError) {
+        logger.error('Error fetching profiles:', profilesError);
+        // Don't continue if there's an error
+        throw profilesError;
+      }
+      
+      logger.log('Fetched profiles:', recentProfiles?.length || 0, recentProfiles);
+
+      // Make sure we have an array, even if it's empty
+      const recentUsers = (recentProfiles || []).map(profile => ({
+        user_id: profile.user_id || '',
+        username: profile.username || 'Unknown',
+        avatar_url: profile.avatar_url || null,
+        created_at: profile.created_at || new Date().toISOString(),
+        ageRange: 'Hidden', // Age information is now protected
+        is_admin: profile.is_admin || false,
+        is_banned: false // Column doesn't exist yet in production
+      }));
+      
+      logger.log('Mapped recentUsers:', recentUsers.length, recentUsers);
 
       setStats({
         totalUsers: totalUsers || 0,
@@ -197,221 +298,200 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="navigation-glass p-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="interactive">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Button>
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b p-4 pt-safe">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{stats?.totalUsers || 0} users</span>
+            <span>•</span>
+            <span>{stats?.todaysTrios || 0} trios today</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="moderation" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Moderation
-            </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              System
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Logs
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Registered profiles
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Trios</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalTrios || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    All-time trio formations
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Today's Trios</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.todaysTrios || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Active trios today
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalPosts || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.todaysPosts || 0} posted today
-                  </p>
-                </CardContent>
-              </Card>
+      <main className="flex-1 overflow-y-auto max-w-6xl mx-auto w-full p-6 space-y-6">
+        {/* Admin Actions */}
+        <Card className="border-amber-500/20 bg-amber-50/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-amber-600" />
+              <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleRandomizeTrios}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                <Shuffle className="h-3 w-3 mr-1" />
+                Randomize Today's Trios
+              </Button>
+              <Button
+                onClick={handleDeleteAllTrios}
+                variant="outline"
+                size="sm"
+                className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete All Trios
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* All Users */}
-            <Card>
-              <CardHeader className="flex items-center justify-between">
-                <CardTitle>All Users ({stats?.recentUsers.length || 0})</CardTitle>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalUsers || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Users</p>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalTrios || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Trios</p>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.todaysTrios || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Today's Trios</p>
+          </Card>
+
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold">{stats?.totalPosts || 0}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Total Posts</p>
+          </Card>
+        </div>
+
+        {/* User Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">User Management</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 w-64"
+                  />
+                </div>
                 <Button 
                   onClick={fetchAdminStats}
                   variant="outline"
                   size="sm"
                 >
-                  Refresh Statistics
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats?.recentUsers.map((user, index) => (
-                    <div 
-                      key={index} 
-                      className="p-4 border rounded-lg space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsUserModalOpen(true);
-                      }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-lg">@{user.username}</p>
-                            {user.is_admin && (
-                              <Badge variant="destructive" className="text-xs">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Admin
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <User className="h-4 w-4" />
-                              <span>ID: {user.user_id?.slice(-8) || 'N/A'}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
-                            </div>
-                            
-                            {user.phone_number && (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <Phone className="h-4 w-4" />
-                                <span>{user.phone_number}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Mail className="h-4 w-4" />
-                              <span>Auth ID: {user.user_id?.slice(0, 8)}...</span>
-                            </div>
-                          </div>
-                          
-                          {user.bio && (
-                            <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                              <strong>Bio:</strong> {user.bio}
-                            </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {stats?.recentUsers?.length || 0} registered users
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {loading ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Loading users...
+                </p>
+              ) : stats && stats.recentUsers && Array.isArray(stats.recentUsers) && stats.recentUsers.length > 0 ? (
+                stats.recentUsers
+                  .filter(user => 
+                    searchTerm === '' || 
+                    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((user) => (
+                  <div 
+                    key={user.user_id} 
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all"
+                    onClick={() => {
+                      setSelectedUserId(user.user_id);
+                      setIsProfileModalOpen(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={user.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {user.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">@{user.username}</p>
+                          {user.is_admin && (
+                            <Badge variant="default" className="text-xs h-5 px-2 bg-purple-600">
+                              Admin
+                            </Badge>
+                          )}
+                          {user.is_banned && (
+                            <Badge variant="destructive" className="text-xs h-5 px-2">
+                              Banned
+                            </Badge>
                           )}
                         </div>
-                        
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge variant="outline">
-                            {user.ageRange}
-                          </Badge>
-                          {user.avatar_url && (
-                            <div className="w-12 h-12 rounded-full bg-muted border overflow-hidden">
-                              <img 
-                                src={user.avatar_url} 
-                                alt={`${user.username} avatar`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Joined {new Date(user.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
-                  )) || (
-                    <p className="text-muted-foreground text-center py-4">
-                      No users found
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  {searchTerm ? 'No users found matching your search' : 'No users found'}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-          <TabsContent value="reports">
-            <ReportedContentPanel />
-          </TabsContent>
-
-          <TabsContent value="moderation">
-            <UserModerationPanel />
-          </TabsContent>
-
-          <TabsContent value="system">
-            <SystemControlsPanel />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <AdminLogsPanel />
-          </TabsContent>
-        </Tabs>
+        {/* User Profile Modal */}
+        <UserProfileModal
+          userId={selectedUserId}
+          isOpen={isProfileModalOpen}
+          onClose={() => {
+            setIsProfileModalOpen(false);
+            setSelectedUserId(null);
+            fetchAdminStats(); // Refresh stats after potential changes
+          }}
+        />
       </main>
-
-      {/* User Profile Modal */}
-      <UserProfileModal
-        user={selectedUser}
-        isOpen={isUserModalOpen}
-        onClose={() => {
-          setIsUserModalOpen(false);
-          setSelectedUser(null);
-        }}
-        onUserUpdated={fetchAdminStats}
-      />
     </div>
   );
 };

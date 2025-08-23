@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, User, Camera, Upload, Check, X, Loader2, AlertCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +19,7 @@ interface Profile {
   username: string;
   bio: string | null;
   avatar_url: string | null;
-  phone_number: string | null;
+  phone_number?: string | null;
   created_at: string;
   updated_at: string;
   username_change_count?: number;
@@ -31,7 +31,7 @@ interface SensitiveData {
 }
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -44,7 +44,6 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     username: user?.user_metadata?.username || '',
     bio: user?.user_metadata?.bio || '',
-    phone_number: user?.user_metadata?.phone_number || '',
     avatar_url: ''
   });
   const [originalUsername, setOriginalUsername] = useState('');
@@ -109,17 +108,14 @@ const Profile = () => {
         setFormData({
           username: profileData.username,
           bio: profileData.bio || '',
-          phone_number: profileData.phone_number || '',
           avatar_url: profileData.avatar_url || ''
         });
         setOriginalUsername(profileData.username);
         
         // Check if user is approaching or at the change limit
         const changeCount = profileData.username_change_count || 0;
-        if (changeCount === 2) {
-          setUsernameChangeWarning('This is your last free username change. Additional changes will cost $5.');
-        } else if (changeCount >= 3) {
-          setUsernameChangeWarning('You\'ve used all 3 free username changes. Additional changes cost $5.');
+        if (changeCount >= 1) {
+          setUsernameChangeWarning('You\'ve used your free username change. Additional changes cost $5.');
         }
       } else {
         // Profile should exist from signup - if not, try to create it from user metadata
@@ -135,7 +131,6 @@ const Profile = () => {
               user_id: user.id,
               username: metadata.username,
               bio: metadata.bio || '',
-              phone_number: metadata.phone_number || null,
               avatar_url: null
             })
             .select()
@@ -146,7 +141,6 @@ const Profile = () => {
             setFormData({
               username: newProfile.username,
               bio: newProfile.bio || '',
-              phone_number: newProfile.phone_number || '',
               avatar_url: newProfile.avatar_url || ''
             });
             setOriginalUsername(newProfile.username);
@@ -292,10 +286,10 @@ const Profile = () => {
     // Check if user has exceeded free username changes
     if (profile && formData.username !== originalUsername) {
       const changeCount = profile.username_change_count || 0;
-      if (changeCount >= 3) {
+      if (changeCount >= 1) {
         toast({
           title: 'Payment Required',
-          description: 'You\'ve used all 3 free username changes. Additional changes cost $5.',
+          description: 'You\'ve used your free username change. Additional changes cost $5.',
           variant: 'destructive'
         });
         // In the future, this would trigger a payment flow
@@ -312,7 +306,6 @@ const Profile = () => {
           .update({
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            phone_number: formData.phone_number.trim() || null,
             avatar_url: formData.avatar_url.trim() || null
           })
           .eq('user_id', user?.id);
@@ -333,7 +326,6 @@ const Profile = () => {
             user_id: user?.id,
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            phone_number: formData.phone_number.trim() || null,
             avatar_url: formData.avatar_url.trim() || null
           });
 
@@ -423,6 +415,15 @@ const Profile = () => {
     return typeof age === 'number' && age < 18;
   };
 
+  const formatPhoneNumber = (phone: string): string => {
+    // Phone is stored as digits only in database
+    if (phone.length === 10) {
+      return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+    }
+    // Return as-is for international numbers
+    return phone;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -432,23 +433,23 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card p-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="sticky top-0 z-40 border-b bg-card p-4 pt-safe">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
+            Back
           </Button>
-          <h1 className="text-2xl font-bold">Profile Settings</h1>
+          <h1 className="text-xl font-semibold">Profile Settings</h1>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto p-4 space-y-6">
+      <main className="flex-1 overflow-y-auto max-w-2xl mx-auto w-full p-4 space-y-6 pb-safe">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Profile Settings
+              Your Profile
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -540,12 +541,8 @@ const Profile = () => {
               {profile && (
                 <p className="text-xs text-muted-foreground">
                   {profile.username_change_count === 0 || !profile.username_change_count
-                    ? 'You have 3 free username changes available'
-                    : profile.username_change_count === 1
-                    ? 'You have 2 free username changes remaining'
-                    : profile.username_change_count === 2
-                    ? 'You have 1 free username change remaining'
-                    : 'You\'ve used all free username changes'}
+                    ? 'You have 1 free username change available'
+                    : 'You\'ve used your free username change'}
                 </p>
               )}
             </div>
@@ -568,29 +565,20 @@ const Profile = () => {
               </p>
             </div>
 
-            {/* Phone Number */}
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Your phone number (optional)"
-                value={formData.phone_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-              />
-              <p className="text-xs text-muted-foreground">
-                Your phone number is private and only visible to you
-              </p>
-            </div>
-
             {/* Read-only info */}
             {profile && (
               <div className="space-y-4 pt-4 border-t">
-                <h3 className="font-medium">Account Information</h3>
+                <h3 className="font-medium">
+                  Account Information <span className="font-light text-muted-foreground">(Only you can see this)</span>
+                </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Email</p>
                     <p>{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Phone</p>
+                    <p>{profile.phone_number ? formatPhoneNumber(profile.phone_number) : 'Not provided'}</p>
                   </div>
                   {userAge !== null && (
                     <div>
@@ -619,6 +607,19 @@ const Profile = () => {
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Saving...' : (profile ? 'Save Profile' : 'Create Profile')}
             </Button>
+
+            {/* Sign Out Button */}
+            <div className="pt-4 border-t">
+              <Button
+                variant="destructive"
+                size="default"
+                onClick={signOut}
+                className="w-full hover:bg-destructive/90 hover:text-white transition-colors"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

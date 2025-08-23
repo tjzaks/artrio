@@ -17,49 +17,28 @@ export default function SystemControlsPanel() {
   const triggerTrioRandomization = async () => {
     setButtonLoading('randomize', true);
     try {
-      const { data, error } = await supabase.rpc('randomize_trios');
+      // Clean call - no parameters, returns void
+      const { error } = await supabase.rpc('randomize_trios');
       
-      if (error) {
-        logger.error('RPC Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Check if the function returned success: false
-      if (data && data.success === false) {
-        throw new Error(data.error || 'Randomization failed');
-      }
-
-      // Skip logging for now if it doesn't exist
-      try {
-        const currentUser = await supabase.auth.getUser();
-        await supabase.rpc('log_admin_action', {
-          p_admin_id: currentUser.data.user?.id,
-          p_action_type: 'system_control',
-          p_description: 'Manually triggered trio randomization'
-        });
-      } catch (logError) {
-        logger.log('Logging skipped:', logError);
-      }
-
-      // Check the response from the RPC function
-      if (data?.success) {
-        toast({
-          title: "Success",
-          description: data.message || `Created ${data.created} trios!`
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "No Trios Created",
-          description: data?.message || "Failed to create trios"
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Trios randomized successfully!"
+      });
+      
+      // Refresh after a short delay to show success message
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       logger.error('Error triggering randomization:', error);
+      console.error('Full error object:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to trigger trio randomization. Please run the SQL script in Supabase."
+        description: error.message || "Failed to trigger trio randomization. Please check the console for details."
       });
     } finally {
       setButtonLoading('randomize', false);
@@ -168,48 +147,27 @@ export default function SystemControlsPanel() {
   const deleteTodaysTrios = async () => {
     setButtonLoading('deleteTrios', true);
     try {
-      // Use RPC function to delete today's trios
-      const { data, error } = await supabase.rpc('delete_todays_trios');
+      // Clean call - no parameters, returns void
+      const { error } = await supabase.rpc('delete_todays_trios');
       
-      if (error) {
-        logger.error('RPC Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // Check if function returned success: false
-      if (data && data.success === false) {
-        throw new Error(data.error || 'Failed to delete trios');
-      }
-
-      // Skip logging for now
-      try {
-        const currentUser = await supabase.auth.getUser();
-        await supabase.rpc('log_admin_action', {
-          p_admin_id: currentUser.data.user?.id,
-          p_action_type: 'system_control',
-          p_description: `Deleted ${data?.deleted_count || 0} trios for ${data?.date || 'today'}`
-        });
-      } catch (logError) {
-        logger.log('Logging skipped:', logError);
-      }
-
-      if (data?.success && data?.deleted > 0) {
-        toast({
-          title: "Success",
-          description: data.message || `Deleted ${data.deleted} trios for today`
-        });
-      } else {
-        toast({
-          title: "No Trios Found",
-          description: data?.message || "No trios exist for today to delete"
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Today's trios have been deleted"
+      });
+      
+      // Refresh after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
     } catch (error) {
       logger.error('Error deleting trios:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to delete today's trios. Please run the SQL function in Supabase."
+        description: error.message || "Failed to delete today's trios."
       });
     } finally {
       setButtonLoading('deleteTrios', false);

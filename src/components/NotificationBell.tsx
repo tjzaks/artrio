@@ -160,28 +160,28 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative"
+        className="relative hover:bg-primary/10 rounded-full transition-all duration-200"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-5 w-5 transition-transform duration-200 hover:scale-110" />
         {unreadCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary animate-pulse shadow-sm shadow-primary/50">
             {unreadCount > 9 ? '9+' : unreadCount}
           </Badge>
         )}
       </Button>
 
       {isOpen && (
-        <Card className="absolute right-0 top-12 w-80 z-50 shadow-lg">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-medium">Notifications</h3>
+        <Card className="absolute right-0 top-12 w-80 z-50 shadow-2xl bg-background border-2 rounded-3xl overflow-hidden transition-all duration-300 ease-out animate-in slide-in-from-top-2">
+          <CardContent className="p-0 bg-background">
+            <div className="flex items-center justify-between p-4 border-b-2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent backdrop-blur-sm">
+              <h3 className="font-semibold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Notifications</h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={markAllAsRead}
-                    className="text-xs"
+                    className="text-xs hover:bg-primary/10 rounded-full transition-all duration-200"
                   >
                     Mark all read
                   </Button>
@@ -190,6 +190,7 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsOpen(false)}
+                  className="hover:bg-primary/10 rounded-full transition-all duration-200"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -197,32 +198,40 @@ export default function NotificationBell({ className = '' }: NotificationBellPro
             </div>
 
             <ScrollArea className="h-96">
-              <div className="space-y-2 p-2">
+              <div className="space-y-3 p-3">
                 {notifications.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No notifications yet</p>
+                  <div className="text-center py-12">
+                    <div className="relative inline-block">
+                      <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-muted-foreground/20 rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-muted-foreground/70 font-medium">No notifications yet</p>
+                    <p className="text-xs text-muted-foreground/50 mt-1">We'll let you know when something happens!</p>
                   </div>
                 ) : (
                   notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                        !notification.is_read ? 'bg-primary/5 border-primary/20' : 'hover:bg-muted/50'
+                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                        !notification.is_read ? 'bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30 shadow-sm' : 'hover:bg-muted/30 border-transparent hover:border-muted-foreground/10'
                       }`}
                       onClick={() => !notification.is_read && markAsRead(notification.id)}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="mt-1">
-                          <Badge variant={getNotificationColor(notification.type)}>
+                        <div className="mt-0.5">
+                          <div className={`inline-flex items-center justify-center h-8 w-8 rounded-full transition-all duration-200 ${
+                            notification.type === 'trio_formed' || notification.type === 'group_formed'
+                              ? 'bg-gradient-to-br from-primary/20 to-primary/10'
+                              : 'bg-gradient-to-br from-secondary/20 to-secondary/10'
+                          }`}>
                             {getNotificationIcon(notification.type)}
-                          </Badge>
+                          </div>
                         </div>
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center justify-between">
-                            <p className="font-medium text-sm">{notification.title}</p>
+                            <p className="font-semibold text-sm">{notification.title}</p>
                             {!notification.is_read && (
-                              <div className="h-2 w-2 bg-primary rounded-full" />
+                              <div className="h-2 w-2 bg-primary rounded-full animate-pulse shadow-sm shadow-primary/50" />
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{notification.message}</p>

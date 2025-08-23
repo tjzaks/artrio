@@ -50,6 +50,8 @@ const CARD_COLORS = [
 ];
 
 const Auth = () => {
+  console.log('🔐 Auth component started');
+  
   const { user, signUp, signIn, loading } = useAuth();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(true);
@@ -63,7 +65,7 @@ const Auth = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phone, setPhone] = useState('');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [birthdayText, setBirthdayText] = useState('');
   const [description, setDescription] = useState('');
@@ -79,6 +81,7 @@ const Auth = () => {
   const [personalityPage, setPersonalityPage] = useState(0);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [welcomeUsername, setWelcomeUsername] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   // Session ID no longer needed - removed username reservation logic
 
   // Redirect if already authenticated
@@ -88,7 +91,7 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-[100dvh] flex items-center justify-center overflow-hidden">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -285,10 +288,10 @@ const Auth = () => {
         username: username.toLowerCase(),
         birthday: format(birthday, 'yyyy-MM-dd'),
         bio: description || '',
+        phone: phone ? phone.replace(/\D/g, '') : undefined,
         personality_type: personalityType,
         first_name: firstName,
-        last_name: lastName,
-        phone_number: phoneNumber || null
+        last_name: lastName
       });
 
       if (error) {
@@ -334,9 +337,9 @@ const Auth = () => {
         setEmail('');
         setPassword('');
         setUsername('');
+        setPhone('');
         setBirthdayText('');
         setDescription('');
-        setPhoneNumber('');
       }
     } catch (error) {
       toast({
@@ -411,18 +414,58 @@ const Auth = () => {
       const { error } = await signIn(emailToUse, password);
       
       if (error) {
+        // Enhanced error logging for iOS Simulator
+        const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+        
+        if (isIOSApp) {
+          console.error('📱 iOS Sign In Failed');
+          console.error('📱 Error:', error);
+          console.error('📱 Error Type:', typeof error);
+          console.error('📱 Error Message:', error?.message || error);
+          
+          // Show more detailed error in iOS
+          const errorMsg = error?.message || cleanErrorMessage(error);
+          
+          // Special handling for common iOS issues
+          if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
+            toast({
+              title: 'Connection Error',
+              description: 'Cannot connect to server. Check Xcode console for details.',
+              variant: 'destructive'
+            });
+          } else {
+            toast({
+              title: 'Sign In Error',
+              description: errorMsg,
+              variant: 'destructive'
+            });
+          }
+        } else {
+          toast({
+            title: 'Sign In Error',
+            description: cleanErrorMessage(error),
+            variant: 'destructive'
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('📱 Unexpected error in handleSignIn:', error);
+      
+      const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+      
+      if (isIOSApp && error?.message === 'Load failed') {
         toast({
-          title: 'Sign In Error',
-          description: cleanErrorMessage(error),
+          title: 'Network Error',
+          description: 'Failed to connect to Artrio servers. This is a known iOS Simulator issue. Check Xcode console.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: error?.message || 'An unexpected error occurred',
           variant: 'destructive'
         });
       }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive'
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -431,6 +474,7 @@ const Auth = () => {
   const signupSteps = [
     { title: "What's your name?", fields: ['name'] },
     { title: "How can we reach you?", fields: ['email'] },
+    { title: "Your phone number", fields: ['phone'] },
     { title: "Create your username", fields: ['username'] },
     { title: "Secure your account", fields: ['password'] },
     { title: "When's your birthday?", fields: ['birthday'] },
@@ -442,10 +486,36 @@ const Auth = () => {
   const totalSteps = signupSteps.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
+  const validatePhone = (phoneNumber: string): boolean => {
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) return false;
+    if (digitsOnly.length === 10 && (digitsOnly[0] === '0' || digitsOnly[0] === '1')) return false;
+    return true;
+  };
+
+  const formatPhone = (value: string): string => {
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 10) {
+      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+    }
+    return digitsOnly;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    setPhone(formatted);
+    if (value && !validatePhone(value)) {
+      setPhoneError('Please enter a valid phone number');
+    } else {
+      setPhoneError(null);
+    }
+  };
+
   const canProceed = () => {
     switch (currentStepData?.fields[0]) {
       case 'name': return firstName && lastName;
       case 'email': return email;
+      case 'phone': return phone && validatePhone(phone);
       case 'username': return username && username.length >= 3;
       case 'password': return password && password.length >= 6 && confirmPassword && password === confirmPassword;
       case 'birthday': return birthdayText;
@@ -473,7 +543,7 @@ const Auth = () => {
   if (!isSignUp) {
     // Regular login form
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-background p-4 overflow-hidden">
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex justify-center mb-4">
@@ -590,7 +660,7 @@ const Auth = () => {
 
   // Card-based signup flow
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4 sm:p-6 md:p-8">
+    <div className="h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-background to-muted p-4 sm:p-6 md:p-8 overflow-hidden">
       <div className="w-full max-w-lg px-4 sm:px-0">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -651,8 +721,7 @@ const Auth = () => {
                           onChange={(e) => setFirstName(e.target.value)}
                           placeholder="First name"
                           className="text-base sm:text-lg p-4 sm:p-5 md:p-6"
-                          autoFocus
-                        />
+                                                  />
                       </div>
                       <div>
                         <Input
@@ -664,17 +733,8 @@ const Auth = () => {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="Phone number (optional)"
-                        className="text-base sm:text-lg p-4 sm:p-5 md:p-6"
-                      />
-                    </div>
                     <p className="text-[10px] text-center text-muted-foreground">
-                      (Your real name and phone number stay private)
+                      (Your real name stays private)
                     </p>
                   </div>
                 )}
@@ -688,8 +748,29 @@ const Auth = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your.email@example.com"
                       className="text-lg p-6 text-center"
-                      autoFocus
-                    />
+                                          />
+                  </div>
+                )}
+
+                {/* Phone Field */}
+                {currentStepData.fields[0] === 'phone' && (
+                  <div className="space-y-4">
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className={cn(
+                        "text-lg p-6 text-center",
+                        phoneError && "border-red-500 focus:border-red-500"
+                      )}
+                                          />
+                    {phoneError && (
+                      <p className="text-xs text-red-500 text-center">{phoneError}</p>
+                    )}
+                    <p className="text-xs text-center text-muted-foreground">
+                      We'll use this to notify you about your trios
+                    </p>
                   </div>
                 )}
 
@@ -733,8 +814,7 @@ const Auth = () => {
                         }}
                         placeholder="@username"
                         className="text-lg p-6 text-center pr-12"
-                        autoFocus
-                      />
+                                              />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         {checkingUsername && (
                           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -769,8 +849,7 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Create a password"
                         className="text-lg p-6 pr-12"
-                        autoFocus
-                      />
+                                              />
                       <Button
                         type="button"
                         variant="ghost"
@@ -932,8 +1011,7 @@ const Auth = () => {
                       placeholder="MM/DD/YYYY"
                       className="text-lg p-6 text-center font-mono"
                       maxLength={10}
-                      autoFocus
-                    />
+                                          />
                     <p className="text-sm text-center text-muted-foreground">
                       We'll celebrate with you! 🥳
                     </p>
@@ -1077,8 +1155,7 @@ const Auth = () => {
                       placeholder="Tell your trio something fun about yourself..."
                       className="w-full min-h-[120px] p-4 text-base rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                       maxLength={150}
-                      autoFocus
-                    />
+                                          />
                     <div className="space-y-1">
                       <p className="text-xs text-center text-muted-foreground">
                         {description.length}/150 characters

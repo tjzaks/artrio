@@ -2,13 +2,14 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session, RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import storage from '@/utils/storage';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string; phone_number?: string | null }) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData: { username: string; birthday: string; bio?: string; phone?: string }) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
@@ -17,44 +18,76 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  // Initialize from localStorage to prevent flashing
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('artrio-auth-user');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [session, setSession] = useState<Session | null>(() => {
-    const stored = localStorage.getItem('artrio-auth-session');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [loading, setLoading] = useState(() => {
-    // Only show loading if we don't have cached auth state
-    const hasStoredUser = localStorage.getItem('artrio-auth-user');
-    return !hasStoredUser;
-  });
-  const [isAdmin, setIsAdmin] = useState(() => {
-    const stored = localStorage.getItem('artrio-is-admin');
-    return stored === 'true';
-  });
+export function AuthProvider({ children, onLoadingChange }: { children: ReactNode; onLoadingChange?: (loading: boolean) => void }) {
+  
+  // Initialize states without localStorage (will load async)
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
   const userRef = useRef<User | null>(null);
 
+
+  // Notify parent of loading changes
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        userRef.current = session?.user ?? null;
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+  }, [loading, onLoadingChange]);
+
+  // Load stored auth state on mount
+  useEffect(() => {
+    
+    const loadStoredAuth = async () => {
+      try {
+        const storedUser = await storage.getItem('artrio-auth-user');
+        const storedSession = await storage.getItem('artrio-auth-session');
+        const storedAdmin = await storage.getItem('artrio-is-admin');
         
-        // Store auth state in localStorage to prevent flashing
+        
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+        if (storedSession) {
+          setSession(JSON.parse(storedSession));
+        }
+        if (storedAdmin === 'true') {
+          setIsAdmin(true);
+        }
+        
+        // Only set loading false if no stored user (wait for auth check otherwise)
+        if (!storedUser) {
+          setLoading(false);
+        }
+      } catch (error) {
+        logger.error('Error loading stored auth:', error);
+        setLoading(false);
+      }
+    };
+    
+    loadStoredAuth();
+  }, []);
+
+  useEffect(() => {
+    
+    try {
+      // Set up auth state listener FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+          userRef.current = session?.user ?? null;
+        
+        // Store auth state to prevent flashing
         if (session?.user) {
-          localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
-          localStorage.setItem('artrio-auth-session', JSON.stringify(session));
+          storage.setItem('artrio-auth-user', JSON.stringify(session.user));
+          storage.setItem('artrio-auth-session', JSON.stringify(session));
         } else {
-          localStorage.removeItem('artrio-auth-user');
-          localStorage.removeItem('artrio-auth-session');
-          localStorage.removeItem('artrio-is-admin');
+          storage.removeItem('artrio-auth-user');
+          storage.removeItem('artrio-auth-session');
+          storage.removeItem('artrio-is-admin');
         }
         
         // Check admin status when user changes
@@ -80,17 +113,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       userRef.current = session?.user ?? null;
       
-      // Store user in localStorage
+      // Store user
       if (session?.user) {
-        localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
+        storage.setItem('artrio-auth-user', JSON.stringify(session.user));
         checkAdminStatus(session.user.id);
         await updatePresence(true, session.user.id);
       } else {
-        localStorage.removeItem('artrio-auth-user');
+        storage.removeItem('artrio-auth-user');
       }
       
       setLoading(false);
+    }).catch((error) => {
+      setLoading(false);
     });
+
+    } catch (error) {
+      setLoading(false);
+    }
 
     // Handle page visibility changes
     const handleVisibilityChange = () => {
@@ -120,8 +159,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePresence = async (isOnline: boolean, userId?: string) => {
-    // Presence tracking temporarily disabled
-    // TODO: Implement user presence tracking
+    if (!userId) return;
+    
+    try {
+      // Update the user's presence in the profiles table
+      await supabase
+        .from('profiles')
+        .update({
+          is_online: isOnline,
+          last_seen: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+    } catch (error) {
+      console.error('Error updating presence:', error);
+    }
   };
 
   const checkAdminStatus = async (userId: string) => {
@@ -135,15 +186,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const isAdminUser = profile?.is_admin || false;
       setIsAdmin(isAdminUser);
-      localStorage.setItem('artrio-is-admin', isAdminUser.toString());
+      storage.setItem('artrio-is-admin', isAdminUser.toString());
     } catch (error) {
       logger.error('Error checking admin status:', error);
       setIsAdmin(false);
-      localStorage.setItem('artrio-is-admin', 'false');
+      storage.setItem('artrio-is-admin', 'false');
     }
   };
 
-  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; personality_type?: string; first_name?: string; last_name?: string; phone_number?: string | null }) => {
+  const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; phone?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -154,8 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bio: userData.bio || null,
           personality_type: userData.personality_type || null,
           first_name: userData.first_name || null,
-          last_name: userData.last_name || null,
-          phone_number: userData.phone_number || null
+          last_name: userData.last_name || null
         }
       }
     });
@@ -191,7 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               user_id: authData.user.id,
               username: userData.username,
               bio: userData.bio || null,
-              avatar_url: null
+              avatar_url: null,
+              phone_number: userData.phone ? userData.phone.replace(/\D/g, '') : null
             });
 
           if (profileError && !profileError.message.includes('duplicate')) {
@@ -219,11 +270,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    return { error };
+    try {
+      // Enhanced debug for iOS Simulator
+      const isIOSApp = typeof window !== 'undefined' && window.navigator?.userAgent?.includes('Artrio iOS App');
+      
+      if (isIOSApp) {
+        console.log('📱 Email:', email);
+        console.log('📱 Supabase client exists:', !!supabase);
+        console.log('📱 Supabase auth exists:', !!supabase?.auth);
+        console.log('📱 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('📱 User Agent:', window.navigator.userAgent);
+        console.log('📱 Current URL:', window.location.href);
+        console.log('📱 localStorage available:', !!window.localStorage);
+        
+        // Test Supabase connection
+        try {
+          console.log('📱 Testing Supabase connection...');
+          const testResult = await supabase.from('profiles').select('count').limit(1);
+          console.log('📱 Supabase connection test:', testResult.error ? 'FAILED' : 'SUCCESS');
+          if (testResult.error) {
+            console.error('📱 Connection test error:', testResult.error);
+          }
+        } catch (testErr) {
+          console.error('📱 Connection test exception:', testErr);
+        }
+      }
+      
+      console.log('📱 Calling signInWithPassword...');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (isIOSApp) {
+        console.log('📱 Sign in response - data:', !!data);
+        console.log('📱 Sign in response - error:', error);
+        if (error) {
+          console.error('📱 Full error object:', JSON.stringify(error, null, 2));
+          console.error('📱 Error message:', error.message);
+          console.error('📱 Error status:', error.status);
+          console.error('📱 Error name:', error.name);
+        }
+      }
+      
+      if (error) {
+        console.error('🔐 Sign in error:', error);
+      }
+      
+      return { error };
+    } catch (err: any) {
+      console.error('📱 CRITICAL: Unexpected sign in exception:', err);
+      console.error('📱 Error type:', typeof err);
+      console.error('📱 Error message:', err?.message);
+      console.error('📱 Error stack:', err?.stack);
+      return { error: err };
+    }
   };
 
   const signOut = async () => {
@@ -239,7 +340,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     
     // Force a hard reload to the auth page
-    window.location.replace('/auth');
+    if (typeof window !== 'undefined') {
+      window.location.replace('/auth');
+    }
   };
 
   const refreshSession = async (): Promise<Session | null> => {
@@ -254,8 +357,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session.user);
         userRef.current = session.user;
-        localStorage.setItem('artrio-auth-user', JSON.stringify(session.user));
-        localStorage.setItem('artrio-auth-session', JSON.stringify(session));
+        storage.setItem('artrio-auth-user', JSON.stringify(session.user));
+        storage.setItem('artrio-auth-session', JSON.stringify(session));
       }
       
       return session;
