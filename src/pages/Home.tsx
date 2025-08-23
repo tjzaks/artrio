@@ -18,6 +18,7 @@ import { cleanErrorMessage } from '@/utils/errorMessages';
 import Stories from '@/components/Stories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
+import TestStoryButton from '@/components/TestStoryButton';
 
 interface Profile {
   id: string;
@@ -710,6 +711,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <TestStoryButton />
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">

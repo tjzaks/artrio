@@ -171,12 +171,36 @@ export default function Friends() {
         // Fetch the profiles of friends
         const { data: friendProfiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, user_id, username, avatar_url, bio, is_online')
+          .select('id, user_id, username, avatar_url, bio, is_online, last_seen')
           .in('id', friendProfileIds);
         
         console.log('[FRIENDS] Friend profiles:', friendProfiles, 'Error:', profilesError);
         
+        // SURGICAL LOGGING - See exactly what we got
         if (friendProfiles) {
+          console.log('[FRIENDS] 🔍 SURGICAL DIAGNOSIS:');
+          friendProfiles.forEach(friend => {
+            console.log(`[FRIENDS] Friend: ${friend.username}`);
+            console.log(`[FRIENDS]   - is_online: ${friend.is_online}`);
+            console.log(`[FRIENDS]   - last_seen: ${friend.last_seen}`);
+            console.log(`[FRIENDS]   - profile_id: ${friend.id}`);
+            console.log(`[FRIENDS]   - user_id: ${friend.user_id}`);
+          });
+          
+          // Check specifically for Toby
+          const toby = friendProfiles.find(f => f.username === 'tobyszaks');
+          if (toby) {
+            console.log('[FRIENDS] 🎯 TOBY STATUS:', {
+              username: toby.username,
+              is_online: toby.is_online,
+              last_seen: toby.last_seen,
+              typeof_is_online: typeof toby.is_online
+            });
+            
+            // Alert for immediate visibility
+            alert(`Toby data from DB:\nis_online: ${toby.is_online}\nlast_seen: ${toby.last_seen}`);
+          }
+          
           setFriends(friendProfiles);
         }
       } else {
@@ -400,25 +424,29 @@ export default function Friends() {
               </Card>
             ) : (
               <div className="space-y-2">
-                {friends.map(friend => (
-                  <Card key={friend.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div 
-                          className="flex items-center gap-3 flex-1"
-                          onClick={() => navigate(`/user/${friend.user_id}`)}
-                        >
-                          <div className="relative">
-                            <ClickableAvatar
-                              userId={friend.user_id}
-                              username={friend.username}
-                              avatarUrl={friend.avatar_url}
-                              size="md"
-                            />
-                            {friend.is_online && (
-                              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
-                            )}
-                          </div>
+                {friends.map(friend => {
+                  // Debug log for each friend being rendered
+                  console.log(`[FRIENDS-RENDER] Rendering ${friend.username}: is_online=${friend.is_online}`);
+                  
+                  return (
+                    <Card key={friend.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div 
+                            className="flex items-center gap-3 flex-1"
+                            onClick={() => navigate(`/user/${friend.user_id}`)}
+                          >
+                            <div className="relative">
+                              <ClickableAvatar
+                                userId={friend.user_id}
+                                username={friend.username}
+                                avatarUrl={friend.avatar_url}
+                                size="md"
+                              />
+                              {friend.is_online && (
+                                <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
+                              )}
+                            </div>
                           <div>
                             <p className="font-medium">@{friend.username}</p>
                             {friend.bio && (
@@ -467,7 +495,8 @@ export default function Friends() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
