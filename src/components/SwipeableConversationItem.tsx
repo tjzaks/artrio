@@ -6,6 +6,7 @@ import ClickableAvatar from '@/components/ClickableAvatar';
 import { format } from 'date-fns';
 import { usePresence } from '@/hooks/usePresence';
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SwipeableConversationItemProps {
   conversation: {
@@ -33,6 +34,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
   const [swipeX, setSwipeX] = useState(0);
   const [showDelete, setShowDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const { isUserOnline } = usePresence();
@@ -40,13 +42,44 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
   const SWIPE_THRESHOLD = 60; // pixels to reveal delete button
   const DELETE_BUTTON_WIDTH = 80; // width of delete button
   
-  // Log presence status for debugging
+  // Fetch and update presence status
   useEffect(() => {
-    if (conversation.other_user) {
-      const online = isUserOnline(conversation.other_user.id);
-      console.log(`[CONVERSATION] ${conversation.other_user.username} is ${online ? '🟢 ONLINE' : '⚫ OFFLINE'}`);
-    }
-  }, [conversation.other_user, isUserOnline]);
+    const checkPresence = async () => {
+      if (conversation.other_user) {
+        // Directly check database for most accurate status
+        const { data } = await supabase
+          .from('profiles')
+          .select('is_online, last_seen')
+          .eq('user_id', conversation.other_user.id)
+          .single();
+        
+        if (data) {
+          // Check if last seen is recent (within 30 seconds)
+          const lastSeenTime = new Date(data.last_seen).getTime();
+          const now = Date.now();
+          const isRecent = (now - lastSeenTime) < 30000;
+          const actuallyOnline = data.is_online && isRecent;
+          
+          setIsOnline(actuallyOnline);
+          
+          console.log(`[CONVERSATION] ${conversation.other_user.username}:`, {
+            dbOnline: data.is_online,
+            isRecent: isRecent,
+            actuallyOnline: actuallyOnline,
+            lastSeen: data.last_seen
+          });
+        }
+      }
+    };
+    
+    // Check immediately
+    checkPresence();
+    
+    // Check periodically
+    const interval = setInterval(checkPresence, 10000); // Every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [conversation.other_user]);
   
   // Check if we're on iOS
   const isIOS = () => {
@@ -198,7 +231,7 @@ export const SwipeableConversationItem: React.FC<SwipeableConversationItemProps>
                 <AvatarFallback>?</AvatarFallback>
               </Avatar>
             )}
-            {conversation.other_user && isUserOnline(conversation.other_user.id) && (
+            {conversation.other_user && isOnline && (
               <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-background z-10" />
             )}
           </div>
