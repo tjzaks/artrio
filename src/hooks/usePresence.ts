@@ -15,6 +15,7 @@ export function usePresence() {
   const { user } = useAuth();
   const [presenceState, setPresenceState] = useState<PresenceState>({});
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Set up database subscription for presence updates
   useEffect(() => {
@@ -79,15 +80,42 @@ export function usePresence() {
             userId: user.id,
             attempted: isOnline
           });
+          setIsConnected(false);
+          // Update our own state to reflect disconnection
+          setPresenceState(prev => ({
+            ...prev,
+            [user.id]: {
+              isOnline: false,
+              lastSeen: new Date().toISOString()
+            }
+          }));
         } else {
           console.log(`[PRESENCE-SUCCESS] Updated ${user.id}:`, {
             isOnline: data?.is_online,
             lastSeen: data?.last_seen,
             username: data?.username
           });
+          setIsConnected(isOnline);
+          // Update our own state immediately
+          setPresenceState(prev => ({
+            ...prev,
+            [user.id]: {
+              isOnline: isOnline,
+              lastSeen: new Date().toISOString()
+            }
+          }));
         }
       } catch (error) {
         console.error('Error updating presence:', error);
+        setIsConnected(false);
+        // Update state to show disconnection
+        setPresenceState(prev => ({
+          ...prev,
+          [user.id]: {
+            isOnline: false,
+            lastSeen: new Date().toISOString()
+          }
+        }));
       }
     };
 
@@ -154,6 +182,7 @@ export function usePresence() {
       .subscribe(async (status) => {
         console.log(`[PRESENCE-CHANNEL] Subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
           // Send user's presence
           const trackData = {
             online_at: new Date().toISOString(),
@@ -162,6 +191,9 @@ export function usePresence() {
           };
           console.log('[PRESENCE-TRACK] Sending presence:', trackData);
           await presenceChannel.track(trackData);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.log('[PRESENCE-CHANNEL] Lost connection:', status);
+          setIsConnected(false);
         }
       });
 
@@ -196,13 +228,35 @@ export function usePresence() {
       updateOwnPresence(false);
     };
     
+    // Monitor network connectivity
+    const handleOnline = () => {
+      console.log('[PRESENCE] Network online - reconnecting...');
+      updateOwnPresence(true);
+    };
+    
+    const handleOffline = () => {
+      console.log('[PRESENCE] Network offline - disconnected');
+      setIsConnected(false);
+      setPresenceState(prev => ({
+        ...prev,
+        [user.id]: {
+          isOnline: false,
+          lastSeen: new Date().toISOString()
+        }
+      }));
+    };
+    
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       
       // Set user as offline
       updateOwnPresence(false);
@@ -293,5 +347,6 @@ export function usePresence() {
     isUserOnline,
     getUserPresenceText,
     isUserCurrentlyActive,
+    isConnected, // Export connection status
   };
 }

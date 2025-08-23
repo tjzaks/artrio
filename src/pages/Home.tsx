@@ -752,7 +752,7 @@ const Home = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/profile')} 
-                className="h-8 w-8 p-0 rounded-full hover:bg-muted"
+                className="h-8 w-8 p-0 rounded-full hover:bg-muted relative"
                 title="Your Profile"
               >
                 <Avatar className="h-7 w-7">
@@ -761,6 +761,14 @@ const Home = () => {
                     {userProfile?.username?.substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
+                {/* Online indicator - shows your connection status */}
+                {user?.id && isUserOnline(user.id) ? (
+                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 border-2 border-background rounded-full" 
+                       title="Connected" />
+                ) : (
+                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-gray-400 border-2 border-background rounded-full" 
+                       title="Disconnected" />
+                )}
               </Button>
             </div>
           </div>
