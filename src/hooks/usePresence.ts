@@ -15,6 +15,7 @@ export function usePresence() {
   const { user } = useAuth();
   const [presenceState, setPresenceState] = useState<PresenceState>({});
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Set up database subscription for presence updates
   useEffect(() => {
@@ -36,25 +37,36 @@ export function usePresence() {
             const userId = (payload.new as any).user_id;
             const isOnline = (payload.new as any).is_online;
             const lastSeen = (payload.new as any).last_seen;
-            console.log(`[PRESENCE-DB-CHANGE] User ${userId} presence updated: online=${isOnline}`);
+            
+            // Check if this is a recent update (within 30 seconds)
+            const lastSeenTime = new Date(lastSeen).getTime();
+            const now = new Date().getTime();
+            const timeDiff = now - lastSeenTime;
+            const isActuallyOnline = isOnline && timeDiff < 30000;
+            
+            console.log(`[PRESENCE-DB-CHANGE] User ${userId}: online=${isOnline}, actually_online=${isActuallyOnline} (${Math.round(timeDiff/1000)}s ago)`);
             
             // Update local state with database change
             setPresenceState(prev => ({
               ...prev,
               [userId]: {
-                isOnline: isOnline || false,
+                isOnline: isActuallyOnline,
                 lastSeen: lastSeen || new Date().toISOString()
               }
             }));
+            
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[PRESENCE-DB-SUBSCRIPTION] Status:', status);
+      });
     
     return () => {
       supabase.removeChannel(profilesSubscription);
     };
   }, [user]);
+  
   
   useEffect(() => {
     if (!user) return;
@@ -79,15 +91,42 @@ export function usePresence() {
             userId: user.id,
             attempted: isOnline
           });
+          setIsConnected(false);
+          // Update our own state to reflect disconnection
+          setPresenceState(prev => ({
+            ...prev,
+            [user.id]: {
+              isOnline: false,
+              lastSeen: new Date().toISOString()
+            }
+          }));
         } else {
           console.log(`[PRESENCE-SUCCESS] Updated ${user.id}:`, {
             isOnline: data?.is_online,
             lastSeen: data?.last_seen,
             username: data?.username
           });
+          setIsConnected(isOnline);
+          // Update our own state immediately
+          setPresenceState(prev => ({
+            ...prev,
+            [user.id]: {
+              isOnline: isOnline,
+              lastSeen: new Date().toISOString()
+            }
+          }));
         }
       } catch (error) {
         console.error('Error updating presence:', error);
+        setIsConnected(false);
+        // Update state to show disconnection
+        setPresenceState(prev => ({
+          ...prev,
+          [user.id]: {
+            isOnline: false,
+            lastSeen: new Date().toISOString()
+          }
+        }));
       }
     };
 
@@ -154,6 +193,7 @@ export function usePresence() {
       .subscribe(async (status) => {
         console.log(`[PRESENCE-CHANNEL] Subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
           // Send user's presence
           const trackData = {
             online_at: new Date().toISOString(),
@@ -162,6 +202,9 @@ export function usePresence() {
           };
           console.log('[PRESENCE-TRACK] Sending presence:', trackData);
           await presenceChannel.track(trackData);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.log('[PRESENCE-CHANNEL] Lost connection:', status);
+          setIsConnected(false);
         }
       });
 
@@ -196,13 +239,35 @@ export function usePresence() {
       updateOwnPresence(false);
     };
     
+    // Monitor network connectivity
+    const handleOnline = () => {
+      console.log('[PRESENCE] Network online - reconnecting...');
+      updateOwnPresence(true);
+    };
+    
+    const handleOffline = () => {
+      console.log('[PRESENCE] Network offline - disconnected');
+      setIsConnected(false);
+      setPresenceState(prev => ({
+        ...prev,
+        [user.id]: {
+          isOnline: false,
+          lastSeen: new Date().toISOString()
+        }
+      }));
+    };
+    
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       
       // Set user as offline
       updateOwnPresence(false);
@@ -228,11 +293,11 @@ export function usePresence() {
       }
       
       if (data) {
-        // Check if last_seen is recent (within 15 seconds) to determine if really online
+        // Check if last_seen is recent (within 30 seconds) to determine if really online
         const lastSeenTime = new Date(data.last_seen).getTime();
         const now = new Date().getTime();
         const timeDiff = now - lastSeenTime;
-        const isActuallyOnline = data.is_online && timeDiff < 15000; // 15 seconds (matches heartbeat)
+        const isActuallyOnline = data.is_online && timeDiff < 30000; // 30 seconds (allows for network delays)
         
         console.log(`[PRESENCE-FETCH] ${data.username || userId}: DB says online=${data.is_online}, last_seen=${data.last_seen}, actually_online=${isActuallyOnline} (${Math.round(timeDiff/1000)}s ago)`);
         
@@ -250,10 +315,24 @@ export function usePresence() {
   };
 
   const isUserOnline = (userId: string): boolean => {
-    // Always fetch fresh presence data for accuracy
-    if (!presenceState[userId] || Date.now() % 10000 < 100) { // Refresh every ~10 seconds
+    // Fetch if we don't have presence data for this user
+    if (!presenceState[userId]) {
       fetchUserPresence(userId);
+      return false; // Return false while loading
     }
+    
+    // For checking our own status, also check if last update was recent
+    if (userId === user?.id) {
+      const lastSeen = presenceState[userId]?.lastSeen;
+      if (lastSeen) {
+        const timeSinceUpdate = Date.now() - new Date(lastSeen).getTime();
+        // If our own status hasn't been updated in 20 seconds, fetch fresh
+        if (timeSinceUpdate > 20000) {
+          fetchUserPresence(userId);
+        }
+      }
+    }
+    
     return presenceState[userId]?.isOnline || false;
   };
 
@@ -293,5 +372,6 @@ export function usePresence() {
     isUserOnline,
     getUserPresenceText,
     isUserCurrentlyActive,
+    isConnected, // Export connection status
   };
 }
