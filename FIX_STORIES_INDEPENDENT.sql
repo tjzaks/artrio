@@ -1,5 +1,9 @@
 -- Make stories independent of trios
--- Stories should be visible to friends AND trio members
+-- Stories visibility rules:
+-- 1. Your friends can ALWAYS see your stories
+-- 2. Your CURRENT trio members (today only) can see your stories
+-- 3. Past trio members can ONLY see stories if they're also friends
+-- This encourages friending people you like from trios!
 
 -- 1. Make trio_id nullable in posts table
 ALTER TABLE posts 
@@ -40,7 +44,7 @@ USING (
     )
   )
   OR
-  -- Can see stories from anyone you've ever been in a trio with
+  -- Can see stories from CURRENT trio members only (today's trio)
   (
     post_type = 'story' AND
     user_id IN (
@@ -52,7 +56,8 @@ USING (
           ELSE user1_id
         END as trio_member
       FROM trios
-      WHERE user1_id = auth.uid() OR user2_id = auth.uid() OR user3_id = auth.uid()
+      WHERE date = CURRENT_DATE  -- Only TODAY's trio
+      AND (user1_id = auth.uid() OR user2_id = auth.uid() OR user3_id = auth.uid())
       UNION
       SELECT DISTINCT
         CASE 
@@ -62,7 +67,8 @@ USING (
           ELSE user3_id
         END as trio_member
       FROM trios
-      WHERE user1_id = auth.uid() OR user2_id = auth.uid() OR user3_id = auth.uid()
+      WHERE date = CURRENT_DATE  -- Only TODAY's trio
+      AND (user1_id = auth.uid() OR user2_id = auth.uid() OR user3_id = auth.uid())
     )
   )
 );
@@ -136,16 +142,22 @@ BEGIN
         AND (f.user1_id = p_user_id OR f.user2_id = p_user_id)
       )
       OR
-      -- Stories from ANY trio members (past or present)
+      -- Stories from CURRENT trio members only (today's trio)
       p.user_id IN (
         SELECT DISTINCT other_user
         FROM (
-          -- Get all users who have ever been in a trio with you
-          SELECT user1_id as other_user FROM trios WHERE user2_id = p_user_id OR user3_id = p_user_id
+          -- Get users in TODAY's trio with you
+          SELECT user1_id as other_user FROM trios 
+          WHERE date = CURRENT_DATE 
+          AND (user2_id = p_user_id OR user3_id = p_user_id)
           UNION
-          SELECT user2_id as other_user FROM trios WHERE user1_id = p_user_id OR user3_id = p_user_id
+          SELECT user2_id as other_user FROM trios 
+          WHERE date = CURRENT_DATE 
+          AND (user1_id = p_user_id OR user3_id = p_user_id)
           UNION
-          SELECT user3_id as other_user FROM trios WHERE user1_id = p_user_id OR user2_id = p_user_id
+          SELECT user3_id as other_user FROM trios 
+          WHERE date = CURRENT_DATE 
+          AND (user1_id = p_user_id OR user2_id = p_user_id)
         ) trio_connections
         WHERE other_user != p_user_id
       )

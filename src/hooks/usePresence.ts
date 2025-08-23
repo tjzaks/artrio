@@ -67,6 +67,7 @@ export function usePresence() {
     };
   }, [user]);
   
+  
   useEffect(() => {
     if (!user) return;
 
@@ -318,6 +319,18 @@ export function usePresence() {
     if (!presenceState[userId]) {
       fetchUserPresence(userId);
       return false; // Return false while loading
+    }
+    
+    // For checking our own status, also check if last update was recent
+    if (userId === user?.id) {
+      const lastSeen = presenceState[userId]?.lastSeen;
+      if (lastSeen) {
+        const timeSinceUpdate = Date.now() - new Date(lastSeen).getTime();
+        // If our own status hasn't been updated in 20 seconds, fetch fresh
+        if (timeSinceUpdate > 20000) {
+          fetchUserPresence(userId);
+        }
+      }
     }
     
     return presenceState[userId]?.isOnline || false;

@@ -166,27 +166,31 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         .getPublicUrl(fileName);
       console.log('[STORY] Public URL:', publicUrl);
 
-      // Get today's trio to associate story with it (optional now)
+      // For now, create a dummy trio_id since it's required in the database
+      // We'll use a special UUID that indicates this is a story without a trio
+      const STORY_PLACEHOLDER_TRIO = '00000000-0000-0000-0000-000000000000';
+      
+      // Try to get today's trio, but don't fail if none exists
       console.log('[STORY] Checking for trio...');
       const { data: todaysTrio } = await supabase
         .from('trios')
         .select('id')
         .eq('date', new Date().toISOString().split('T')[0])
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
-        .maybeSingle(); // Use maybeSingle instead of single to allow null
+        .maybeSingle();
 
-      console.log('[STORY] Trio found:', todaysTrio?.id || 'none');
+      console.log('[STORY] Trio found:', todaysTrio?.id || 'none - using placeholder');
 
       // Create story post in database with caption position
       console.log('[STORY] Creating post in database...');
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .insert({
-          user_id: user?.id,  // Use auth user.id for posts table
-          trio_id: todaysTrio?.id || null,  // Make trio_id optional
+          user_id: user?.id,
+          trio_id: todaysTrio?.id || STORY_PLACEHOLDER_TRIO,  // Use placeholder if no trio
           content: caption || '📸',
           image_url: publicUrl,
-          media_url: publicUrl,  // Also set media_url for compatibility
+          media_url: publicUrl,
           media_type: 'image',
           post_type: 'story',
           metadata: {
