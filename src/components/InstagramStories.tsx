@@ -66,7 +66,7 @@ export default function InstagramStories() {
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
 
-      // Get my story
+      // Get my story (use maybeSingle to avoid error if no story)
       const { data: myStoryData } = await supabase
         .from('posts')
         .select(`
@@ -85,7 +85,7 @@ export default function InstagramStories() {
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       setStories(friendStories || []);
       setMyStory(myStoryData);
@@ -94,8 +94,9 @@ export default function InstagramStories() {
     }
   };
 
-  // Group stories by user (Instagram style)
+  // Group stories by user (Instagram style) - with safety check
   const groupedStories = stories.reduce((acc, story) => {
+    if (!story.profiles) return acc; // Skip if no profile data
     const userId = story.profiles.id;
     if (!acc[userId]) {
       acc[userId] = {

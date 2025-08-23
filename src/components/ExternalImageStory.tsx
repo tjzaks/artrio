@@ -39,8 +39,8 @@ export default function ExternalImageStory() {
         setStatus('✅ Story posted with external image!');
         console.log('Posted:', data);
         
-        // Refresh the page to see the story
-        setTimeout(() => window.location.reload(), 1000);
+        // Don't refresh - it's breaking the app
+        // setTimeout(() => window.location.reload(), 1000);
       }
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);
