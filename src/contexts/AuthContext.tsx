@@ -195,6 +195,7 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
   };
 
   const signUp = async (email: string, password: string, userData: { username: string; birthday: string; bio?: string; phone?: string; personality_type?: string; first_name?: string; last_name?: string }) => {
+    console.log('📱 SignUp - Phone data received:', userData.phone);
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -235,6 +236,8 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
 
         if (!existingProfile) {
           // Create profile manually
+          const phoneToStore = userData.phone ? userData.phone.replace(/\D/g, '') : null;
+          console.log('📱 SignUp - Storing phone in profiles:', phoneToStore);
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
@@ -242,7 +245,7 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
               username: userData.username,
               bio: userData.bio || null,
               avatar_url: null,
-              phone_number: userData.phone ? userData.phone.replace(/\D/g, '') : null
+              phone_number: phoneToStore
             });
 
           if (profileError && !profileError.message.includes('duplicate')) {

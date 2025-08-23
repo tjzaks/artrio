@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
-import UserProfileModal from '@/components/admin/UserProfileModal';
+// import MinimalModal from '@/components/admin/MinimalModal'; // Not needed anymore
 
 interface AdminStats {
   totalUsers: number;
@@ -38,7 +38,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedUserData, setSelectedUserData] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -433,8 +433,71 @@ const Admin = () => {
                     key={user.user_id} 
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-all"
                     onClick={() => {
+                      // Start with basic info immediately
                       setSelectedUserId(user.user_id);
-                      setIsProfileModalOpen(true);
+                      setSelectedUserData({
+                        username: user.username,
+                        email: 'Loading...',
+                        birthday: null,
+                        age: null,
+                        phone: 'Loading...'
+                      });
+                      
+                      // Then fetch detailed data
+                      setTimeout(async () => {
+                        try {
+                          console.log('🔍 Fetching data for user:', user.user_id);
+                          
+                          const { data: authData, error: authError } = await supabase
+                            .rpc('admin_get_user_email', { target_user_id: user.user_id });
+                          
+                          console.log('📧 Auth data response:', { authData, authError });
+                          
+                          const { data: sensitiveData, error: sensitiveError } = await supabase
+                            .rpc('admin_get_sensitive_data', { target_user_id: user.user_id });
+                          
+                          console.log('🎂 Sensitive data response:', { sensitiveData, sensitiveError });
+                          
+                          // Calculate age from birthday in authData
+                          let calculatedAge = null;
+                          const birthdayFromAuth = authData?.raw_user_meta_data?.birthday;
+                          
+                          if (birthdayFromAuth) {
+                            try {
+                              // Parse date as local date to avoid timezone issues
+                              const [year, month, day] = birthdayFromAuth.split('-').map(Number);
+                              const birthDate = new Date(year, month - 1, day); // month is 0-indexed
+                              const today = new Date();
+                              calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                              const monthDiff = today.getMonth() - birthDate.getMonth();
+                              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                calculatedAge--;
+                              }
+                            } catch (error) {
+                              console.error('Error calculating age:', error);
+                            }
+                          }
+                          
+                          setSelectedUserData({
+                            username: user.username,
+                            email: authData?.email || 'Unable to load',
+                            birthday: birthdayFromAuth || null,
+                            age: calculatedAge,
+                            phone: authData?.phone || authData?.raw_user_meta_data?.phone || user.phone_number || 'No phone numbers in database yet'
+                          });
+                          
+                          console.log('✅ Updated user data display');
+                        } catch (error) {
+                          console.error('❌ Error fetching user data:', error);
+                          setSelectedUserData({
+                            username: user.username,
+                            email: 'Error loading',
+                            birthday: null,
+                            age: null,
+                            phone: 'Error loading'
+                          });
+                        }
+                      }, 100);
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -481,16 +544,43 @@ const Admin = () => {
           </CardContent>
         </Card>
 
-        {/* User Profile Modal */}
-        <UserProfileModal
-          userId={selectedUserId}
-          isOpen={isProfileModalOpen}
-          onClose={() => {
-            setIsProfileModalOpen(false);
-            setSelectedUserId(null);
-            fetchAdminStats(); // Refresh stats after potential changes
-          }}
-        />
+        {/* User Info Display */}
+        {selectedUserId && (
+          <Card className="mt-6 border-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                User Account Info (ID: {selectedUserId})
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedUserData(null);
+                    setSelectedUserId(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedUserData ? (
+                <div className="space-y-2">
+                  <p><strong>Username:</strong> {selectedUserData.username}</p>
+                  <p><strong>Email:</strong> {selectedUserData.email}</p>
+                  <p><strong>Phone:</strong> {selectedUserData.phone}</p>
+                  <p><strong>Birthday:</strong> {selectedUserData.birthday ? (() => {
+                    const [year, month, day] = selectedUserData.birthday.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                  })() : 'Not provided'}</p>
+                  <p><strong>Age:</strong> {selectedUserData.age ? `${selectedUserData.age} years old` : 'Unknown'}</p>
+                </div>
+              ) : (
+                <p>Loading user data...</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );
