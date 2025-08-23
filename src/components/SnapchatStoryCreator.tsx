@@ -124,6 +124,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       const fileName = `${user?.id}/${Date.now()}.jpg`;
       
       // Upload the image
+      console.log('[STORY] Uploading to storage bucket...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, blob, {
@@ -132,8 +133,10 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         });
 
       if (uploadError) {
+        console.error('[STORY] Storage upload failed:', uploadError);
         throw uploadError;
       }
+      console.log('[STORY] Upload successful');
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -177,8 +180,16 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
 
       if (postError) {
         console.error('[STORY] Failed to post story:', postError);
+        console.error('[STORY] Post data was:', {
+          user_id: user?.id,
+          trio_id: trioId,
+          post_type: 'story',
+          media_url: publicUrl
+        });
         throw postError;
       }
+      
+      console.log('[STORY] Story posted successfully!');
 
       toast({
         title: 'Story posted!',
