@@ -66,23 +66,6 @@ export default function Messages() {
   // Track read receipts globally for messages I sent
   const [readReceipts, setReadReceipts] = useState<Map<string, {is_read: boolean, read_at?: string}>>(new Map());
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  
-  // Periodically refresh presence for visible conversations
-  useEffect(() => {
-    if (!conversations.length) return;
-    
-    // Check presence every 5 seconds for all conversation partners
-    const presenceInterval = setInterval(() => {
-      conversations.forEach(conv => {
-        if (conv.other_user?.id) {
-          // Force refresh presence
-          isUserOnline(conv.other_user.id);
-        }
-      });
-    }, 5000);
-    
-    return () => clearInterval(presenceInterval);
-  }, [conversations.length]);
 
   // Prevent page scrolling when Messages is open
   useEffect(() => {

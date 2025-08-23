@@ -16,7 +16,6 @@ export function usePresence() {
   const [presenceState, setPresenceState] = useState<PresenceState>({});
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [lastFetchTime, setLastFetchTime] = useState<{ [userId: string]: number }>({});
 
   // Set up database subscription for presence updates
   useEffect(() => {
@@ -56,8 +55,6 @@ export function usePresence() {
               }
             }));
             
-            // Clear fetch time so we don't re-fetch immediately
-            setLastFetchTime(prev => ({ ...prev, [userId]: Date.now() }));
           }
         }
       )
@@ -317,13 +314,10 @@ export function usePresence() {
   };
 
   const isUserOnline = (userId: string): boolean => {
-    const now = Date.now();
-    const lastFetch = lastFetchTime[userId] || 0;
-    
-    // Fetch if we haven't fetched before, or if it's been more than 5 seconds
-    if (!presenceState[userId] || (now - lastFetch > 5000)) {
-      setLastFetchTime(prev => ({ ...prev, [userId]: now }));
+    // Fetch if we don't have presence data for this user
+    if (!presenceState[userId]) {
       fetchUserPresence(userId);
+      return false; // Return false while loading
     }
     
     return presenceState[userId]?.isOnline || false;

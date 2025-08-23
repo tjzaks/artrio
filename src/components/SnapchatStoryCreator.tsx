@@ -114,20 +114,25 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
   const handlePost = async () => {
     if (!selectedImage || uploading) return;
     
+    console.log('[STORY] Starting upload process...');
     setUploading(true);
     
     try {
       // Convert data URL to compressed blob
+      console.log('[STORY] Compressing image...');
       const blob = await compressImage(selectedImage);
+      console.log('[STORY] Image compressed, size:', blob.size);
       
       // Create a unique filename
       const fileName = `${user?.id}/${Date.now()}.jpg`;
+      console.log('[STORY] Filename:', fileName);
       
       // First, check if the bucket exists and create it if needed
       const { data: buckets } = await supabase.storage.listBuckets();
       const storiesBucket = buckets?.find(b => b.name === 'stories');
       
       if (!storiesBucket) {
+        console.log('[STORY] Creating stories bucket...');
         // Create the bucket with public access
         const { error: createError } = await supabase.storage.createBucket('stories', {
           public: true,
@@ -141,6 +146,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       }
       
       // Upload the image
+      console.log('[STORY] Uploading to storage...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(fileName, blob, {
@@ -149,33 +155,35 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        console.error('[STORY] Upload error:', uploadError);
         throw uploadError;
       }
+      console.log('[STORY] Upload successful:', uploadData);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('stories')
         .getPublicUrl(fileName);
+      console.log('[STORY] Public URL:', publicUrl);
 
-      // Get today's trio to associate story with it
+      // Get today's trio to associate story with it (optional now)
+      console.log('[STORY] Checking for trio...');
       const { data: todaysTrio } = await supabase
         .from('trios')
         .select('id')
         .eq('date', new Date().toISOString().split('T')[0])
         .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id},user3_id.eq.${user?.id}`)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to allow null
 
-      if (!todaysTrio?.id) {
-        throw new Error('You need to be in a trio to post stories');
-      }
+      console.log('[STORY] Trio found:', todaysTrio?.id || 'none');
 
       // Create story post in database with caption position
-      const { error: postError } = await supabase
+      console.log('[STORY] Creating post in database...');
+      const { data: postData, error: postError } = await supabase
         .from('posts')
         .insert({
           user_id: user?.id,  // Use auth user.id for posts table
-          trio_id: todaysTrio.id,  // Required field
+          trio_id: todaysTrio?.id || null,  // Make trio_id optional
           content: caption || '📸',
           image_url: publicUrl,
           media_url: publicUrl,  // Also set media_url for compatibility
@@ -184,12 +192,15 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
           metadata: {
             caption_position: captionPosition
           }
-        });
+        })
+        .select()
+        .single();
 
       if (postError) {
-        console.error('Post error:', postError);
+        console.error('[STORY] Post error:', postError);
         throw postError;
       }
+      console.log('[STORY] Post created successfully:', postData);
 
       toast({
         title: 'Story posted!',
@@ -199,7 +210,7 @@ export default function SnapchatStoryCreator({ open, onClose, onSuccess }: Story
       handleClose();
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('Error posting story:', error);
+      console.error('[STORY] Error posting story:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to post story',
