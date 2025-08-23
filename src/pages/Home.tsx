@@ -15,7 +15,8 @@ import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
-import InstagramStories from '@/components/InstagramStories';
+import SimpleStoryViewer from '@/components/SimpleStoryViewer';
+import DebugStories from '@/components/DebugStories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
 import ExternalImageStory from '@/components/ExternalImageStory';
@@ -712,6 +713,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       <ExternalImageStory />
+      <DebugStories />
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
@@ -796,7 +798,7 @@ const Home = () => {
         </div>
         
         {/* Stories Bar */}
-        <InstagramStories />
+        <SimpleStoryViewer />
       </header>
 
       <main className="p-4 space-y-4 pb-20">
