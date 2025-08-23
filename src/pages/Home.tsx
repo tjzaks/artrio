@@ -18,8 +18,7 @@ import { cleanErrorMessage } from '@/utils/errorMessages';
 import InstagramStories from '@/components/InstagramStories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
-import DirectStoryTest from '@/components/DirectStoryTest';
-import UltraSimpleStory from '@/components/UltraSimpleStory';
+import ExternalImageStory from '@/components/ExternalImageStory';
 
 interface Profile {
   id: string;
@@ -712,8 +711,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DirectStoryTest />
-      <UltraSimpleStory />
+      <ExternalImageStory />
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
