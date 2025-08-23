@@ -16,6 +16,7 @@ export function usePresence() {
   const [presenceState, setPresenceState] = useState<PresenceState>({});
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<{ [userId: string]: number }>({});
 
   // Set up database subscription for presence updates
   useEffect(() => {
@@ -37,20 +38,32 @@ export function usePresence() {
             const userId = (payload.new as any).user_id;
             const isOnline = (payload.new as any).is_online;
             const lastSeen = (payload.new as any).last_seen;
-            console.log(`[PRESENCE-DB-CHANGE] User ${userId} presence updated: online=${isOnline}`);
+            
+            // Check if this is a recent update (within 30 seconds)
+            const lastSeenTime = new Date(lastSeen).getTime();
+            const now = new Date().getTime();
+            const timeDiff = now - lastSeenTime;
+            const isActuallyOnline = isOnline && timeDiff < 30000;
+            
+            console.log(`[PRESENCE-DB-CHANGE] User ${userId}: online=${isOnline}, actually_online=${isActuallyOnline} (${Math.round(timeDiff/1000)}s ago)`);
             
             // Update local state with database change
             setPresenceState(prev => ({
               ...prev,
               [userId]: {
-                isOnline: isOnline || false,
+                isOnline: isActuallyOnline,
                 lastSeen: lastSeen || new Date().toISOString()
               }
             }));
+            
+            // Clear fetch time so we don't re-fetch immediately
+            setLastFetchTime(prev => ({ ...prev, [userId]: Date.now() }));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[PRESENCE-DB-SUBSCRIPTION] Status:', status);
+      });
     
     return () => {
       supabase.removeChannel(profilesSubscription);
@@ -282,11 +295,11 @@ export function usePresence() {
       }
       
       if (data) {
-        // Check if last_seen is recent (within 15 seconds) to determine if really online
+        // Check if last_seen is recent (within 30 seconds) to determine if really online
         const lastSeenTime = new Date(data.last_seen).getTime();
         const now = new Date().getTime();
         const timeDiff = now - lastSeenTime;
-        const isActuallyOnline = data.is_online && timeDiff < 15000; // 15 seconds (matches heartbeat)
+        const isActuallyOnline = data.is_online && timeDiff < 30000; // 30 seconds (allows for network delays)
         
         console.log(`[PRESENCE-FETCH] ${data.username || userId}: DB says online=${data.is_online}, last_seen=${data.last_seen}, actually_online=${isActuallyOnline} (${Math.round(timeDiff/1000)}s ago)`);
         
@@ -304,10 +317,15 @@ export function usePresence() {
   };
 
   const isUserOnline = (userId: string): boolean => {
-    // Always fetch fresh presence data for accuracy
-    if (!presenceState[userId] || Date.now() % 10000 < 100) { // Refresh every ~10 seconds
+    const now = Date.now();
+    const lastFetch = lastFetchTime[userId] || 0;
+    
+    // Fetch if we haven't fetched before, or if it's been more than 5 seconds
+    if (!presenceState[userId] || (now - lastFetch > 5000)) {
+      setLastFetchTime(prev => ({ ...prev, [userId]: now }));
       fetchUserPresence(userId);
     }
+    
     return presenceState[userId]?.isOnline || false;
   };
 
