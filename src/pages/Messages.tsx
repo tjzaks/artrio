@@ -1190,8 +1190,8 @@ export default function Messages() {
                       <AvatarFallback>??</AvatarFallback>
                     </Avatar>
                   )}
-                  {selectedConversation.other_user?.id && isUserCurrentlyActive(selectedConversation.other_user.id) && (
-                    <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
+                  {selectedConversation.other_user?.id && isUserOnline(selectedConversation.other_user.id) && (
+                    <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 border-2 border-background rounded-full animate-pulse" />
                   )}
                 </div>
                 <div 
@@ -1199,10 +1199,16 @@ export default function Messages() {
                   onClick={() => navigate(`/user/${selectedConversation.other_user?.id}`)}
                 >
                   <p className="font-medium truncate">@{selectedConversation.other_user?.username || 'Unknown'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedConversation.other_user?.id 
-                      ? getUserPresenceText(selectedConversation.other_user.id)
-                      : 'Offline'}
+                  <p className="text-xs">
+                    {selectedConversation.other_user?.id && isUserOnline(selectedConversation.other_user.id) ? (
+                      <span className="text-green-500 font-medium">● Active now</span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {selectedConversation.other_user?.id 
+                          ? getUserPresenceText(selectedConversation.other_user.id)
+                          : 'Offline'}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

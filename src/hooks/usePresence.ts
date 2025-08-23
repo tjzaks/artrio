@@ -29,7 +29,7 @@ export function usePresence() {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `user_id=neq.${user.id}`, // Listen to all users except self
+          // NO FILTER - we need to see ALL updates including our own
         },
         (payload) => {
           if (payload.new && (payload.new as any).user_id) {
@@ -180,23 +180,29 @@ export function usePresence() {
       }
     }, 10000); // Changed from 30s to 10s for better responsiveness
 
-    // Handle page visibility changes
+    // Handle page visibility changes - but DON'T set offline for tab switches
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // User switched to another tab/minimized
-        updateOwnPresence(false);
-      } else {
-        // User returned to the tab
+      if (!document.hidden) {
+        // User returned to the tab - update presence to ensure we're marked online
         updateOwnPresence(true);
       }
+      // Don't set offline when switching tabs - only on actual page unload
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Handle actual page close/navigation
+    const handleBeforeUnload = () => {
+      updateOwnPresence(false);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       
       // Set user as offline
       updateOwnPresence(false);
@@ -222,11 +228,11 @@ export function usePresence() {
       }
       
       if (data) {
-        // Check if last_seen is recent (within 30 seconds) to determine if really online
+        // Check if last_seen is recent (within 15 seconds) to determine if really online
         const lastSeenTime = new Date(data.last_seen).getTime();
         const now = new Date().getTime();
         const timeDiff = now - lastSeenTime;
-        const isActuallyOnline = data.is_online && timeDiff < 30000; // 30 seconds
+        const isActuallyOnline = data.is_online && timeDiff < 15000; // 15 seconds (matches heartbeat)
         
         console.log(`[PRESENCE-FETCH] ${data.username || userId}: DB says online=${data.is_online}, last_seen=${data.last_seen}, actually_online=${isActuallyOnline} (${Math.round(timeDiff/1000)}s ago)`);
         

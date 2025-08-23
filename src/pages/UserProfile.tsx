@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare, PartyPopper, Cake, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePresence } from '@/hooks/usePresence';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ProfileSkeleton from '@/components/ProfileSkeleton';
 import ReportUserDialog from '@/components/ReportUserDialog';
@@ -27,6 +28,7 @@ const UserProfile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isUserOnline, getUserPresenceText } = usePresence();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [ageRange, setAgeRange] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -473,9 +475,13 @@ const UserProfile = () => {
                       {profile.username.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  {/* Birthday indicator instead of active dot */}
+                  {/* Online indicator */}
+                  {userId && isUserOnline(userId) && (
+                    <div className="absolute bottom-0 right-0 h-6 w-6 bg-green-500 border-3 border-background rounded-full" />
+                  )}
+                  {/* Birthday indicator */}
                   {isBirthday && (
-                    <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1.5">
+                    <div className="absolute -bottom-1 -left-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-1.5">
                       <PartyPopper className="h-4 w-4 text-white" />
                     </div>
                   )}
@@ -483,6 +489,12 @@ const UserProfile = () => {
                 
                 <div className="text-center">
                   <h2 className="text-2xl font-bold">@{profile.username}</h2>
+                  {/* Online status text */}
+                  {userId && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getUserPresenceText(userId)}
+                    </p>
+                  )}
                   {ageRange && (
                     <p className="text-muted-foreground">Age: {ageRange}</p>
                   )}
