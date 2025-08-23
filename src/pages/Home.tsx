@@ -753,17 +753,36 @@ const Home = () => {
                 size="sm" 
                 onClick={() => navigate('/profile')} 
                 className="h-8 w-8 p-0 rounded-full hover:bg-muted relative"
-                title="Your Profile"
+                title={user?.id && isUserOnline(user.id) ? "Your Profile (Connected)" : "Your Profile (Disconnected)"}
               >
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src={userProfile?.avatar_url || undefined} />
-                  <AvatarFallback className="text-xs">
+                <Avatar 
+                  className={`h-7 w-7 transition-all duration-300 ${
+                    user?.id && !isUserOnline(user.id) 
+                      ? 'grayscale opacity-50' 
+                      : ''
+                  }`}
+                >
+                  <AvatarImage 
+                    src={userProfile?.avatar_url || undefined}
+                    className={`${
+                      user?.id && !isUserOnline(user.id) 
+                        ? 'grayscale opacity-60' 
+                        : ''
+                    }`}
+                  />
+                  <AvatarFallback 
+                    className={`text-xs ${
+                      user?.id && !isUserOnline(user.id) 
+                        ? 'grayscale opacity-50' 
+                        : ''
+                    }`}
+                  >
                     {userProfile?.username?.substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                {/* Online indicator - shows your connection status */}
+                {/* Connection status dot */}
                 {user?.id && isUserOnline(user.id) ? (
-                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 border-2 border-background rounded-full" 
+                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 border-2 border-background rounded-full animate-pulse" 
                        title="Connected" />
                 ) : (
                   <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-gray-400 border-2 border-background rounded-full" 
