@@ -383,7 +383,7 @@ const AdminV2 = () => {
                   }`}
                   onClick={() => setSelectedUser(user)}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={user.avatar_url || undefined} />
                       <AvatarFallback className="text-lg font-semibold">
@@ -392,66 +392,88 @@ const AdminV2 = () => {
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-base">@{user.username}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-lg">@{user.username}</span>
                         {user.is_admin && (
                           <Badge className="bg-purple-600 text-white text-xs px-2 py-0.5">Admin</Badge>
                         )}
-                        {user.is_banned && (
-                          <Badge variant="destructive" className="text-xs px-2 py-0.5">Banned</Badge>
-                        )}
                       </div>
                       
-                      <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="text-sm text-muted-foreground mt-0.5">
                         <div className="flex items-center gap-1">
                           <Mail className="h-4 w-4 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
+                          <span className="truncate">{user.email || 'Loading...'}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4 flex-shrink-0" />
-                          <span>{formatPhone(user.phone)}</span>
-                        </div>
-                        {user.age && (
-                          <div className="flex items-center gap-1">
-                            <Cake className="h-4 w-4 flex-shrink-0" />
-                            <span>{user.age} years old</span>
-                          </div>
-                        )}
                       </div>
-                      
-                      <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
-                        <div>Joined: {formatDate(user.created_at)}</div>
-                        <div>Active: {formatDate(user.last_sign_in)}</div>
-                        <div className="flex gap-3 mt-1">
-                          <span>{user.total_posts} posts</span>
-                          <span>{user.total_messages} msgs</span>
-                          <span>{user.total_friends} friends</span>
-                        </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground">
+                        {formatPhone(user.phone)}
                       </div>
                     </div>
                   </div>
 
                   {/* Expanded Details when Selected */}
                   {selectedUser?.user_id === user.user_id && (
-                    <div className="mt-4 pt-4 border-t-2 space-y-3">
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-semibold">User ID:</span>
-                          <div className="text-xs text-muted-foreground break-all mt-0.5">{user.user_id}</div>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Birthday:</span> {formatBirthday(user.birthday)}
-                        </div>
-                        {(user.first_name || user.last_name) && (
-                          <div>
-                            <span className="font-semibold">Real Name:</span> {[user.first_name, user.last_name].filter(Boolean).join(' ')}
+                    <div className="mt-4 pt-4 border-t-2 space-y-3 bg-gray-50 dark:bg-gray-900/50 -mx-4 px-4 pb-2">
+                      <div className="grid grid-cols-1 gap-3 text-sm">
+                        {/* Contact Info */}
+                        <div className="space-y-2">
+                          <div className="font-semibold text-base mb-2">Contact Information</div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{formatPhone(user.phone)}</span>
                           </div>
-                        )}
-                        {user.bio && (
-                          <div>
-                            <span className="font-semibold">Bio:</span> {user.bio}
+                          {(user.first_name || user.last_name) && (
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span>{[user.first_name, user.last_name].filter(Boolean).join(' ')}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Personal Info */}
+                        <div className="space-y-2">
+                          <div className="font-semibold text-base mb-2">Personal Details</div>
+                          <div className="flex items-center gap-2">
+                            <Cake className="h-4 w-4 text-muted-foreground" />
+                            <span>Birthday: {formatBirthday(user.birthday)}</span>
+                            {user.age && <span className="text-muted-foreground">({user.age} years old)</span>}
                           </div>
-                        )}
+                          {user.bio && (
+                            <div className="flex items-start gap-2">
+                              <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <span className="italic">"{user.bio}"</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Activity Stats */}
+                        <div className="space-y-2">
+                          <div className="font-semibold text-base mb-2">Activity</div>
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <div className="text-xl font-bold">{user.total_posts}</div>
+                              <div className="text-xs text-muted-foreground">Posts</div>
+                            </div>
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <div className="text-xl font-bold">{user.total_messages}</div>
+                              <div className="text-xs text-muted-foreground">Messages</div>
+                            </div>
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-2">
+                              <div className="text-xl font-bold">{user.total_friends}</div>
+                              <div className="text-xs text-muted-foreground">Friends</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dates */}
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <div>Joined: {formatDate(user.created_at)}</div>
+                          <div>Last active: {formatDate(user.last_sign_in)}</div>
+                          <div className="font-mono text-xs opacity-50">ID: {user.user_id}</div>
+                        </div>
                       </div>
                       
                       <div className="flex gap-2 pt-2">
