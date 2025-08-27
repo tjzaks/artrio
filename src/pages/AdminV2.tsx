@@ -271,195 +271,194 @@ const AdminV2 = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background border-b">
-        <div className="p-4 pt-safe flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="p-4 pt-safe">
+          <div className="flex items-center justify-between mb-3">
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/')}
+              className="text-base"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
+              <ArrowLeft className="h-5 w-5 mr-2" />
               Back
             </Button>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-purple-600" />
-              <h1 className="text-xl font-bold">Admin Dashboard</h1>
-            </div>
+            <Button
+              onClick={handleRandomizeTrios}
+              disabled={randomizing}
+              size="sm"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-sm px-4 py-2"
+            >
+              <Shuffle className="h-4 w-4 mr-2" />
+              {randomizing ? 'Randomizing...' : 'Randomize Trios'}
+            </Button>
           </div>
-          <Button
-            onClick={handleRandomizeTrios}
-            disabled={randomizing}
-            className="bg-gradient-to-r from-purple-600 to-blue-600"
-          >
-            <Shuffle className="h-4 w-4 mr-2" />
-            {randomizing ? 'Randomizing...' : 'Randomize Trios'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Shield className="h-6 w-6 text-purple-600" />
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          </div>
         </div>
       </header>
 
       <div className="p-4 space-y-4 max-w-7xl mx-auto">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-background">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Users className="h-5 w-5 text-purple-600" />
-                <span className="text-2xl font-bold">{stats?.totalUsers || 0}</span>
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Users className="h-6 w-6 text-purple-600" />
+                <span className="text-3xl font-bold">{stats?.totalUsers || 0}</span>
+                <p className="text-sm text-muted-foreground">Total Users</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Total Users</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-background">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Users className="h-5 w-5 text-blue-600" />
-                <span className="text-2xl font-bold">{stats?.totalTrios || 0}</span>
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Users className="h-6 w-6 text-blue-600" />
+                <span className="text-3xl font-bold">{stats?.totalTrios || 0}</span>
+                <p className="text-sm text-muted-foreground">Total Trios</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Total Trios</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-background">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Calendar className="h-5 w-5 text-green-600" />
-                <span className="text-2xl font-bold">{stats?.todaysTrios || 0}</span>
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Calendar className="h-6 w-6 text-green-600" />
+                <span className="text-3xl font-bold">{stats?.todaysTrios || 0}</span>
+                <p className="text-sm text-muted-foreground">Today's Trios</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Today's Trios</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-background">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Hash className="h-5 w-5 text-amber-600" />
-                <span className="text-2xl font-bold">{stats?.totalPosts || 0}</span>
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Hash className="h-6 w-6 text-amber-600" />
+                <span className="text-3xl font-bold">{stats?.totalPosts || 0}</span>
+                <p className="text-sm text-muted-foreground">Total Posts</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Total Posts</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-pink-50 to-white dark:from-pink-900/20 dark:to-background">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <MessageSquare className="h-5 w-5 text-pink-600" />
-                <span className="text-2xl font-bold">{stats?.totalMessages || 0}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Messages</p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Messages Card - Full Width on Mobile */}
+        <Card className="bg-gradient-to-br from-pink-50 to-white dark:from-pink-900/20 dark:to-background">
+          <CardContent className="p-4">
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <MessageSquare className="h-6 w-6 text-pink-600" />
+              <span className="text-3xl font-bold">{stats?.totalMessages || 0}</span>
+              <p className="text-sm text-muted-foreground">Total Messages</p>
+            </div>
+          </CardContent>
+        </Card>
+        </div>
+
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Search users by name, email, or username..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-base h-12"
           />
         </div>
 
         {/* Users List */}
         <Card>
-          <CardHeader>
-            <CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl">
               All Users ({filteredUsers.length} of {users.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+          <CardContent className="p-0">
+            <div className="space-y-3 max-h-[600px] overflow-y-auto p-4">
               {filteredUsers.map((user) => (
                 <div
                   key={user.user_id}
-                  className={`p-4 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
-                    selectedUser?.user_id === user.user_id ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/20' : ''
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    selectedUser?.user_id === user.user_id ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-900/20 shadow-md' : 'hover:shadow-sm'
                   }`}
                   onClick={() => setSelectedUser(user)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {user.username?.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">@{user.username}</span>
-                          {user.is_admin && (
-                            <Badge className="bg-purple-600 text-white text-xs">Admin</Badge>
-                          )}
-                          {user.is_banned && (
-                            <Badge variant="destructive" className="text-xs">Banned</Badge>
-                          )}
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground space-y-0.5">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {user.email}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {formatPhone(user.phone)}
-                            </span>
-                            {user.age && (
-                              <span className="flex items-center gap-1">
-                                <Cake className="h-3 w-3" />
-                                {user.age} years old
-                              </span>
-                            )}
-                          </div>
-                          
-                          {(user.first_name || user.last_name) && (
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {[user.first_name, user.last_name].filter(Boolean).join(' ')}
-                            </div>
-                          )}
-                        </div>
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback className="text-lg font-semibold">
+                        {user.username?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-bold text-base">@{user.username}</span>
+                        {user.is_admin && (
+                          <Badge className="bg-purple-600 text-white text-xs px-2 py-0.5">Admin</Badge>
+                        )}
+                        {user.is_banned && (
+                          <Badge variant="destructive" className="text-xs px-2 py-0.5">Banned</Badge>
+                        )}
                       </div>
-                    </div>
-
-                    <div className="text-right text-xs text-muted-foreground">
-                      <div>Joined: {formatDate(user.created_at)}</div>
-                      <div>Active: {formatDate(user.last_sign_in)}</div>
-                      <div className="mt-1 space-x-3">
-                        <span>{user.total_posts} posts</span>
-                        <span>{user.total_messages} msgs</span>
-                        <span>{user.total_friends} friends</span>
+                      
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span>{formatPhone(user.phone)}</span>
+                        </div>
+                        {user.age && (
+                          <div className="flex items-center gap-1">
+                            <Cake className="h-4 w-4 flex-shrink-0" />
+                            <span>{user.age} years old</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                        <div>Joined: {formatDate(user.created_at)}</div>
+                        <div>Active: {formatDate(user.last_sign_in)}</div>
+                        <div className="flex gap-3 mt-1">
+                          <span>{user.total_posts} posts</span>
+                          <span>{user.total_messages} msgs</span>
+                          <span>{user.total_friends} friends</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Expanded Details when Selected */}
                   {selectedUser?.user_id === user.user_id && (
-                    <div className="mt-4 pt-4 border-t space-y-2 text-sm">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="mt-4 pt-4 border-t-2 space-y-3">
+                      <div className="space-y-2 text-sm">
                         <div>
-                          <span className="font-semibold">User ID:</span> {user.user_id}
+                          <span className="font-semibold">User ID:</span>
+                          <div className="text-xs text-muted-foreground break-all mt-0.5">{user.user_id}</div>
                         </div>
                         <div>
                           <span className="font-semibold">Birthday:</span> {formatBirthday(user.birthday)}
                         </div>
-                        <div>
-                          <span className="font-semibold">Personality:</span> {user.personality_type || 'Not set'}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Bio:</span> {user.bio || 'No bio'}
-                        </div>
+                        {(user.first_name || user.last_name) && (
+                          <div>
+                            <span className="font-semibold">Real Name:</span> {[user.first_name, user.last_name].filter(Boolean).join(' ')}
+                          </div>
+                        )}
+                        {user.bio && (
+                          <div>
+                            <span className="font-semibold">Bio:</span> {user.bio}
+                          </div>
+                        )}
                       </div>
                       
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex gap-2 pt-2">
                         <Button 
                           size="sm" 
                           variant="outline"
+                          className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/user/${user.username}`);
@@ -471,7 +470,7 @@ const AdminV2 = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            className="text-purple-600 border-purple-600"
+                            className="flex-1 text-purple-600 border-purple-600"
                             onClick={async (e) => {
                               e.stopPropagation();
                               await supabase
