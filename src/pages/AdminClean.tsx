@@ -75,43 +75,68 @@ const AdminClean = () => {
 
   const loadUsers = async () => {
     try {
+      // Try the admin RPC function first
       const { data, error } = await supabase
         .rpc('admin_get_all_user_data');
       
       if (error) {
-        // Fallback
+        console.error('Admin RPC error:', error);
+        
+        // Fallback: Get basic profile data and auth emails separately
         const { data: profiles } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (profiles) {
-          const basicUsers = profiles.map(p => ({
-            user_id: p.user_id,
-            email: 'Unable to load',
-            phone: p.phone_number,
-            username: p.username,
-            first_name: null,
-            last_name: null,
-            birthday: null,
-            age: null,
-            bio: p.bio,
-            avatar_url: p.avatar_url,
-            created_at: p.created_at,
-            last_sign_in: null,
-            is_admin: p.is_admin || false,
-            is_banned: p.is_banned || false,
-            total_posts: 0,
-            total_messages: 0,
-            total_friends: 0
-          }));
-          setUsers(basicUsers);
+          // For each profile, try to get auth data
+          const enrichedUsers = await Promise.all(
+            profiles.map(async (p) => {
+              // Try to get user email from auth.users (admin only)
+              let email = 'N/A';
+              try {
+                const { data: authData } = await supabase.auth.admin.getUserById(p.user_id);
+                if (authData?.user?.email) {
+                  email = authData.user.email;
+                }
+              } catch {
+                // If we can't get auth data, that's okay
+              }
+              
+              return {
+                user_id: p.user_id,
+                email: email,
+                phone: p.phone_number || 'No phone',
+                username: p.username,
+                first_name: null,
+                last_name: null,
+                birthday: null,
+                age: null,
+                bio: p.bio,
+                avatar_url: p.avatar_url,
+                created_at: p.created_at,
+                last_sign_in: null,
+                is_admin: p.is_admin || false,
+                is_banned: p.is_banned || false,
+                total_posts: 0,
+                total_messages: 0,
+                total_friends: 0
+              };
+            })
+          );
+          setUsers(enrichedUsers);
         }
       } else if (data) {
+        // Success - use the admin data
         setUsers(data);
       }
     } catch (error) {
       console.error('Failed to load users:', error);
+      toast({ 
+        title: 'Error loading users', 
+        description: 'Check console for details',
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -246,7 +271,19 @@ const AdminClean = () => {
                   className="w-full px-4 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-lg">
+                    {user.avatar_url ? (
+                      <img 
+                        src={user.avatar_url} 
+                        alt={user.username}
+                        className="h-12 w-12 rounded-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initials on image error
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-lg ${user.avatar_url ? 'hidden' : ''}`}>
                       {user.username?.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
@@ -263,7 +300,7 @@ const AdminClean = () => {
                   </div>
                   
                   <div className="text-sm text-gray-500 text-right">
-                    {user.phone || 'No phone'}
+                    {user.phone && user.phone !== 'null' ? user.phone : 'No phone'}
                   </div>
                 </button>
 
