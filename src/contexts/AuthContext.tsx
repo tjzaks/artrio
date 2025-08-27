@@ -204,6 +204,7 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
           username: userData.username,
           birthday: userData.birthday,
           bio: userData.bio || null,
+          phone: userData.phone || null,  // ✅ FIXED: Include phone in metadata!
           personality_type: userData.personality_type || null,
           first_name: userData.first_name || null,
           last_name: userData.last_name || null

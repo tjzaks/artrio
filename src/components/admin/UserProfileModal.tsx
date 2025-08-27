@@ -47,6 +47,7 @@ interface UserAccountInfo {
   last_sign_in: string | null;
   first_name: string | null;
   last_name: string | null;
+  phone_number: string | null;
 }
 
 interface UserActivity {
@@ -197,7 +198,8 @@ function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalPr
         age: age,
         last_sign_in: authUser?.last_sign_in_at || null,
         first_name: authUser?.raw_user_meta_data?.first_name || null,
-        last_name: authUser?.raw_user_meta_data?.last_name || null
+        last_name: authUser?.raw_user_meta_data?.last_name || null,
+        phone_number: authUser?.raw_user_meta_data?.phone || profileData?.phone_number || null
       };
       
       console.log('🔧 Setting account info:', accountData);
@@ -235,7 +237,8 @@ function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalPr
         age: null,
         last_sign_in: null,
         first_name: null,
-        last_name: null
+        last_name: null,
+        phone_number: null
       });
     } finally {
       setLoading(false);
@@ -534,7 +537,7 @@ function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalPr
                     <div className="flex items-start gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                       <span className="text-sm break-words">
-                        Phone: {formatPhoneNumber(profile.phone_number || authUser?.phone)}
+                        Phone: {formatPhoneNumber(profile.phone_number || accountInfo?.phone_number)}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">

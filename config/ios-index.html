@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <title>Artrio</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .loading {
+        text-align: center;
+      }
+      .logo {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+      .bar {
+        width: 30px;
+        height: 80px;
+        border-radius: 15px;
+      }
+      .red { background: #D73935; }
+      .green { background: #7BB146; }
+      .blue { background: #1BA0CC; }
+    </style>
+  </head>
+  <body>
+    <div class="loading">
+      <div class="logo">
+        <div class="bar red"></div>
+        <div class="bar green"></div>
+        <div class="bar blue"></div>
+      </div>
+      <h1>ARTRIO</h1>
+      <p>Loading...</p>
+    </div>
+  </body>
+</html>
