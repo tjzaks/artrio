@@ -353,7 +353,6 @@ const AdminV2 = () => {
             </div>
           </CardContent>
         </Card>
-        </div>
 
         {/* Search Bar */}
         <div className="relative">

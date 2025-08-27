@@ -16,7 +16,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Admin from "./pages/Admin";
-import AdminV2 from "./pages/AdminV2";
+import AdminClean from "./pages/AdminClean";
 import Messages from "./pages/Messages";
 import Friends from "./pages/Friends";
 import ResetPassword from "./pages/ResetPassword";
@@ -37,7 +37,7 @@ const queryClient = new QueryClient({
 // Wrap components with swipe-back functionality
 const ProfileWithSwipe = withSwipeBack(Profile);
 const UserProfileWithSwipe = withSwipeBack(UserProfile);
-const AdminWithSwipe = withSwipeBack(AdminV2); // Using new clean admin dashboard
+const AdminWithSwipe = withSwipeBack(AdminClean); // Using iPhone-native admin dashboard
 const MessagesWithSwipe = withSwipeBack(Messages);
 const FriendsWithSwipe = withSwipeBack(Friends);
 const DebugWithSwipe = withSwipeBack(Debug);
