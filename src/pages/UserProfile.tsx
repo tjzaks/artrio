@@ -9,8 +9,6 @@ import { ArrowLeft, Calendar, User, Share, UserX, UserCheck, Copy, MessageSquare
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePresence } from '@/hooks/usePresence';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import ProfileSkeleton from '@/components/ProfileSkeleton';
 import ReportUserDialog from '@/components/ReportUserDialog';
 import { logger } from '@/utils/logger';
 
@@ -421,7 +419,9 @@ const UserProfile = () => {
           </div>
         </header>
         <main className="p-4">
-          <ProfileSkeleton />
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </main>
       </div>
     );
@@ -442,8 +442,7 @@ const UserProfile = () => {
   const isOwnProfile = profile.user_id === user?.id;
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
         <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 p-3 pt-safe">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -607,8 +606,7 @@ const UserProfile = () => {
             </CardContent>
           </Card>
         </main>
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 };
 

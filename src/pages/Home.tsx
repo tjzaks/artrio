@@ -709,8 +709,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <ExternalImageStory />
-      <DebugStories />
       <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
@@ -794,8 +792,6 @@ const Home = () => {
           </div>
         </div>
         
-        {/* Stories Bar */}
-        <SimpleStoryViewer />
       </header>
 
       <main className="p-4 space-y-4 pb-20">
