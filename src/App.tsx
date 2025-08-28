@@ -15,15 +15,11 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
-import Admin from "./pages/Admin";
-import AdminClean from "./pages/AdminClean";
+import Admin from "./pages/AdminClean";
 import Messages from "./pages/Messages";
 import Friends from "./pages/Friends";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import Health from "./pages/Health";
-import Debug from "./pages/Debug";
-import DebugMessages from "./pages/DebugMessages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,11 +33,9 @@ const queryClient = new QueryClient({
 // Wrap components with swipe-back functionality
 const ProfileWithSwipe = withSwipeBack(Profile);
 const UserProfileWithSwipe = withSwipeBack(UserProfile);
-const AdminWithSwipe = withSwipeBack(AdminClean); // Using iPhone-native admin dashboard
+const AdminWithSwipe = withSwipeBack(Admin);
 const MessagesWithSwipe = withSwipeBack(Messages);
 const FriendsWithSwipe = withSwipeBack(Friends);
-const DebugWithSwipe = withSwipeBack(Debug);
-const DebugMessagesWithSwipe = withSwipeBack(DebugMessages);
 
 const App = () => {
   
@@ -100,10 +94,6 @@ const App = () => {
               } />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/health" element={<Health />} />
-              <Route path="/api/health" element={<Health />} />
-              <Route path="/debug" element={<DebugWithSwipe />} />
-              <Route path="/debug-messages" element={<DebugMessagesWithSwipe />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfileWithSwipe />

@@ -15,11 +15,8 @@ import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 import MediaUpload from '@/components/MediaUpload';
 import { usePresence } from '@/hooks/usePresence';
 import { cleanErrorMessage } from '@/utils/errorMessages';
-import SimpleStoryViewer from '@/components/SimpleStoryViewer';
-import DebugStories from '@/components/DebugStories';
 import ClickableAvatar from '@/components/ClickableAvatar';
 import SwipeablePostCard from '@/components/SwipeablePostCard';
-import ExternalImageStory from '@/components/ExternalImageStory';
 
 interface Profile {
   id: string;
