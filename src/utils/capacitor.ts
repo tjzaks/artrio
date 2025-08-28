@@ -15,6 +15,8 @@ export const initializeApp = async () => {
     if (Capacitor.getPlatform() === 'ios') {
       // Configure status bar for iOS
       await StatusBar.setStyle({ style: 'dark' });
+      // CRITICAL: Don't overlay content - push it down instead
+      await StatusBar.setOverlaysWebView({ overlay: false });
       
       // Configure keyboard for iOS
       await Keyboard.setAccessoryBarVisible({ isVisible: false });

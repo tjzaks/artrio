@@ -708,8 +708,8 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingTop: '60px' }}>
-      <header className="fixed top-0 left-0 right-0 z-40 navigation-glass" style={{ paddingTop: '60px' }}>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 navigation-glass pt-safe">
         <div className="p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
