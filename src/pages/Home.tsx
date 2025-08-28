@@ -709,7 +709,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 navigation-glass pt-safe">
+      <header className="sticky top-0 z-40 navigation-glass" style={{ paddingTop: 'max(env(safe-area-inset-top), 44px)' }}>
         <div className="p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
