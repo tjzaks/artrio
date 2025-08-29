@@ -44,7 +44,8 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     username: user?.user_metadata?.username || '',
     bio: user?.user_metadata?.bio || '',
-    avatar_url: ''
+    avatar_url: '',
+    phone_number: user?.user_metadata?.phone || ''
   });
   const [originalUsername, setOriginalUsername] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
@@ -108,7 +109,8 @@ const Profile = () => {
         setFormData({
           username: profileData.username,
           bio: profileData.bio || '',
-          avatar_url: profileData.avatar_url || ''
+          avatar_url: profileData.avatar_url || '',
+          phone_number: profileData.phone_number || ''
         });
         setOriginalUsername(profileData.username);
         
@@ -141,7 +143,8 @@ const Profile = () => {
             setFormData({
               username: newProfile.username,
               bio: newProfile.bio || '',
-              avatar_url: newProfile.avatar_url || ''
+              avatar_url: newProfile.avatar_url || '',
+              phone_number: newProfile.phone_number || ''
             });
             setOriginalUsername(newProfile.username);
           } else if (createError?.message?.includes('duplicate')) {
@@ -152,7 +155,8 @@ const Profile = () => {
             setFormData({
               username: metadata.username || '',
               bio: metadata.bio || '',
-              avatar_url: ''
+              avatar_url: '',
+              phone_number: metadata.phone || ''
             });
           }
         } else {
@@ -160,7 +164,8 @@ const Profile = () => {
           setFormData({
             username: '',
             bio: '',
-            avatar_url: ''
+            avatar_url: '',
+            phone_number: ''
           });
         }
       }
@@ -306,7 +311,8 @@ const Profile = () => {
           .update({
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            avatar_url: formData.avatar_url.trim() || null
+            avatar_url: formData.avatar_url.trim() || null,
+            phone_number: formData.phone_number?.trim() || null
           })
           .eq('user_id', user?.id);
 
@@ -326,7 +332,8 @@ const Profile = () => {
             user_id: user?.id,
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            avatar_url: formData.avatar_url.trim() || null
+            avatar_url: formData.avatar_url.trim() || null,
+            phone_number: formData.phone_number?.trim() || null
           });
 
         if (error) {
