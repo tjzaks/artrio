@@ -6,8 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // IMPORTANT: 'capacitor' works on real devices, 'ionic' works in simulator
-    // Using 'capacitor' for real device testing (simulators are unreliable)
-    iosScheme: 'capacitor',
+    // Using 'ionic' for simulator testing (allows external network requests)
+    iosScheme: 'ionic',
     androidScheme: 'https',
     // Allow connections to Supabase from iOS
     allowNavigation: ['*'],
