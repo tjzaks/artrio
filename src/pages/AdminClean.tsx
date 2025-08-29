@@ -82,14 +82,30 @@ const AdminClean = () => {
       
       if (error) {
         console.error('Admin RPC error:', error);
+        console.error('RPC Error details:', { 
+          message: error.message, 
+          details: error.details, 
+          hint: error.hint,
+          code: error.code 
+        });
         
-        // Fallback: Get basic profile data and auth emails separately
+        // Fallback: Get basic profile data and sensitive data separately
         const { data: profiles } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });
 
+        // Get sensitive data (birthdays)
+        const { data: sensitiveData } = await supabase
+          .from('sensitive_user_data')
+          .select('user_id, birthday');
+
         if (profiles) {
+          // Create a map of birthdays for quick lookup
+          const birthdayMap = new Map(
+            sensitiveData?.map(s => [s.user_id, s.birthday]) || []
+          );
+
           // For each profile, try to get auth data
           const enrichedUsers = await Promise.all(
             profiles.map(async (p) => {
@@ -104,6 +120,11 @@ const AdminClean = () => {
                 // If we can't get auth data, that's okay
               }
               
+              const birthday = birthdayMap.get(p.user_id) || null;
+              const age = birthday ? 
+                Math.floor((Date.now() - new Date(birthday).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 
+                null;
+              
               return {
                 user_id: p.user_id,
                 email: email,
@@ -111,8 +132,8 @@ const AdminClean = () => {
                 username: p.username,
                 first_name: null,
                 last_name: null,
-                birthday: null,
-                age: null,
+                birthday: birthday,
+                age: age,
                 bio: p.bio,
                 avatar_url: p.avatar_url,
                 created_at: p.created_at,
@@ -129,6 +150,7 @@ const AdminClean = () => {
         }
       } else if (data) {
         // Success - use the admin data
+        console.log('Admin RPC succeeded, got users:', data?.length);
         setUsers(data);
       }
     } catch (error) {

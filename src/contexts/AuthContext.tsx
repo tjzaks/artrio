@@ -249,8 +249,16 @@ export function AuthProvider({ children, onLoadingChange }: { children: ReactNod
               phone_number: phoneToStore
             });
 
-          if (profileError && !profileError.message.includes('duplicate')) {
-            logger.error('Profile creation error:', profileError);
+          if (profileError) {
+            // Check if it's a phone number duplicate error
+            if (profileError.message?.includes('unique_phone_number') || 
+                profileError.message?.includes('duplicate key value violates unique constraint')) {
+              logger.error('Phone number already in use:', phoneToStore);
+              // Return a more specific error for phone duplicates
+              return { error: { message: 'This phone number is already registered to another account.' } };
+            } else if (!profileError.message.includes('duplicate')) {
+              logger.error('Profile creation error:', profileError);
+            }
           }
 
           // Create sensitive data entry

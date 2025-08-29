@@ -13,6 +13,7 @@ import { validateEmail, validatePassword, validateUsername, sanitize } from '@/u
 import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
 import { formatPhoneNumber } from '@/utils/phoneFormat';
+import { validatePhoneNumber } from '@/utils/phoneValidation';
 import { cn } from '@/lib/utils';
 import { WelcomeModal } from '@/components/WelcomeModal';
 
@@ -302,10 +303,15 @@ const Auth = () => {
         
         let errorMessage = error.message;
         
-        if (error.message.includes('username') && (error.message.includes('duplicate') || error.message.includes('unique'))) {
+        if (error.message.includes('phone number is already registered')) {
+          errorMessage = 'This phone number is already registered to another account.';
+        } else if (error.message.includes('username') && (error.message.includes('duplicate') || error.message.includes('unique'))) {
           errorMessage = 'That username is already taken. Please choose another.';
-        } else if (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already registered')) {
+        } else if (error.message.includes('email') && (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already registered'))) {
           errorMessage = 'This email is already registered. Try signing in instead.';
+        } else if (error.message.includes('duplicate') || error.message.includes('unique') || error.message.includes('already registered')) {
+          // Generic duplicate error - could be email or phone
+          errorMessage = 'This information is already registered. Please check your email and phone number.';
         } else if (error.message.includes('Database error') || error.message.includes('profiles')) {
           errorMessage = 'Database error. Please try again in a moment.';
         } else if (error.message.includes('Invalid login credentials')) {
@@ -505,11 +511,21 @@ const Auth = () => {
   };
 
 
-  const handlePhoneChange = (value: string) => {
+  const handlePhoneChange = async (value: string) => {
     const formatted = formatPhoneNumber(value);
     setPhone(formatted);
-    if (value && !validatePhone(value)) {
-      setPhoneError('Please enter a valid phone number');
+    
+    // Only validate if we have a reasonably complete phone number
+    if (value.replace(/\D/g, '').length >= 10) {
+      const validation = await validatePhoneNumber(value);
+      if (!validation.isValid) {
+        setPhoneError(validation.error || 'Invalid phone number');
+      } else {
+        setPhoneError(null);
+      }
+    } else if (value.replace(/\D/g, '').length > 0) {
+      // Show error if they've started typing but haven't entered enough digits
+      setPhoneError('Please enter a complete phone number');
     } else {
       setPhoneError(null);
     }
@@ -520,9 +536,11 @@ const Auth = () => {
       case 'name': return firstName && lastName;
       case 'email': return email;
       case 'phone': {
-        const result = phone && validatePhone(phone);
-        console.log('📱 canProceed phone check - phone:', phone, 'validation:', validatePhone(phone), 'result:', result);
-        return result;
+        // Phone must be entered and no error message should be present
+        const hasPhone = phone && phone.replace(/\D/g, '').length >= 10;
+        const noError = !phoneError;
+        console.log('📱 canProceed phone check - phone:', phone, 'hasPhone:', hasPhone, 'noError:', noError);
+        return hasPhone && noError;
       }
       case 'username': return username && username.length >= 3;
       case 'password': return password && password.length >= 6 && confirmPassword && password === confirmPassword;

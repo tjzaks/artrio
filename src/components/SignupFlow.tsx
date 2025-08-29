@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPhoneNumber } from '@/utils/phoneFormat';
+import { validatePhoneNumber } from '@/utils/phoneValidation';
 
 interface SignupFlowProps {
   onComplete: (data: SignupData) => Promise<void>;
@@ -141,41 +142,33 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
     const formatted = formatPhoneNumber(value);
     setFormData(prev => ({ ...prev, phone: formatted }));
     
-    // Validate phone number
-    if (value && !validatePhone(value)) {
-      setPhoneError('Please enter a valid phone number');
-      return;
-    }
+    // Only validate if we have a reasonably complete phone number
+    const digitsOnly = value.replace(/\D/g, '');
     
-    // Check if phone number is already in use
-    if (validatePhone(value)) {
+    if (digitsOnly.length >= 10) {
       setCheckingPhone(true);
-      setPhoneError(null);
-      
-      // Extract digits only for database check
-      const digitsOnly = value.replace(/\D/g, '');
       
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('phone_number')
-          .eq('phone_number', digitsOnly)
-          .maybeSingle();
+        const validation = await validatePhoneNumber(value);
         
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking phone:', error);
-        } else if (data) {
-          setPhoneError('This phone number is already registered');
+        if (!validation.isValid) {
+          setPhoneError(validation.error || 'Invalid phone number');
         } else {
           setPhoneError(null);
         }
-      } catch (error) {
-        console.error('Error checking phone:', error);
+      } catch (err) {
+        console.error('Phone validation error:', err);
+        setPhoneError('Unable to verify phone number');
       } finally {
         setCheckingPhone(false);
       }
+    } else if (digitsOnly.length > 0) {
+      // Show error if they've started typing but haven't entered enough digits
+      setPhoneError('Please enter a complete phone number');
+      setCheckingPhone(false);
     } else {
       setPhoneError(null);
+      setCheckingPhone(false);
     }
   };
 
