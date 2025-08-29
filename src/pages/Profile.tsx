@@ -311,8 +311,8 @@ const Profile = () => {
           .update({
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            avatar_url: formData.avatar_url.trim() || null,
-            phone_number: formData.phone_number?.trim() || null
+            avatar_url: formData.avatar_url.trim() || null
+            // phone_number is immutable after signup
           })
           .eq('user_id', user?.id);
 
@@ -332,8 +332,8 @@ const Profile = () => {
             user_id: user?.id,
             username: formData.username.trim(),
             bio: formData.bio.trim() || null,
-            avatar_url: formData.avatar_url.trim() || null,
-            phone_number: formData.phone_number?.trim() || null
+            avatar_url: formData.avatar_url.trim() || null
+            // phone_number should already be set from signup
           });
 
         if (error) {
@@ -572,18 +572,19 @@ const Profile = () => {
               </p>
             </div>
 
-            {/* Phone Number */}
+            {/* Phone Number - Read Only */}
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
-                placeholder="(555) 123-4567"
-                value={formData.phone_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                placeholder="Not provided"
+                value={formData.phone_number ? formatPhoneNumber(formData.phone_number) : ''}
+                disabled
+                className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
-                Optional - for account recovery
+                Phone number cannot be changed after signup
               </p>
             </div>
 
