@@ -385,8 +385,28 @@ const Home = () => {
         hasMedia: !!mediaUrl,
         mediaType,
         userId: user?.id,
-        trioId: currentTrio.id
+        trioId: currentTrio.id,
+        currentTrio: currentTrio
       });
+
+      // Verify trio exists before posting
+      const { data: trioExists, error: trioCheckError } = await supabase
+        .from('trios')
+        .select('id')
+        .eq('id', currentTrio.id)
+        .single();
+
+      if (trioCheckError || !trioExists) {
+        console.error('Trio does not exist in database:', currentTrio.id);
+        toast({
+          title: 'Error',
+          description: 'Your trio has expired. Please refresh the page.',
+          variant: 'destructive'
+        });
+        // Refresh the trio
+        await fetchCurrentTrio();
+        return;
+      }
 
       // First try with full schema including media fields
       let { error } = await supabase
