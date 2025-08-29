@@ -151,6 +151,15 @@ const AdminClean = () => {
       } else if (data) {
         // Success - use the admin data
         console.log('Admin RPC succeeded, got users:', data?.length);
+        // Debug: Check phone data for specific users
+        const debugUsers = data.filter((u: any) => 
+          ['tobyszaks', 'jonny_b_good', 'tzak'].includes(u.username?.toLowerCase())
+        );
+        console.log('Phone debug for Toby/Jon/Tyler:', debugUsers.map((u: any) => ({
+          username: u.username,
+          phone: u.phone,
+          phone_number: u.phone_number
+        })));
         setUsers(data);
       }
     } catch (error) {
