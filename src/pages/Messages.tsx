@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ClickableAvatar from '@/components/ClickableAvatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, ArrowUp, MessageSquare, Users, Plus, Camera, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import MessageUserSearch from '@/components/MessageUserSearch';
@@ -1113,7 +1112,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="h-full bg-background flex overflow-hidden">
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background border-b flex-shrink-0">
@@ -1131,7 +1130,7 @@ export default function Messages() {
           </div>
         </header>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -1159,7 +1158,7 @@ export default function Messages() {
               />
             ))
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Chat Area */}
