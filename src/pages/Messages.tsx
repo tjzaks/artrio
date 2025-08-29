@@ -1112,11 +1112,11 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-full bg-background flex overflow-hidden">
+    <div className="fixed inset-0 bg-background flex overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Conversations List */}
       <div className={`border-r flex flex-col h-full ${selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'}`}>
         <header className="bg-background border-b flex-shrink-0">
-          <div className="px-4 pb-4 pt-16 flex items-center justify-between">
+          <div className="px-4 pb-4 pt-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1166,7 +1166,7 @@ export default function Messages() {
         <div className="flex-1 flex flex-col h-full relative">
           {/* Fixed Header */}
           <header className="absolute top-0 left-0 right-0 bg-background border-b z-10">
-            <div className="px-4 pb-3 pt-14">
+            <div className="px-4 pb-3 pt-3">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
