@@ -9,7 +9,8 @@
 
 /* Global fix: Root container setup for iOS */
 #root {
-  /* NO padding - let individual components handle safe areas */
+  /* Add top padding for status bar/Dynamic Island */
+  padding-top: env(safe-area-inset-top);
   /* Bottom padding for home indicator */
   padding-bottom: env(safe-area-inset-bottom);
   /* Side padding for landscape orientation */
@@ -20,6 +21,8 @@
   min-height: 100dvh; /* Dynamic viewport height for mobile */
   /* Allow normal scrolling */
   position: relative;
+  /* Ensure white background */
+  background-color: white;
 }
 
 /* IMPORTANT: Prevent any child from breaking out of safe area */

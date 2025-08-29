@@ -14,6 +14,10 @@ export const initializeApp = async () => {
     
     if (Capacitor.getPlatform() === 'ios') {
       // Configure status bar for iOS
+      await StatusBar.setStyle({ style: 'light' }); // Light text on dark background
+      // Set background color to white to match app
+      await StatusBar.setBackgroundColor({ color: '#FFFFFF' });
+      // Then switch to dark text
       await StatusBar.setStyle({ style: 'dark' });
       // CRITICAL: Don't overlay content - push it down instead
       await StatusBar.setOverlaysWebView({ overlay: false });
