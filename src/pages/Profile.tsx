@@ -572,6 +572,21 @@ const Profile = () => {
               </p>
             </div>
 
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.phone_number}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional - for account recovery
+              </p>
+            </div>
+
             {/* Read-only info */}
             {profile && (
               <div className="space-y-4 pt-4 border-t">
