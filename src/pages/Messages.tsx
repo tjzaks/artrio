@@ -43,6 +43,7 @@ interface Conversation {
 }
 
 export default function Messages() {
+  // ALL hooks must be called at the top level, before any returns
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1125,7 +1126,6 @@ export default function Messages() {
     );
   }
   
-  // Safety check - shouldn't reach here but just in case
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
