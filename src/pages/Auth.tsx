@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateEmail, validatePassword, validateUsername, sanitize } from '@/utils/validation';
 import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
+import { formatPhoneNumber } from '@/utils/phoneFormat';
 import { cn } from '@/lib/utils';
 import { WelcomeModal } from '@/components/WelcomeModal';
 
@@ -503,16 +504,9 @@ const Auth = () => {
     return true;
   };
 
-  const formatPhone = (value: string): string => {
-    const digitsOnly = value.replace(/\D/g, '');
-    if (digitsOnly.length === 10) {
-      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
-    }
-    return digitsOnly;
-  };
 
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhone(value);
+    const formatted = formatPhoneNumber(value);
     setPhone(formatted);
     if (value && !validatePhone(value)) {
       setPhoneError('Please enter a valid phone number');

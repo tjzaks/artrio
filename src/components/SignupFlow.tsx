@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatPhoneNumber } from '@/utils/phoneFormat';
 
 interface SignupFlowProps {
   onComplete: (data: SignupData) => Promise<void>;
@@ -135,21 +136,9 @@ export default function SignupFlow({ onComplete, onBack }: SignupFlowProps) {
     return true;
   };
 
-  const formatPhone = (value: string): string => {
-    // Remove all non-digit characters
-    const digitsOnly = value.replace(/\D/g, '');
-    
-    // Format as US phone number if 10 digits
-    if (digitsOnly.length === 10) {
-      return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
-    }
-    
-    // Otherwise just return digits with spaces for readability
-    return digitsOnly;
-  };
 
   const handlePhoneChange = async (value: string) => {
-    const formatted = formatPhone(value);
+    const formatted = formatPhoneNumber(value);
     setFormData(prev => ({ ...prev, phone: formatted }));
     
     // Validate phone number

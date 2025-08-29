@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, Shuffle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatPhoneNumber } from '@/utils/phoneFormat';
 
 interface UserData {
   user_id: string;
@@ -106,7 +107,7 @@ const AdminClean = () => {
               return {
                 user_id: p.user_id,
                 email: email,
-                phone: p.phone_number || 'No phone',
+                phone: p.phone_number || null,
                 username: p.username,
                 first_name: null,
                 last_name: null,
@@ -300,7 +301,7 @@ const AdminClean = () => {
                   </div>
                   
                   <div className="text-sm text-gray-500 text-right">
-                    {user.phone && user.phone !== 'null' ? user.phone : 'No phone'}
+                    {user.phone ? formatPhoneNumber(user.phone) : 'No phone'}
                   </div>
                 </button>
 

@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
 import { cleanErrorMessage } from '@/utils/errorMessages';
+import { formatPhoneNumber } from '@/utils/phoneFormat';
 
 interface Profile {
   id: string;
@@ -422,14 +423,6 @@ const Profile = () => {
     return typeof age === 'number' && age < 18;
   };
 
-  const formatPhoneNumber = (phone: string): string => {
-    // Phone is stored as digits only in database
-    if (phone.length === 10) {
-      return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
-    }
-    // Return as-is for international numbers
-    return phone;
-  };
 
   if (loading) {
     return (

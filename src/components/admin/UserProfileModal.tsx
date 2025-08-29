@@ -10,6 +10,7 @@ import { User, Mail, Phone, Calendar, MapPin, Shield, Ban, AlertTriangle, Messag
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
+import { formatPhoneNumber } from '@/utils/phoneFormat';
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -245,13 +246,6 @@ function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalPr
     }
   };
 
-  const formatPhoneNumber = (phone: string | null): string => {
-    if (!phone) return 'Not provided';
-    if (phone.length === 10) {
-      return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
-    }
-    return phone;
-  };
 
   const formatVibes = (vibes: string[] | null): string => {
     if (!vibes || vibes.length === 0) return 'Not provided';
@@ -537,7 +531,7 @@ function UserProfileModalContent({ userId, isOpen, onClose }: UserProfileModalPr
                     <div className="flex items-start gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                       <span className="text-sm break-words">
-                        Phone: {formatPhoneNumber(profile.phone_number || accountInfo?.phone_number)}
+                        Phone: {formatPhoneNumber(profile.phone_number || accountInfo?.phone_number) || 'Not provided'}
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
