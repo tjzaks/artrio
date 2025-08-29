@@ -178,29 +178,6 @@ export default function Friends() {
         
         // SURGICAL LOGGING - See exactly what we got
         if (friendProfiles) {
-          console.log('[FRIENDS] 🔍 SURGICAL DIAGNOSIS:');
-          friendProfiles.forEach(friend => {
-            console.log(`[FRIENDS] Friend: ${friend.username}`);
-            console.log(`[FRIENDS]   - is_online: ${friend.is_online}`);
-            console.log(`[FRIENDS]   - last_seen: ${friend.last_seen}`);
-            console.log(`[FRIENDS]   - profile_id: ${friend.id}`);
-            console.log(`[FRIENDS]   - user_id: ${friend.user_id}`);
-          });
-          
-          // Check specifically for Toby
-          const toby = friendProfiles.find(f => f.username === 'tobyszaks');
-          if (toby) {
-            console.log('[FRIENDS] 🎯 TOBY STATUS:', {
-              username: toby.username,
-              is_online: toby.is_online,
-              last_seen: toby.last_seen,
-              typeof_is_online: typeof toby.is_online
-            });
-            
-            // Alert for immediate visibility
-            alert(`Toby data from DB:\nis_online: ${toby.is_online}\nlast_seen: ${toby.last_seen}`);
-          }
-          
           setFriends(friendProfiles);
         }
       } else {
