@@ -43,7 +43,7 @@ interface Conversation {
 }
 
 export default function Messages() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -160,8 +160,21 @@ export default function Messages() {
   
   // Load conversations and handle URL params
   useEffect(() => {
-    if (user) {
-      loadConversations();
+    // Wait for auth to load first
+    if (authLoading) {
+      console.log('[MESSAGES] Waiting for auth to load...');
+      return;
+    }
+    
+    if (!user) {
+      console.log('[MESSAGES] No user authenticated, redirecting to auth...');
+      setLoading(false);
+      navigate('/auth');
+      return;
+    }
+    
+    console.log('[MESSAGES] User authenticated, loading conversations...');
+    loadConversations();
       
       // Set up a single global subscription for ALL messages
       const channel = supabase
@@ -239,8 +252,7 @@ export default function Messages() {
       return () => {
         channel.unsubscribe();
       };
-    }
-  }, [user]);
+  }, [user, authLoading, navigate]);
 
   // Handle conversation from URL params or user profile navigation
   useEffect(() => {
@@ -518,12 +530,12 @@ export default function Messages() {
   const loadConversations = async () => {
     try {
       if (!user?.id) {
-        console.error('No user ID available');
-        setLoading(false);
+        console.error('[MESSAGES] No user ID available, user object:', user);
+        // Don't set loading to false here - wait for auth to load
         return;
       }
 
-      console.log('Loading conversations for user:', user.id);
+      console.log('[MESSAGES] Loading conversations for user:', user.id);
 
       // Load conversations with profiles in separate queries for now
       const { data: convs, error } = await supabase
@@ -1103,10 +1115,21 @@ export default function Messages() {
     return diffMinutes <= 2;
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading messages...</div>
+        <div className="text-lg">
+          {authLoading ? 'Authenticating...' : 'Loading messages...'}
+        </div>
+      </div>
+    );
+  }
+  
+  // Safety check - shouldn't reach here but just in case
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Please log in to view messages</div>
       </div>
     );
   }
